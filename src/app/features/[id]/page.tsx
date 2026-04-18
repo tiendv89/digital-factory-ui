@@ -1,24 +1,36 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Table } from "@heroui/react";
-import { getMockFeatureById, getMockTasksByFeatureId } from "@/lib/mock/data";
+import { getFeatureRepository } from "@/lib/repositories";
 import { StatusBadge } from "@/components/status-badge";
+import type { Feature } from "@/lib/types/feature";
+import type { Task } from "@/lib/types/task";
+
+// Always render at request time — data comes from live filesystem reads.
+export const dynamic = "force-dynamic";
 
 interface FeatureDetailPageProps {
   params: Promise<{ id: string }>;
+}
+
+function getCurrentReviewStatus(feature: Feature): string {
+  const stage = feature.stages[feature.current_stage];
+  return stage?.review_status ?? "unknown";
 }
 
 export default async function FeatureDetailPage({
   params,
 }: FeatureDetailPageProps) {
   const { id } = await params;
-  const feature = getMockFeatureById(id);
+  const repo = getFeatureRepository();
+  const [feature, tasks] = await Promise.all([
+    repo.findById(id),
+    repo.findTasksByFeatureId(id),
+  ]);
 
   if (!feature) {
     notFound();
   }
-
-  const tasks = getMockTasksByFeatureId(id);
 
   return (
     <main className="p-8">
@@ -30,20 +42,22 @@ export default async function FeatureDetailPage({
       {/* Feature header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">{feature.title}</h1>
-        <p className="font-mono text-sm text-gray-500 mb-4">{feature.id}</p>
+        <p className="font-mono text-sm text-gray-500 mb-4">{feature.feature_id}</p>
         <div className="flex flex-wrap gap-3 items-center">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Stage:</span>
-            <StatusBadge status={feature.stage} />
+            <StatusBadge status={feature.current_stage} />
           </div>
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-500">Review:</span>
-            <StatusBadge status={feature.review_status} />
+            <StatusBadge status={getCurrentReviewStatus(feature)} />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Next action:</span>
-            <span className="text-sm">{feature.next_action}</span>
-          </div>
+          {feature.next_action && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-500">Next action:</span>
+              <span className="text-sm">{feature.next_action}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -62,7 +76,7 @@ export default async function FeatureDetailPage({
               <Table.Column>PR</Table.Column>
             </Table.Header>
             <Table.Body>
-              {tasks.map((task) => {
+              {tasks.map((task: Task) => {
                 const isBlocked = task.status === "blocked";
                 const hasUnmetDeps =
                   task.depends_on.length > 0 &&
@@ -70,6 +84,7 @@ export default async function FeatureDetailPage({
                     const dep = tasks.find((t) => t.id === depId);
                     return dep && dep.status !== "done";
                   });
+                const prUrl = task.pr?.url;
 
                 return (
                   <Table.Row
@@ -95,7 +110,9 @@ export default async function FeatureDetailPage({
                     <Table.Cell className="font-mono text-xs">
                       {task.repo}
                     </Table.Cell>
-                    <Table.Cell className="text-sm">{task.actor_type}</Table.Cell>
+                    <Table.Cell className="text-sm">
+                      {task.execution?.actor_type ?? "—"}
+                    </Table.Cell>
                     <Table.Cell>
                       {task.depends_on.length === 0 ? (
                         <span className="text-gray-400 text-xs">—</span>
@@ -110,9 +127,9 @@ export default async function FeatureDetailPage({
                       )}
                     </Table.Cell>
                     <Table.Cell>
-                      {task.pr_url ? (
+                      {prUrl ? (
                         <a
-                          href={task.pr_url}
+                          href={prUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="text-blue-600 hover:underline text-xs"
