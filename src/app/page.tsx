@@ -4,9 +4,6 @@ import { getFeatureRepository } from "@/lib/repositories";
 import { StatusBadge } from "@/components/status-badge";
 import type { FeatureSummary } from "@/lib/types/feature";
 
-// Always render at request time — data comes from live filesystem reads.
-export const dynamic = "force-dynamic";
-
 function getCurrentReviewStatus(feature: FeatureSummary): string {
   const stage = feature.stages[feature.current_stage];
   return stage?.review_status ?? "unknown";
