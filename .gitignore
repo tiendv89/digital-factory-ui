@@ -13,6 +13,9 @@
 /.next/
 /out/
 
+# generated at build time by scripts/generate-data.ts
+/public/data/
+
 # production
 /build
 

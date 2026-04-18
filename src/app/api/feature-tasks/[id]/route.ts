@@ -1,10 +1,10 @@
 /**
- * GET /api/features/:id — returns a single feature by ID.
+ * GET /api/feature-tasks/:id — returns all tasks for a given feature ID.
  *
- * NOTE: There is deliberately no parent route handler at /api/features.
- * In static export mode, Next.js creates out/api/features/ as a directory.
- * Having a parent handler would create out/api/features (file), causing
- * an EISDIR conflict. The list endpoint lives at /api/feature-summaries.
+ * Separated from /api/features/:id into its own namespace to avoid the
+ * static export EISDIR conflict: if tasks lived at /api/features/:id/tasks,
+ * Next.js would try to write out/api/features/{id} (file) AND create
+ * out/api/features/{id}/ (directory), causing a copyfile error.
  */
 
 import { NextResponse } from "next/server";
@@ -33,9 +33,6 @@ interface RouteParams {
 export async function GET(_request: Request, { params }: RouteParams) {
   const { id } = await params;
   const repo = getFeatureRepository();
-  const feature = await repo.findById(id);
-  if (!feature) {
-    return NextResponse.json({ error: "Feature not found" }, { status: 404 });
-  }
-  return NextResponse.json(feature);
+  const tasks = await repo.findTasksByFeatureId(id);
+  return NextResponse.json(tasks);
 }

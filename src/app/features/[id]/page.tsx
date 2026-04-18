@@ -6,8 +6,23 @@ import { StatusBadge } from "@/components/status-badge";
 import type { Feature } from "@/lib/types/feature";
 import type { Task } from "@/lib/types/task";
 
-// Always render at request time — data comes from live filesystem reads.
-export const dynamic = "force-dynamic";
+/**
+ * generateStaticParams is required for dynamic routes when output: 'export'
+ * is active. It returns all feature IDs so Next.js pre-renders each detail
+ * page as static HTML.
+ */
+export async function generateStaticParams(): Promise<{ id: string }[]> {
+  try {
+    const repo = getFeatureRepository();
+    const features = await repo.findAll();
+    return features.map((f) => ({ id: f.feature_id }));
+  } catch {
+    // If the data source is not configured (e.g. missing env var in a dev
+    // build that doesn't use static export), return an empty list so the
+    // build still succeeds.
+    return [];
+  }
+}
 
 interface FeatureDetailPageProps {
   params: Promise<{ id: string }>;
