@@ -120,9 +120,15 @@ src/
       static-feature.repository.ts       # Reads pre-generated JSON (static build)
       index.ts                           # Factory: selects impl via NEXT_PUBLIC_DATA_SOURCE
   app/
-    page.tsx                  # Features list (Server Component)
-    features/[id]/page.tsx    # Feature detail (Server Component)
-    api/features/...          # REST API routes (local dev only; excluded from static export)
+    page.tsx                        # Features list (Server Component)
+    features/[id]/page.tsx          # Feature detail (Server Component)
+    api/
+      feature-summaries/route.ts    # GET /api/feature-summaries → FeatureSummary[]
+      features/[id]/route.ts        # GET /api/features/:id → Feature
+      feature-tasks/[id]/route.ts   # GET /api/feature-tasks/:id → Task[]
+      # NOTE: Flat layout (no /api/features parent handler) is required to
+      # avoid an EISDIR conflict in Next.js static export where a route file
+      # and a route directory cannot share the same path.
 scripts/
   generate-data.ts    # Build-time YAML → JSON converter
 .github/workflows/
