@@ -1,0 +1,29 @@
+id: T1
+title: First task in another feature
+repo: test-repo
+status: in_progress
+depends_on: []
+blocked_reason: null
+blocked_context: null
+branch: feature/another-feature-T1
+
+execution:
+  actor_type: agent
+  last_updated_by: tester@example.com
+  last_updated_at: "2026-02-10T00:00:00Z"
+
+pr:
+  url: ""
+  status: not_created
+
+workspace_pr: null
+
+log:
+  - action: created
+    by: tester@example.com
+    at: "2026-02-01T00:00:00Z"
+    note: Task created.
+  - action: started
+    by: tester@example.com
+    at: "2026-02-10T00:00:00Z"
+    note: Implementation started.

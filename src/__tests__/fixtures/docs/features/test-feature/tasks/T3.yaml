@@ -1,0 +1,30 @@
+id: T3
+title: Third task (ready)
+repo: test-repo
+status: ready
+depends_on:
+  - T1
+blocked_reason: null
+blocked_context: null
+branch: ""
+
+execution:
+  actor_type: agent
+  last_updated_by: null
+  last_updated_at: null
+
+pr:
+  url: ""
+  status: not_created
+
+workspace_pr: null
+
+log:
+  - action: created
+    by: tester@example.com
+    at: "2026-01-03T00:00:00Z"
+    note: Task created.
+  - action: ready
+    by: tester@example.com
+    at: "2026-01-10T00:00:00Z"
+    note: Auto-ready after T1 done.
