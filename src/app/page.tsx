@@ -1,10 +1,19 @@
 import Link from "next/link";
 import { Table } from "@heroui/react";
-import { getMockFeatureSummaries } from "@/lib/mock/data";
+import { getFeatureRepository } from "@/lib/repositories";
 import { StatusBadge } from "@/components/status-badge";
+import type { FeatureSummary } from "@/lib/types/feature";
 
-export default function FeaturesListPage() {
-  const features = getMockFeatureSummaries();
+// Always render at request time — data comes from live filesystem reads.
+export const dynamic = "force-dynamic";
+
+function getCurrentReviewStatus(feature: FeatureSummary): string {
+  const stage = feature.stages[feature.current_stage];
+  return stage?.review_status ?? "unknown";
+}
+
+export default async function FeaturesListPage() {
+  const features = await getFeatureRepository().findAll();
 
   return (
     <main className="p-8">
@@ -17,42 +26,42 @@ export default function FeaturesListPage() {
             <Table.Header>
               <Table.Column isRowHeader>Feature ID</Table.Column>
               <Table.Column>Title</Table.Column>
-              <Table.Column>Stage</Table.Column>
+              <Table.Column>Status</Table.Column>
               <Table.Column>Review Status</Table.Column>
               <Table.Column>Tasks</Table.Column>
             </Table.Header>
             <Table.Body>
               {features.map((feature) => {
-                const { task_counts } = feature;
+                const { taskCounts } = feature;
                 const taskSummaryParts: string[] = [];
-                if (task_counts.done > 0)
-                  taskSummaryParts.push(`${task_counts.done} done`);
-                if (task_counts.in_progress > 0)
-                  taskSummaryParts.push(`${task_counts.in_progress} in progress`);
-                if (task_counts.in_review > 0)
-                  taskSummaryParts.push(`${task_counts.in_review} in review`);
-                if (task_counts.blocked > 0)
-                  taskSummaryParts.push(`${task_counts.blocked} blocked`);
-                if (task_counts.ready > 0)
-                  taskSummaryParts.push(`${task_counts.ready} ready`);
+                if (taskCounts.done > 0)
+                  taskSummaryParts.push(`${taskCounts.done} done`);
+                if (taskCounts.in_progress > 0)
+                  taskSummaryParts.push(`${taskCounts.in_progress} in progress`);
+                if (taskCounts.in_review > 0)
+                  taskSummaryParts.push(`${taskCounts.in_review} in review`);
+                if (taskCounts.blocked > 0)
+                  taskSummaryParts.push(`${taskCounts.blocked} blocked`);
+                if (taskCounts.ready > 0)
+                  taskSummaryParts.push(`${taskCounts.ready} ready`);
                 const taskSummary = taskSummaryParts.join(" · ") || "no tasks";
 
                 return (
-                  <Table.Row key={feature.id}>
+                  <Table.Row key={feature.feature_id}>
                     <Table.Cell className="font-mono text-sm">
                       <Link
-                        href={`/features/${feature.id}`}
+                        href={`/features/${feature.feature_id}`}
                         className="text-blue-600 hover:underline"
                       >
-                        {feature.id}
+                        {feature.feature_id}
                       </Link>
                     </Table.Cell>
                     <Table.Cell>{feature.title}</Table.Cell>
                     <Table.Cell>
-                      <StatusBadge status={feature.stage} />
+                      <StatusBadge status={feature.feature_status} />
                     </Table.Cell>
                     <Table.Cell>
-                      <StatusBadge status={feature.review_status} />
+                      <StatusBadge status={getCurrentReviewStatus(feature)} />
                     </Table.Cell>
                     <Table.Cell className="text-sm text-gray-600">
                       {taskSummary}
