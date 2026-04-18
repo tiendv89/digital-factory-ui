@@ -1,7 +1,6 @@
 import { Chip } from "@heroui/react";
-import type { FeatureStage, ReviewStatus, TaskStatus } from "@/lib/mock/data";
 
-type StatusValue = TaskStatus | FeatureStage | ReviewStatus | string;
+type StatusValue = string;
 
 type ChipColor = "default" | "accent" | "success" | "warning" | "danger";
 
