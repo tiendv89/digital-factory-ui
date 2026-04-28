@@ -1,5 +1,5 @@
 import { getWorkspaceSummaries } from "@/lib/workspace";
-import { HomeContent } from "./HomeContent";
+import { HomeContent } from "./home-content";
 
 export const dynamic = "force-dynamic";
 

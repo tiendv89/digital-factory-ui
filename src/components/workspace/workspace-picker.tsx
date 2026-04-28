@@ -1,4 +1,4 @@
-import { WorkspaceCard } from "./WorkspaceCard";
+import { WorkspaceCard } from "./workspace-card";
 import type { WorkspaceSummary } from "@/types/workspace";
 
 interface WorkspacePickerProps {
