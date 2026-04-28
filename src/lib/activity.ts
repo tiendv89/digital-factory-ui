@@ -1,4 +1,4 @@
-import type { ActivityEntry } from "@/components/dashboard/RecentActivity";
+import type { ActivityEntry } from "@/types/activity";
 import type { FeatureSummary } from "@/types/feature";
 import { loadFeatureStatus } from "@/lib/features";
 import { listTasks } from "@/lib/tasks";
@@ -10,13 +10,15 @@ export function buildActivityFeed(
 ): ActivityEntry[] {
   const entries: ActivityEntry[] = [];
 
+  let seq = 0;
+
   for (const feature of features) {
     const status = loadFeatureStatus(workspaceRoot, feature.featureId);
     if (!status) continue;
 
     for (const h of status.history) {
       entries.push({
-        id: `feature-${feature.featureId}-${h.at}-${h.action}`,
+        id: `feature-${feature.featureId}-${seq++}`,
         type: "feature",
         action: h.action,
         subject: feature.title,
@@ -31,10 +33,10 @@ export function buildActivityFeed(
     for (const task of tasks) {
       for (const log of task.log ?? []) {
         entries.push({
-          id: `task-${task.id}-${log.at}-${log.action}`,
+          id: `task-${task.id}-${seq++}`,
           type: "task",
           action: log.action,
-          subject: task.title ?? task.id,
+          subject: task.title,
           subjectId: task.id,
           by: log.by,
           at: log.at,

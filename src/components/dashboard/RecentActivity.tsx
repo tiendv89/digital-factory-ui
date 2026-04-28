@@ -1,15 +1,5 @@
 import { formatDistanceToNow } from "@/lib/date-utils";
-
-export interface ActivityEntry {
-  id: string;
-  type: "feature" | "task";
-  action: string;
-  subject: string;
-  subjectId: string;
-  by: string;
-  at: string;
-  note?: string | null;
-}
+import type { ActivityEntry } from "@/types/activity";
 
 interface RecentActivityProps {
   entries: ActivityEntry[];
