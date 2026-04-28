@@ -41,13 +41,13 @@ export function FeatureSummaryCard({
   const currentStageLabel = STAGE_DEFS.find(s => s.key === currentStage)?.label ?? currentStage;
 
   return (
-    <div className="relative h-[225.5px] w-[360px] shrink-0 rounded-[14px] border border-(--color-border) bg-(--color-surface) shadow-[0px_1px_1px_rgba(16,24,40,0.04)]">
+    <div className="relative h-[225.5px] w-[360px] shrink-0 rounded-[14px] border border-border bg-surface shadow-[0px_1px_1px_rgba(16,24,40,0.04)]">
       {/* Header */}
       <div className="absolute left-5 right-5 top-5">
-        <p className="truncate text-[15px] font-semibold leading-[22.5px] tracking-[-0.23px] text-(--color-text-primary)">
+        <p className="truncate text-[15px] font-semibold leading-[22.5px] tracking-[-0.23px] text-text-primary">
           {title}
         </p>
-        <span className="mt-[6px] inline-block rounded-[4px] bg-[#f3f4f9] px-[6px] font-mono text-[11px] leading-[16.5px] text-(--color-text-secondary)">
+        <span className="mt-[6px] inline-block rounded-[4px] bg-[#f3f4f9] px-[6px] font-mono text-[11px] leading-[16.5px] text-text-secondary">
           {featureId}
         </span>
       </div>
@@ -67,7 +67,7 @@ export function FeatureSummaryCard({
                     ? "bg-[#17a674] text-white"
                     : isCurrent
                     ? "bg-[#5465e8] text-white"
-                    : "bg-[#eef0f6] text-(--color-text-muted)",
+                    : "bg-[#eef0f6] text-text-muted",
                 ].join(" ")}
               >
                 {isApproved ? "✓" : i + 1}
@@ -75,7 +75,7 @@ export function FeatureSummaryCard({
               <p
                 className={[
                   "text-center text-[10px] font-medium uppercase tracking-[0.6px] leading-[15px]",
-                  isCurrent ? "text-(--color-text-primary)" : "text-(--color-text-muted)",
+                  isCurrent ? "text-text-primary" : "text-text-muted",
                 ].join(" ")}
               >
                 {stage.label}
@@ -87,7 +87,7 @@ export function FeatureSummaryCard({
 
       {/* Stage label + review badge */}
       <div className="absolute left-5 right-5 top-[143.5px] flex items-center justify-between">
-        <p className="text-[12px] leading-[18px] text-(--color-text-secondary)">
+        <p className="text-[12px] leading-[18px] text-text-secondary">
           {currentStageLabel}
         </p>
         <span
@@ -108,10 +108,10 @@ export function FeatureSummaryCard({
 
       {/* Footer */}
       <div className="absolute left-5 right-5 top-[185.5px] flex items-center justify-between">
-        <p className="text-[12px] leading-[18px] text-(--color-text-muted)">
+        <p className="text-[12px] leading-[18px] text-text-muted">
           {doneTasks}/{totalTasks} tasks
         </p>
-        <p className="text-[12px] leading-[18px] text-(--color-text-muted)">
+        <p className="text-[12px] leading-[18px] text-text-muted">
           {lastUpdatedAt ? formatDistanceToNow(lastUpdatedAt) : "—"}
         </p>
       </div>
