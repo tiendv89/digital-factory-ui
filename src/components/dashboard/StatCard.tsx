@@ -1,47 +1,67 @@
-type CountVariant = "default" | "warning" | "danger";
-type SubtitleVariant = "positive" | "negative" | "muted";
+import type { LucideIcon } from "lucide-react";
 
-const countColors: Record<CountVariant, string> = {
-  default: "text-(--color-text-primary)",
-  warning: "text-[#ffb547]",
-  danger: "text-[#ff5e7d]",
-};
+type ColorVariant = "primary" | "success" | "danger" | "warning" | "muted";
 
-const subtitleColors: Record<SubtitleVariant, string> = {
-  positive: "text-(--color-success)",
-  negative: "text-(--color-danger)",
-  muted: "text-(--color-text-muted)",
+const variantStyles: Record<
+  ColorVariant,
+  { icon: string; iconBg: string; count: string }
+> = {
+  primary: {
+    icon: "text-(--color-primary)",
+    iconBg: "bg-(--color-primary-light)",
+    count: "text-(--color-text-primary)",
+  },
+  success: {
+    icon: "text-(--color-success)",
+    iconBg: "bg-(--color-success-bg)",
+    count: "text-(--color-text-primary)",
+  },
+  danger: {
+    icon: "text-(--color-danger)",
+    iconBg: "bg-(--color-danger-bg)",
+    count: "text-(--color-text-primary)",
+  },
+  warning: {
+    icon: "text-(--color-warning)",
+    iconBg: "bg-(--color-warning-bg)",
+    count: "text-(--color-text-primary)",
+  },
+  muted: {
+    icon: "text-(--color-text-muted)",
+    iconBg: "bg-(--color-border)",
+    count: "text-(--color-text-primary)",
+  },
 };
 
 interface StatCardProps {
   label: string;
   count: number;
-  subtitle?: string;
-  subtitleVariant?: SubtitleVariant;
-  countVariant?: CountVariant;
+  Icon: LucideIcon;
+  variant: ColorVariant;
 }
 
-export function StatCard({
-  label,
-  count,
-  subtitle,
-  subtitleVariant = "muted",
-  countVariant = "default",
-}: StatCardProps) {
+export function StatCard({ label, count, Icon, variant }: StatCardProps) {
+  const styles = variantStyles[variant];
+
   return (
-    <div className="flex flex-col gap-3 rounded-[14px] border border-(--color-border) bg-(--color-surface) p-5 shadow-[0px_1px_1px_rgba(16,24,40,0.04)]">
-      <p className="text-[11px] font-medium uppercase tracking-[0.55px] text-(--color-text-muted)">
-        {label}
-      </p>
-      <div className="flex items-end justify-between">
-        <p className={`text-[32px] font-bold leading-8 tabular-nums ${countColors[countVariant]}`}>
+    <div className="flex items-center gap-4 rounded-xl border border-(--color-border) bg-(--color-surface) p-5">
+      <div
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${styles.iconBg}`}
+        style={
+          variant === "primary"
+            ? { backgroundColor: "rgba(84,101,232,0.08)" }
+            : undefined
+        }
+      >
+        <Icon size={20} className={styles.icon} aria-hidden="true" />
+      </div>
+      <div className="min-w-0">
+        <p className="text-xs font-medium text-(--color-text-muted) uppercase tracking-wide">
+          {label}
+        </p>
+        <p className={`mt-0.5 text-2xl font-bold tabular-nums ${styles.count}`}>
           {count}
         </p>
-        {subtitle && (
-          <p className={`text-[12px] leading-4.5 ${subtitleColors[subtitleVariant]}`}>
-            {subtitle}
-          </p>
-        )}
       </div>
     </div>
   );
