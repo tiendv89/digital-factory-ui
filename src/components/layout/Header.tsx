@@ -8,8 +8,7 @@ interface HeaderProps {
 export function Header({ title, workspaceIds }: HeaderProps) {
   return (
     <header
-      className="flex h-16 shrink-0 items-center justify-between border-b border-(--color-border) px-8"
-      style={{ backgroundColor: "rgba(247,248,251,0.85)" }}
+      className="flex h-16 shrink-0 items-center justify-between border-b border-(--color-border) bg-(--color-surface) px-8"
     >
       <div className="flex flex-col justify-center">
         {title && (
