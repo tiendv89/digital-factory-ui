@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Check, ChevronDown } from "lucide-react";
 import { useWorkspace } from "@/context/workspace-context";
 
@@ -12,6 +13,7 @@ export function WorkspaceSwitcher({ workspaceIds }: WorkspaceSwitcherProps) {
   const { activeWorkspaceId, setActiveWorkspaceId } = useWorkspace();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -60,6 +62,7 @@ export function WorkspaceSwitcher({ workspaceIds }: WorkspaceSwitcherProps) {
                     onClick={() => {
                       setActiveWorkspaceId(id);
                       setOpen(false);
+                      router.push(`/?workspace=${encodeURIComponent(id)}`);
                     }}
                     className={[
                       "flex w-full items-center gap-2 px-4 py-2.5 text-sm transition-colors",
