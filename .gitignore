@@ -3,8 +3,12 @@
 # dependencies
 /node_modules
 /.pnp
-.pnp.js
-.yarn/install-state.gz
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
 # testing
 /coverage
@@ -12,9 +16,6 @@
 # next.js
 /.next/
 /out/
-
-# generated at build time by scripts/generate-data.ts
-/public/data/
 
 # production
 /build
@@ -27,10 +28,11 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+.pnpm-debug.log*
 
-# env files (can opt-in for secrets)
-.env*.local
-.env
+# env files (can opt-in for committing if needed)
+.env*
+!.env*.example
 
 # vercel
 .vercel

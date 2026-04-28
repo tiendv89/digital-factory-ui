@@ -1,136 +1,36 @@
-# digital-factory-ui
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Feature & Task Status Visualization Dashboard — a Next.js app that reads
-feature and task state from the management repo YAML files and renders them
-as a browsable web UI.
+## Getting Started
 
----
-
-## Local development
-
-### Prerequisites
-
-- Node.js 20+
-- A local clone of the management repo (the workspace that holds `docs/features/`)
-
-### Setup
-
-```bash
-npm install
-
-# Copy the example env file and set your management repo path
-cp .env.local.example .env.local
-# Edit .env.local → set WORKSPACE_MGMT_PATH to your local management repo clone
-```
-
-### Run
+First, run the development server:
 
 ```bash
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-The app reads YAML files directly from `WORKSPACE_MGMT_PATH` on every request
-in this mode.
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
----
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Static export (GitHub Pages)
+## Learn More
 
-The app can be built as a fully static site and deployed to GitHub Pages.
-Static builds use pre-generated JSON instead of live YAML reads.
+To learn more about Next.js, take a look at the following resources:
 
-### Build locally
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-```bash
-# 1. Point to your management repo
-export WORKSPACE_MGMT_PATH=/path/to/management-repo
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-# 2. Generate static JSON data
-npm run generate-data
+## Deploy on Vercel
 
-# 3. Build the static export
-NEXT_PUBLIC_DATA_SOURCE=static npm run build
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-# Output is in out/
-```
-
-### GitHub Actions deployment
-
-The workflow at `.github/workflows/deploy.yml` runs automatically on every
-push to `main` and deploys the static export to GitHub Pages.
-
-#### Required GitHub repository setup
-
-1. **Enable GitHub Pages** — go to *Settings → Pages* and set the source to
-   *GitHub Actions*.
-
-2. **Management repo access** — the workflow checks out
-   `tiendv89/project-workspace` alongside the implementation repo. If the
-   management repo is **private**, add a Personal Access Token (PAT) or
-   deploy key and uncomment the `token:` line in the workflow:
-
-   ```yaml
-   # .github/workflows/deploy.yml — in the "Checkout management repo" step:
-   token: ${{ secrets.WORKSPACE_REPO_TOKEN }}
-   ```
-
-   Then add the secret in *Settings → Secrets and variables → Actions*:
-
-   | Secret name | Value |
-   |---|---|
-   | `WORKSPACE_REPO_TOKEN` | A GitHub PAT with `repo` (read) scope for the management repo |
-
-   No additional secrets are required for a public management repo.
-
----
-
-## Environment variables
-
-| Variable | Where | Description |
-|---|---|---|
-| `WORKSPACE_MGMT_PATH` | `.env.local` / CI env | Path to the local management repo clone. Required for local dev and the `generate-data` script. |
-| `NEXT_PUBLIC_DATA_SOURCE` | CI env / build command | Set to `static` to activate static export mode (selects `StaticFeatureRepository` and enables `output: 'export'`). Omit for local dev. |
-
----
-
-## Scripts
-
-| Script | Description |
-|---|---|
-| `npm run dev` | Start the development server |
-| `npm run build` | Build for production |
-| `npm run generate-data` | Generate `public/data/*.json` from management repo YAML (run before a static build) |
-| `npm run type-check` | TypeScript type check (`tsc --noEmit`) |
-| `npm run test` | Run unit tests |
-| `npm run lint` | Run ESLint |
-
----
-
-## Architecture
-
-```
-src/
-  lib/
-    types/          # TypeScript types mirroring the YAML schema
-    repositories/
-      feature.repository.ts              # FeatureRepository interface
-      filesystem-feature.repository.ts   # Reads live YAML (local dev)
-      static-feature.repository.ts       # Reads pre-generated JSON (static build)
-      index.ts                           # Factory: selects impl via NEXT_PUBLIC_DATA_SOURCE
-  app/
-    page.tsx                        # Features list (Server Component)
-    features/[id]/page.tsx          # Feature detail (Server Component)
-    api/
-      feature-summaries/route.ts    # GET /api/feature-summaries → FeatureSummary[]
-      features/[id]/route.ts        # GET /api/features/:id → Feature
-      feature-tasks/[id]/route.ts   # GET /api/feature-tasks/:id → Task[]
-      # NOTE: Flat layout (no /api/features parent handler) is required to
-      # avoid an EISDIR conflict in Next.js static export where a route file
-      # and a route directory cannot share the same path.
-scripts/
-  generate-data.ts    # Build-time YAML → JSON converter
-.github/workflows/
-  deploy.yml          # GitHub Actions CI/CD pipeline
-```
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

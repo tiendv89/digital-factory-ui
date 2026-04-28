@@ -1,2 +1,40 @@
 @import "tailwindcss";
-@import "@heroui/styles";
+@import "@heroui/react/styles";
+
+@theme inline {
+  /* Fonts */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-cousine);
+
+  /* Design tokens */
+  --color-primary: #5465e8;
+  --color-primary-light: #e4e8fb;
+  --color-success: #17a674;
+  --color-success-bg: #dff5eb;
+  --color-warning: #b3741a;
+  --color-warning-bg: #fbefd9;
+  --color-danger: #e04865;
+  --color-danger-bg: #fce4e9;
+  --color-ready: #2595cc;
+  --color-ready-bg: #e3f2fb;
+  --color-surface: #ffffff;
+  --color-bg: #f7f8fb;
+  --color-surface-secondary: #fafbfd;
+  --color-border: #e4e7ef;
+  --color-text-primary: #1a1d27;
+  --color-text-secondary: #5a6380;
+  --color-text-muted: #8892b5;
+}
+
+:root {
+  --background: var(--color-bg);
+  --foreground: var(--color-text-primary);
+  --sidebar-width: 240px;
+  --header-height: 64px;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter, system-ui, sans-serif);
+}
