@@ -30,7 +30,6 @@ interface NewFeatureModalProps {
 }
 
 export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProps) {
-  const state = useOverlayState();
   const { activeWorkspaceId } = useWorkspace();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -40,6 +39,21 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
   const [description, setDescription] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  const resetForm = useCallback(() => {
+    setTitle("");
+    setFeatureId("");
+    setDescription("");
+    setSlugManuallyEdited(false);
+    setErrors({});
+  }, []);
+
+  // Reset form whenever the modal closes (covers backdrop click, Escape, and explicit close button)
+  const state = useOverlayState({
+    onOpenChange: (open) => {
+      if (!open) resetForm();
+    },
+  });
 
   const handleTitleChange = useCallback(
     (value: string) => {
@@ -81,19 +95,6 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
     return Object.keys(next).length === 0;
   }
 
-  function resetForm() {
-    setTitle("");
-    setFeatureId("");
-    setDescription("");
-    setSlugManuallyEdited(false);
-    setErrors({});
-  }
-
-  function handleClose() {
-    state.close();
-    resetForm();
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!validate()) return;
@@ -119,7 +120,7 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
         return;
       }
 
-      handleClose();
+      state.close();
       router.refresh();
     });
   }
@@ -166,7 +167,7 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
                   </div>
                   <button
                     type="button"
-                    onClick={handleClose}
+                    onClick={state.close}
                     className="rounded-lg p-1 text-text-muted transition-colors hover:bg-bg hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     aria-label="Close modal"
                   >
@@ -293,7 +294,7 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
                       type="button"
                       variant="secondary"
                       size="sm"
-                      onPress={handleClose}
+                      onPress={state.close}
                       isDisabled={isPending}
                     >
                       Cancel
