@@ -83,7 +83,7 @@ export function TaskCard({ task }: TaskCardProps) {
       <div className="flex flex-1 flex-col gap-2 px-3.5 py-3">
         {/* Feature tag chip */}
         <div className="flex">
-          <span className="rounded bg-chip-bg px-1.5 py-0.5 font-mono text-[10px] leading-tight text-text-muted">
+          <span className="rounded bg-chip-bg font-mono text-[10px] leading-tight text-text-muted">
             {task.featureId}
           </span>
         </div>
