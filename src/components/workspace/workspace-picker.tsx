@@ -19,10 +19,10 @@ export function WorkspacePicker({ workspaces }: WorkspacePickerProps) {
           >
             DF
           </div>
-          <h1 className="text-2xl font-semibold text-(--color-text-primary)">
+          <h1 className="text-2xl font-semibold text-text-primary">
             Select a workspace
           </h1>
-          <p className="mt-1.5 text-sm text-(--color-text-secondary)">
+          <p className="mt-1.5 text-sm text-text-secondary">
             Choose a workspace to get started. Your selection will be remembered
             for future visits.
           </p>
@@ -30,11 +30,11 @@ export function WorkspacePicker({ workspaces }: WorkspacePickerProps) {
 
         {/* Workspace grid */}
         {workspaces.length === 0 ? (
-          <div className="rounded-[14px] border border-dashed border-(--color-border) py-16 text-center">
-            <p className="text-sm text-(--color-text-muted)">
+          <div className="rounded-[14px] border border-dashed border-border py-16 text-center">
+            <p className="text-sm text-text-muted">
               No workspaces found.
             </p>
-            <p className="mt-1 text-xs text-(--color-text-muted)">
+            <p className="mt-1 text-xs text-text-muted">
               Set <code className="font-mono">WORKSPACE_LIST</code> to a
               comma-separated list of workspace paths, each containing a{" "}
               <code className="font-mono">workspace.yaml</code>.

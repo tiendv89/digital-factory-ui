@@ -20,7 +20,7 @@ export function WorkspaceCard({ workspace }: WorkspaceCardProps) {
   return (
     <button
       onClick={handleSelect}
-      className="group flex w-full flex-col gap-4 rounded-[14px] border border-(--color-border) bg-(--color-surface) p-6 text-left shadow-sm transition-all hover:border-(--color-primary) hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-(--color-primary)"
+      className="group flex w-full flex-col gap-4 rounded-[14px] border border-border bg-surface p-6 text-left shadow-sm transition-all hover:border-primary hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
       {/* Workspace icon + name */}
       <div className="flex items-center gap-3">
@@ -33,10 +33,10 @@ export function WorkspaceCard({ workspace }: WorkspaceCardProps) {
           {workspace.name.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-(--color-text-primary) group-hover:text-(--color-primary)">
+          <p className="truncate text-sm font-semibold text-text-primary group-hover:text-primary">
             {workspace.name}
           </p>
-          <p className="font-mono truncate text-xs text-(--color-text-muted)">
+          <p className="font-mono truncate text-xs text-text-muted">
             {workspace.workspaceId}
           </p>
         </div>
@@ -45,7 +45,7 @@ export function WorkspaceCard({ workspace }: WorkspaceCardProps) {
       {/* Stats row */}
       <div className="flex items-center gap-4">
         <Stat label="Features" value={workspace.totalFeatures} />
-        <div className="h-3 w-px bg-(--color-border)" />
+        <div className="h-3 w-px bg-border" />
         <Stat
           label="In progress"
           value={workspace.inProgressFeatures}
@@ -53,7 +53,7 @@ export function WorkspaceCard({ workspace }: WorkspaceCardProps) {
         />
         {workspace.blockedFeatures > 0 && (
           <>
-            <div className="h-3 w-px bg-(--color-border)" />
+            <div className="h-3 w-px bg-border" />
             <Stat
               label="Blocked"
               value={workspace.blockedFeatures}
@@ -75,17 +75,17 @@ interface StatProps {
 function Stat({ label, value, color }: StatProps) {
   const valueClass =
     color === "primary"
-      ? "text-(--color-primary)"
+      ? "text-primary"
       : color === "danger"
-        ? "text-(--color-danger)"
-        : "text-(--color-text-primary)";
+        ? "text-danger"
+        : "text-text-primary";
 
   return (
     <div className="flex flex-col">
       <span className={`text-lg font-semibold leading-none ${valueClass}`}>
         {value}
       </span>
-      <span className="mt-0.5 text-xs text-(--color-text-muted)">{label}</span>
+      <span className="mt-0.5 text-xs text-text-muted">{label}</span>
     </div>
   );
 }
