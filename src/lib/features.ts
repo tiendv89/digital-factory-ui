@@ -43,7 +43,8 @@ export async function listFeatures(
     if (filters?.featureStatus && status.feature_status !== filters.featureStatus) continue;
     if (filters?.currentStage && status.current_stage !== filters.currentStage) continue;
 
-    const lastHistoryEntry = status.history[status.history.length - 1];
+    const history = status.history ?? [];
+    const lastHistoryEntry = history[history.length - 1];
 
     summaries.push({
       featureId,
@@ -53,7 +54,7 @@ export async function listFeatures(
       nextAction: status.next_action ?? null,
       workspaceId,
       workspaceRoot,
-      lastUpdatedAt: lastHistoryEntry?.at ?? null,
+      lastUpdatedAt: lastHistoryEntry?.at != null ? String(lastHistoryEntry.at) : null,
     });
   }
 
@@ -72,7 +73,8 @@ export async function getFeatureSummary(
   const status = loadFeatureStatus(workspaceRoot, featureId);
   if (!status) return null;
 
-  const lastHistoryEntry = status.history[status.history.length - 1];
+  const history = status.history ?? [];
+  const lastHistoryEntry = history[history.length - 1];
 
   return {
     featureId,
@@ -82,6 +84,6 @@ export async function getFeatureSummary(
     nextAction: status.next_action ?? null,
     workspaceId,
     workspaceRoot,
-    lastUpdatedAt: lastHistoryEntry?.at ?? null,
+    lastUpdatedAt: lastHistoryEntry?.at != null ? String(lastHistoryEntry.at) : null,
   };
 }

@@ -41,6 +41,24 @@ export function listTasks(workspaceRoot: string, featureId: string, filters?: { 
   });
 }
 
+export function listAllTasksWithFeature(workspaceRoot: string): { featureId: string; task: TaskYaml }[] {
+  const featuresDir = path.join(workspaceRoot, "docs", "features");
+  if (!fs.existsSync(featuresDir)) return [];
+
+  const featureEntries = fs.readdirSync(featuresDir, { withFileTypes: true });
+  const result: { featureId: string; task: TaskYaml }[] = [];
+
+  for (const entry of featureEntries) {
+    if (!entry.isDirectory()) continue;
+    const featureId = entry.name;
+    for (const task of listTasks(workspaceRoot, featureId)) {
+      result.push({ featureId, task });
+    }
+  }
+
+  return result;
+}
+
 export function listAllTasks(workspaceRoot: string): TaskYaml[] {
   const featuresDir = path.join(workspaceRoot, "docs", "features");
   if (!fs.existsSync(featuresDir)) return [];
