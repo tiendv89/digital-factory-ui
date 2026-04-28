@@ -67,18 +67,15 @@ export default async function FeaturesPage({ searchParams }: PageProps) {
       {/* Row 1: page title + count + New Feature button */}
       <div className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
-          <h1 className="text-[22px] font-bold leading-tight text-(--color-text-primary)">
+          <h1 className="text-[22px] font-bold leading-tight text-text-primary">
             Features
           </h1>
-          <p className="text-[13px] text-(--color-text-secondary)">
+          <p className="text-[13px] text-text-secondary">
             {features.length} of {totalAll} shown
           </p>
         </div>
 
-        <button
-          className="flex shrink-0 items-center gap-1.5 rounded-lg px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: "var(--color-primary)" }}
-        >
+        <button className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90">
           <Plus size={14} aria-hidden="true" />
           New Feature
         </button>
@@ -89,7 +86,7 @@ export default async function FeaturesPage({ searchParams }: PageProps) {
         <Suspense
           fallback={
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-(--color-primary) px-3 py-1 text-[11px] font-medium text-white">
+              <span className="inline-flex h-7 items-center rounded-full border border-primary bg-primary px-3 text-[11px] font-medium uppercase tracking-[0.5645px] text-white">
                 All
               </span>
             </div>
@@ -98,14 +95,14 @@ export default async function FeaturesPage({ searchParams }: PageProps) {
           <FilterPills activeStatus={statusFilter} />
         </Suspense>
 
-        <div className="flex shrink-0 items-center gap-2 rounded-lg border border-(--color-border) bg-(--color-surface) px-3 py-2">
+        <div className="flex h-9 w-[260px] shrink-0 items-center gap-2 rounded-lg border border-border bg-surface px-3">
           <svg
             width="14"
             height="14"
             viewBox="0 0 14 14"
             fill="none"
             aria-hidden="true"
-            className="shrink-0 text-(--color-text-muted)"
+            className="shrink-0 text-text-muted"
           >
             <circle
               cx="5.5"

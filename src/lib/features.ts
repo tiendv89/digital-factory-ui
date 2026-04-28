@@ -7,6 +7,23 @@ function getFeaturesDir(workspaceRoot: string): string {
   return path.join(workspaceRoot, "docs", "features");
 }
 
+function countTasks(workspaceRoot: string, featureId: string): { done: number; total: number } {
+  const tasksDir = path.join(getFeaturesDir(workspaceRoot), featureId, "tasks");
+  if (!fs.existsSync(tasksDir)) return { done: 0, total: 0 };
+  const files = fs.readdirSync(tasksDir).filter((f) => f.endsWith(".yaml"));
+  let done = 0;
+  for (const file of files) {
+    try {
+      const raw = fs.readFileSync(path.join(tasksDir, file), "utf-8");
+      const task = yaml.load(raw) as { status?: string };
+      if (task?.status === "done") done++;
+    } catch {
+      // skip unreadable task files
+    }
+  }
+  return { done, total: files.length };
+}
+
 export function loadFeatureStatus(workspaceRoot: string, featureId: string): FeatureStatusYaml | null {
   const statusPath = path.join(getFeaturesDir(workspaceRoot), featureId, "status.yaml");
   if (!fs.existsSync(statusPath)) return null;
@@ -45,13 +62,17 @@ export async function listFeatures(
 
     const history = status.history ?? [];
     const lastHistoryEntry = history[history.length - 1];
+    const { done: tasksDone, total: tasksTotal } = countTasks(workspaceRoot, featureId);
 
     summaries.push({
       featureId,
       title: status.title,
       featureStatus: status.feature_status,
       currentStage: status.current_stage,
+      currentStageReviewStatus: status.stages?.[status.current_stage]?.review_status ?? null,
       nextAction: status.next_action ?? null,
+      tasksDone,
+      tasksTotal,
       workspaceId,
       workspaceRoot,
       lastUpdatedAt: lastHistoryEntry?.at != null ? String(lastHistoryEntry.at) : null,
@@ -61,7 +82,7 @@ export async function listFeatures(
   return summaries.sort((a, b) => {
     if (!a.lastUpdatedAt) return 1;
     if (!b.lastUpdatedAt) return -1;
-    return b.lastUpdatedAt.localeCompare(a.lastUpdatedAt);
+    return new Date(b.lastUpdatedAt).getTime() - new Date(a.lastUpdatedAt).getTime();
   });
 }
 
@@ -75,13 +96,17 @@ export async function getFeatureSummary(
 
   const history = status.history ?? [];
   const lastHistoryEntry = history[history.length - 1];
+  const { done: tasksDone, total: tasksTotal } = countTasks(workspaceRoot, featureId);
 
   return {
     featureId,
     title: status.title,
     featureStatus: status.feature_status,
     currentStage: status.current_stage,
+    currentStageReviewStatus: status.stages?.[status.current_stage]?.review_status ?? null,
     nextAction: status.next_action ?? null,
+    tasksDone,
+    tasksTotal,
     workspaceId,
     workspaceRoot,
     lastUpdatedAt: lastHistoryEntry?.at != null ? String(lastHistoryEntry.at) : null,

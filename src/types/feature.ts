@@ -67,7 +67,10 @@ export interface FeatureSummary {
   title: string;
   featureStatus: FeatureStatus;
   currentStage: LifecycleStage;
+  currentStageReviewStatus: StageReviewStatus | null;
   nextAction: string | null;
+  tasksDone: number;
+  tasksTotal: number;
   workspaceId: string;
   workspaceRoot: string;
   lastUpdatedAt: string | null;

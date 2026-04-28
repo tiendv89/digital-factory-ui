@@ -1,120 +1,70 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import type { FeatureSummary, FeatureStatus, LifecycleStage } from "@/types/feature";
+import { ChevronRight } from "lucide-react";
+import type { FeatureSummary, FeatureStatus, StageReviewStatus } from "@/types/feature";
 import { formatRelativeTime, formatStageLabel } from "@/lib/utils";
 
-// Figma-derived status badge color map
-const STATUS_BADGE: Record<
-  FeatureStatus,
-  { bg: string; color: string; label: string }
-> = {
-  in_design: {
-    bg: "var(--color-primary-light)",
-    color: "var(--color-primary)",
-    label: "In Design",
-  },
-  in_tdd: {
-    bg: "var(--color-ready-bg)",
-    color: "var(--color-ready)",
-    label: "In TDD",
-  },
-  ready_for_implementation: {
-    bg: "var(--color-ready-bg)",
-    color: "var(--color-ready)",
-    label: "Ready",
-  },
-  in_implementation: {
-    bg: "var(--color-success-bg)",
-    color: "var(--color-success)",
-    label: "In Implementation",
-  },
-  in_handoff: {
-    bg: "var(--color-warning-bg)",
-    color: "var(--color-warning)",
-    label: "In Handoff",
-  },
-  done: {
-    bg: "var(--color-primary-light)",
-    color: "var(--color-primary)",
-    label: "Done",
-  },
-  blocked: {
-    bg: "var(--color-danger-bg)",
-    color: "var(--color-danger)",
-    label: "Blocked",
-  },
-  cancelled: {
-    bg: "var(--color-border)",
-    color: "var(--color-text-secondary)",
-    label: "Cancelled",
-  },
+const STATUS_BADGE: Record<FeatureStatus, { bgClass: string; textClass: string; label: string }> = {
+  in_design: { bgClass: "bg-purple-bg", textClass: "text-purple", label: "In Design" },
+  in_tdd: { bgClass: "bg-purple-bg", textClass: "text-purple", label: "In TDD" },
+  ready_for_implementation: { bgClass: "bg-purple-bg", textClass: "text-purple", label: "Ready" },
+  in_implementation: { bgClass: "bg-yellow-bg", textClass: "text-yellow", label: "In Implementation" },
+  in_handoff: { bgClass: "bg-primary-light", textClass: "text-primary", label: "In Handoff" },
+  done: { bgClass: "bg-success-bg", textClass: "text-success", label: "Done" },
+  blocked: { bgClass: "bg-danger-bg", textClass: "text-danger", label: "Blocked" },
+  cancelled: { bgClass: "bg-muted-bg", textClass: "text-text-muted", label: "Cancelled" },
 };
 
-// Ordered lifecycle stages for progress calculation
-const LIFECYCLE_ORDER: LifecycleStage[] = [
-  "product_spec",
-  "technical_design",
-  "tasks",
-  "handoff",
-];
+const REVIEW_BADGE: Record<StageReviewStatus, { bgClass: string; textClass: string; label: string }> = {
+  draft: { bgClass: "bg-muted-bg", textClass: "text-text-secondary", label: "Draft" },
+  awaiting_approval: { bgClass: "bg-warning-bg", textClass: "text-warning", label: "Awaiting Approval" },
+  approved: { bgClass: "bg-success-bg", textClass: "text-success", label: "Approved" },
+  rejected: { bgClass: "bg-danger-bg", textClass: "text-danger", label: "Rejected" },
+};
 
-function lifecycleProgress(
-  stage: LifecycleStage,
-  featureStatus: FeatureStatus
-): number {
-  if (featureStatus === "done") return 100;
-  const idx = LIFECYCLE_ORDER.indexOf(stage);
-  if (idx < 0) return 0;
-  return Math.round(((idx + 1) / LIFECYCLE_ORDER.length) * 100);
-}
 
-interface StatusBadgeProps {
-  status: FeatureStatus;
-}
-
-function StatusBadge({ status }: StatusBadgeProps) {
-  const { bg, color, label } = STATUS_BADGE[status];
+function StatusBadge({ status }: { status: FeatureStatus }) {
+  const { bgClass, textClass, label } = STATUS_BADGE[status];
   return (
     <span
-      className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-none"
-      style={{ backgroundColor: bg, color }}
+      className={`inline-flex h-5 items-center rounded-full px-2 text-[11px] font-medium uppercase tracking-[0.5645px] ${bgClass} ${textClass}`}
     >
       {label}
     </span>
   );
 }
 
-interface LifecycleBarProps {
-  stage: LifecycleStage;
-  featureStatus: FeatureStatus;
+function ReviewBadge({ reviewStatus }: { reviewStatus: StageReviewStatus }) {
+  const { bgClass, textClass, label } = REVIEW_BADGE[reviewStatus];
+  return (
+    <span
+      className={`inline-flex h-5 items-center rounded-full px-2 text-[11px] font-medium uppercase tracking-[0.5645px] ${bgClass} ${textClass}`}
+    >
+      {label}
+    </span>
+  );
 }
 
-function LifecycleBar({ stage, featureStatus }: LifecycleBarProps) {
-  const pct = lifecycleProgress(stage, featureStatus);
-  const cancelled = featureStatus === "cancelled";
-
+function LifecycleBar({ done, total, cancelled }: { done: number; total: number; cancelled: boolean }) {
+  const pct = total > 0 ? (done / total) * 100 : 0;
   return (
     <div
-      className="h-1.5 w-full overflow-hidden rounded-full"
-      style={{ backgroundColor: "var(--color-border)" }}
+      className="h-1.5 w-full overflow-hidden rounded-full bg-muted-bg"
       role="progressbar"
       aria-valuenow={pct}
       aria-valuemin={0}
       aria-valuemax={100}
     >
       <div
-        className="h-full rounded-full transition-all"
-        style={{
-          width: `${pct}%`,
-          backgroundColor: cancelled
-            ? "var(--color-text-muted)"
-            : "var(--color-primary)",
-          opacity: cancelled ? 0.5 : 1,
-        }}
+        className={`h-full rounded-full ${cancelled ? "bg-text-muted opacity-50" : "bg-gradient-to-r from-primary to-success"}`}
+        style={{ width: `${pct}%` }}
       />
     </div>
   );
 }
+
+const GRID_COLS = "2fr 1.3fr 1.5fr 1.5fr 1.1fr 48px";
+
+const TABLE_HEADER_COLS = ["Feature", "Status", "Stage", "Tasks", "Last Updated", ""] as const;
 
 interface FeaturesTableProps {
   features: FeatureSummary[];
@@ -132,101 +82,94 @@ export function FeaturesTable({ features, searchQuery }: FeaturesTableProps) {
 
   if (filtered.length === 0) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center rounded-xl border border-(--color-border) bg-(--color-surface)">
-        <p className="text-sm text-(--color-text-muted)">No features found</p>
+      <div className="flex min-h-[200px] items-center justify-center rounded-[14px] border border-border bg-surface shadow-[0px_1px_2px_0px_rgba(16,24,40,0.04)]">
+        <p className="text-sm text-text-muted">No features found</p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-(--color-border) bg-(--color-surface)">
+    <div className="overflow-hidden rounded-[14px] border border-border bg-surface shadow-[0px_1px_2px_0px_rgba(16,24,40,0.04)]">
       {/* Table header */}
       <div
-        className="grid items-center px-5 py-3"
-        style={{
-          backgroundColor: "var(--color-surface-secondary)",
-          gridTemplateColumns: "2fr 1.2fr 1.4fr 1.4fr 1fr 48px",
-        }}
+        className="grid h-11 items-center border-b border-border bg-surface-secondary px-5"
+        style={{ gridTemplateColumns: GRID_COLS }}
       >
-        {(["Feature", "Status", "Stage", "Tasks", "Last Updated", ""] as const).map(
-          (col) => (
-            <span
-              key={col}
-              className="text-[11px] font-medium text-(--color-text-muted)"
-            >
-              {col}
-            </span>
-          )
-        )}
+        {TABLE_HEADER_COLS.map((col) => (
+          <span
+            key={col}
+            className="text-[11px] font-medium uppercase tracking-[0.5645px] text-text-muted"
+          >
+            {col}
+          </span>
+        ))}
       </div>
 
       {/* Table rows */}
-      <ul role="list" className="divide-y divide-(--color-border)">
-        {filtered.map((feature) => (
-          <li key={feature.featureId}>
-            <Link
-              href={`/features/${feature.featureId}`}
-              className="grid items-center px-5 py-4 transition-colors hover:bg-(--color-bg)"
-              style={{
-                gridTemplateColumns: "2fr 1.2fr 1.4fr 1.4fr 1fr 48px",
-              }}
-            >
-              {/* Feature name + ID */}
-              <div className="min-w-0 pr-4">
-                <p className="truncate text-sm font-medium text-(--color-text-primary)">
-                  {feature.title}
-                </p>
-                <p className="mt-0.5 truncate font-mono text-xs text-(--color-text-muted)">
-                  {feature.featureId}
-                </p>
-              </div>
+      <ul role="list" className="divide-y divide-border">
+        {filtered.map((feature) => {
+          const { tasksDone: done, tasksTotal: total } = feature;
+          const cancelled = feature.featureStatus === "cancelled";
 
-              {/* Status badge */}
-              <div>
-                <StatusBadge status={feature.featureStatus} />
-              </div>
-
-              {/* Stage */}
-              <div className="min-w-0 pr-4">
-                <p className="truncate text-sm text-(--color-text-primary)">
-                  {formatStageLabel(feature.currentStage)}
-                </p>
-                {feature.nextAction && (
-                  <p className="mt-0.5 truncate text-xs text-(--color-text-muted)">
-                    {feature.nextAction}
+          return (
+            <li key={feature.featureId}>
+              <Link
+                href={`/features/${feature.featureId}`}
+                className="grid h-16 items-center px-5 transition-colors hover:bg-bg"
+                style={{ gridTemplateColumns: GRID_COLS }}
+              >
+                {/* Feature name + ID */}
+                <div className="min-w-0 pr-4">
+                  <p className="truncate text-[14px] font-medium leading-[1.5] text-text-primary">
+                    {feature.title}
                   </p>
-                )}
-              </div>
+                  <p className="mt-0.5 truncate font-mono text-[12px] text-text-muted">
+                    {feature.featureId}
+                  </p>
+                </div>
 
-              {/* Lifecycle progress bar */}
-              <div className="min-w-0 pr-4">
-                <p className="mb-1.5 text-xs text-(--color-text-muted)">
-                  {lifecycleProgress(feature.currentStage, feature.featureStatus)}% complete
-                </p>
-                <LifecycleBar
-                  stage={feature.currentStage}
-                  featureStatus={feature.featureStatus}
-                />
-              </div>
+                {/* Status badge */}
+                <div>
+                  <StatusBadge status={feature.featureStatus} />
+                </div>
 
-              {/* Last updated */}
-              <div>
-                <span className="text-[12px] font-medium text-(--color-text-muted)">
-                  {formatRelativeTime(feature.lastUpdatedAt)}
-                </span>
-              </div>
+                {/* Stage + review badge */}
+                <div className="flex min-w-0 flex-col gap-1 pr-4">
+                  <p className="truncate text-[13px] font-medium text-text-primary">
+                    {formatStageLabel(feature.currentStage)}
+                  </p>
+                  {feature.currentStageReviewStatus && (
+                    <ReviewBadge reviewStatus={feature.currentStageReviewStatus} />
+                  )}
+                </div>
 
-              {/* Arrow icon */}
-              <div className="flex justify-end">
-                <ArrowRight
-                  size={16}
-                  className="shrink-0 text-(--color-text-muted)"
-                  aria-hidden="true"
-                />
-              </div>
-            </Link>
-          </li>
-        ))}
+                {/* Tasks progress */}
+                <div className="flex min-w-0 flex-col gap-1.5 pr-4">
+                  <p className="text-[12px] font-medium text-text-secondary">
+                    {done}/{total}
+                  </p>
+                  <LifecycleBar done={done} total={total} cancelled={cancelled} />
+                </div>
+
+                {/* Last updated */}
+                <div>
+                  <span className="text-[12px] font-medium text-text-muted">
+                    {formatRelativeTime(feature.lastUpdatedAt)}
+                  </span>
+                </div>
+
+                {/* Chevron */}
+                <div className="flex justify-end">
+                  <ChevronRight
+                    size={16}
+                    className="shrink-0 text-text-muted"
+                    aria-hidden="true"
+                  />
+                </div>
+              </Link>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

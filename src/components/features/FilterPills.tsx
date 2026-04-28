@@ -45,10 +45,10 @@ export function FilterPills({ activeStatus }: FilterPillsProps) {
             key={value}
             onClick={() => handleFilter(value)}
             className={[
-              "rounded-full px-3 py-1 text-[11px] font-medium leading-none transition-colors",
+              "inline-flex h-7 items-center rounded-full px-3 text-[11px] font-medium uppercase tracking-[0.5645px] transition-colors",
               isActive
-                ? "bg-(--color-primary) text-white"
-                : "border border-(--color-border) bg-(--color-surface) text-(--color-text-secondary) hover:border-(--color-primary) hover:text-(--color-primary)",
+                ? "border border-primary bg-primary text-white"
+                : "border border-border bg-surface text-text-secondary hover:border-primary hover:text-primary",
             ].join(" ")}
           >
             {label}

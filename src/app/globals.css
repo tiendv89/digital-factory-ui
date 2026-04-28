@@ -15,8 +15,13 @@
   --color-warning-bg: #fbefd9;
   --color-danger: #e04865;
   --color-danger-bg: #fce4e9;
+  --color-purple: #7c3aed;
+  --color-purple-bg: #ede9fe;
+  --color-yellow: #b45309;
+  --color-yellow-bg: #fef3c7;
   --color-ready: #2595cc;
   --color-ready-bg: #e3f2fb;
+  --color-muted-bg: #eef0f6;
   --color-surface: #ffffff;
   --color-bg: #f7f8fb;
   --color-surface-secondary: #fafbfd;
