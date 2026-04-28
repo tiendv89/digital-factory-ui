@@ -39,17 +39,17 @@ export function RecentActivity({ entries }: RecentActivityProps) {
   return (
     <div className="flex flex-col gap-4 col-span-2">
       <div>
-        <h2 className="text-[16px] font-semibold leading-6 tracking-[-0.31px] text-(--color-text-primary)">
+        <h2 className="text-[16px] font-semibold leading-6 tracking-[-0.31px] text-text-primary">
           Recent Activity
         </h2>
-        <p className="text-[13px] leading-[19.5px] text-(--color-text-secondary)">
+        <p className="text-[13px] leading-[19.5px] text-text-secondary">
           Last {entries.length > 0 ? entries.length : 10} events across all tasks
         </p>
       </div>
 
-      <div className="rounded-[14px] border border-(--color-border) bg-(--color-surface) p-5 shadow-[0px_1px_1px_rgba(16,24,40,0.04)]">
+      <div className="rounded-[14px] border border-border bg-surface p-5 shadow-[0px_1px_1px_rgba(16,24,40,0.04)]">
         {entries.length === 0 ? (
-          <p className="py-6 text-sm text-(--color-text-muted)">No recent activity.</p>
+          <p className="py-6 text-sm text-text-muted">No recent activity.</p>
         ) : (
           <ol>
             {entries.map((entry, i) => (
@@ -57,24 +57,24 @@ export function RecentActivity({ entries }: RecentActivityProps) {
                 key={entry.id}
                 className={[
                   "flex items-start gap-3 py-3.5",
-                  i < entries.length - 1 ? "border-b border-(--color-border)" : "",
+                  i < entries.length - 1 ? "border-b border-border" : "",
                 ].join(" ")}
               >
                 {/* Avatar */}
-                <div className="mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eef0f6] text-[10px] font-semibold tracking-[0.12px] text-(--color-text-primary)">
+                <div className="mt-px flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#eef0f6] text-[10px] font-semibold tracking-[0.12px] text-text-primary">
                   {getInitials(entry.by)}
                 </div>
 
                 <div className="min-w-0 flex-1">
                   {/* Path header */}
-                  <p className="truncate font-mono text-[11px] leading-[16.5px] text-(--color-text-muted)">
+                  <p className="truncate font-mono text-[11px] leading-[16.5px] text-text-muted">
                     {entry.featureId ? (
                       <>
                         <span>{entry.featureId}</span>
                         {entry.type === "task" && (
                           <>
                             <span className="mx-[6px]">/</span>
-                            <span className="text-(--color-text-secondary)">{entry.subjectId}</span>
+                            <span className="text-text-secondary">{entry.subjectId}</span>
                           </>
                         )}
                       </>
@@ -96,19 +96,19 @@ export function RecentActivity({ entries }: RecentActivityProps) {
                         </span>
                       );
                     })()}
-                    <span className="truncate text-[13px] leading-[19.5px] text-(--color-text-secondary)">
+                    <span className="truncate text-[13px] leading-[19.5px] text-text-secondary">
                       {entry.subject}
                     </span>
                   </div>
 
                   {entry.note && (
-                    <p className="mt-0.5 truncate text-[12px] leading-[18px] text-(--color-text-muted)">
+                    <p className="mt-0.5 truncate text-[12px] leading-[18px] text-text-muted">
                       {entry.note}
                     </p>
                   )}
 
                   {/* Meta */}
-                  <p className="mt-[2px] truncate text-[12px] leading-[18px] text-(--color-text-muted)">
+                  <p className="mt-[2px] truncate text-[12px] leading-[18px] text-text-muted">
                     {entry.by}
                     <span className="mx-1.5">·</span>
                     <time dateTime={entry.at}>{formatDistanceToNow(entry.at)}</time>

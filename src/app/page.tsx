@@ -45,7 +45,7 @@ export default async function Home({ searchParams }: PageProps) {
     return (
       <div className="flex min-h-full flex-col items-center justify-center gap-3 p-8">
         <WorkspaceAutoRedirect />
-        <p className="text-sm text-(--color-text-muted)">
+        <p className="text-sm text-text-muted">
           Select a workspace from the header to get started.
         </p>
       </div>
@@ -56,9 +56,9 @@ export default async function Home({ searchParams }: PageProps) {
   if (!workspace) {
     return (
       <div className="flex min-h-full flex-col items-center justify-center gap-3 p-8">
-        <p className="text-sm text-(--color-text-muted)">
+        <p className="text-sm text-text-muted">
           Workspace{" "}
-          <span className="font-mono text-(--color-text-primary)">{workspaceId}</span>{" "}
+          <span className="font-mono text-text-primary">{workspaceId}</span>{" "}
           not found. Select another workspace from the header.
         </p>
       </div>
@@ -132,8 +132,8 @@ export default async function Home({ searchParams }: PageProps) {
     <div className="w-full space-y-8 p-8">
       {/* Page heading */}
       <div>
-        <h1 className="text-xl font-semibold text-(--color-text-primary)">Dashboard</h1>
-        <p className="mt-1 text-sm text-(--color-text-muted)">{workspace.config.name}</p>
+        <h1 className="text-xl font-semibold text-text-primary">Dashboard</h1>
+        <p className="mt-1 text-sm text-text-muted">{workspace.config.name}</p>
       </div>
 
       {/* Stat cards */}
@@ -173,14 +173,14 @@ export default async function Home({ searchParams }: PageProps) {
         <section aria-label="Active features">
           <div className="mb-4 flex items-end justify-between">
             <div>
-              <h2 className="text-[16px] font-semibold leading-6 tracking-[-0.31px] text-(--color-text-primary)">
+              <h2 className="text-[16px] font-semibold leading-6 tracking-[-0.31px] text-text-primary">
                 Active Features
               </h2>
-              <p className="text-[13px] leading-[19.5px] text-(--color-text-secondary)">
+              <p className="text-[13px] leading-[19.5px] text-text-secondary">
                 Features currently moving through the lifecycle
               </p>
             </div>
-            <a href="/features" className="text-[13px] font-medium leading-[19.5px] text-(--color-primary)">
+            <a href="/features" className="text-[13px] font-medium leading-[19.5px] text-primary">
               View all →
             </a>
           </div>
