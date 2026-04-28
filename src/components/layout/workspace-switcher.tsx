@@ -29,7 +29,7 @@ export function WorkspaceSwitcher({ workspaceIds }: WorkspaceSwitcherProps) {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-lg border border-(--color-border) bg-(--color-surface) px-3 py-1.5 text-sm text-(--color-text-primary) transition-colors hover:bg-(--color-bg)"
+        className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm text-text-primary transition-colors hover:bg-bg"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
@@ -46,10 +46,10 @@ export function WorkspaceSwitcher({ workspaceIds }: WorkspaceSwitcherProps) {
       {open && (
         <div
           role="listbox"
-          className="absolute right-0 top-full z-50 mt-1 min-w-[220px] overflow-hidden rounded-xl border border-(--color-border) bg-(--color-surface) shadow-lg"
+          className="absolute right-0 top-full z-50 mt-1 min-w-[220px] overflow-hidden rounded-xl border border-border bg-surface shadow-lg"
         >
           {workspaceIds.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-(--color-text-muted)">
+            <p className="px-4 py-3 text-sm text-text-muted">
               No workspaces found
             </p>
           ) : (
@@ -67,8 +67,8 @@ export function WorkspaceSwitcher({ workspaceIds }: WorkspaceSwitcherProps) {
                     className={[
                       "flex w-full items-center gap-2 px-4 py-2.5 text-sm transition-colors",
                       id === activeWorkspaceId
-                        ? "bg-(--color-primary-light) text-(--color-primary) font-medium"
-                        : "text-(--color-text-primary) hover:bg-(--color-bg)",
+                        ? "bg-primary-light text-primary font-medium"
+                        : "text-text-primary hover:bg-bg",
                     ].join(" ")}
                     style={
                       id === activeWorkspaceId

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Cousine } from "next/font/google";
 import "./globals.css";
 import { WorkspaceProvider } from "@/context/workspace-context";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
+import { Sidebar } from "@/components/layout/sidebar";
+import { Header } from "@/components/layout/header";
 import { listWorkspaceIds } from "@/lib/workspace";
 
 const inter = Inter({
@@ -33,7 +33,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${inter.variable} ${cousine.variable} h-full`}>
-      <body className="flex h-full min-h-screen bg-(--color-bg) text-(--color-text-primary) antialiased">
+      <body className="flex h-full min-h-screen bg-bg text-text-primary antialiased">
         <WorkspaceProvider>
           <Sidebar />
           <div className="flex min-w-0 flex-1 flex-col">

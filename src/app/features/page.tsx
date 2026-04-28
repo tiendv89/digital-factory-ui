@@ -2,10 +2,10 @@ import { Suspense } from "react";
 import type { FeatureStatus } from "@/types/feature";
 import { listFeatures } from "@/lib/features";
 import { getWorkspaceByIdFromScan, scanWorkspaces } from "@/lib/workspace";
-import { FilterPills } from "@/components/features/FilterPills";
-import { FeaturesTable } from "@/components/features/FeaturesTable";
-import { FeaturesWorkspaceBridge } from "@/components/features/FeaturesWorkspaceBridge";
-import { SearchInput } from "@/components/features/SearchInput";
+import { FilterPills } from "@/components/features/filter-pills";
+import { FeaturesTable } from "@/components/features/features-table";
+import { FeaturesWorkspaceBridge } from "@/components/features/features-workspace-bridge";
+import { SearchInput } from "@/components/features/search-input";
 import { NewFeatureModal } from "@/components/features/new-feature-modal";
 
 export const dynamic = "force-dynamic";

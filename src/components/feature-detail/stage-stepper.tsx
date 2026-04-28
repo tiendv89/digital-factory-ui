@@ -3,11 +3,11 @@ import { formatStageLabel } from "@/lib/utils";
 
 const STAGES: LifecycleStage[] = ["product_spec", "technical_design", "tasks", "handoff"];
 
-const REVIEW_BADGE: Record<StageReviewStatus, { bg: string; color: string; label: string }> = {
-  approved: { bg: "var(--color-success-bg)", color: "var(--color-success)", label: "Approved" },
-  awaiting_approval: { bg: "var(--color-warning-bg)", color: "var(--color-warning)", label: "Awaiting Approval" },
-  rejected: { bg: "var(--color-danger-bg)", color: "var(--color-danger)", label: "Rejected" },
-  draft: { bg: "var(--color-border)", color: "var(--color-text-muted)", label: "Draft" },
+const REVIEW_BADGE: Record<StageReviewStatus, { className: string; label: string }> = {
+  approved: { className: "bg-success-bg text-success", label: "Approved" },
+  awaiting_approval: { className: "bg-warning-bg text-warning", label: "Awaiting Approval" },
+  rejected: { className: "bg-danger-bg text-danger", label: "Rejected" },
+  draft: { className: "bg-border text-text-muted", label: "Draft" },
 };
 
 interface StageStepperProps {
@@ -25,16 +25,16 @@ export function StageStepper({ status }: StageStepperProps) {
           const isLast = idx === STAGES.length - 1;
           const badge = REVIEW_BADGE[review.review_status];
 
-          let circleStyle: React.CSSProperties;
+          let circleClass: string;
           let circleContent: string;
           if (isCompleted) {
-            circleStyle = { backgroundColor: "var(--color-success)", color: "#ffffff" };
+            circleClass = "bg-success text-white";
             circleContent = "✓";
           } else if (isCurrent) {
-            circleStyle = { backgroundColor: "var(--color-primary)", color: "#ffffff" };
+            circleClass = "bg-primary text-white";
             circleContent = String(idx + 1);
           } else {
-            circleStyle = { backgroundColor: "var(--color-border)", color: "var(--color-text-muted)" };
+            circleClass = "bg-border text-text-muted";
             circleContent = String(idx + 1);
           }
 
@@ -43,25 +43,18 @@ export function StageStepper({ status }: StageStepperProps) {
               {/* Step */}
               <div className="flex flex-col items-center gap-2">
                 <div
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold"
-                  style={circleStyle}
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold ${circleClass}`}
                 >
                   {circleContent}
                 </div>
                 <div className="flex flex-col items-center gap-1 text-center">
                   <span
-                    className="text-[11px] font-medium leading-none"
-                    style={{
-                      color: isCurrent
-                        ? "var(--color-text-primary)"
-                        : "var(--color-text-secondary)",
-                    }}
+                    className={`text-[11px] font-medium leading-none ${isCurrent ? "text-text-primary" : "text-text-secondary"}`}
                   >
                     {formatStageLabel(stage)}
                   </span>
                   <span
-                    className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium leading-none"
-                    style={{ backgroundColor: badge.bg, color: badge.color }}
+                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium leading-none ${badge.className}`}
                   >
                     {badge.label}
                   </span>
@@ -71,14 +64,7 @@ export function StageStepper({ status }: StageStepperProps) {
               {/* Connector line */}
               {!isLast && (
                 <div className="mt-4 min-w-0 flex-1 px-3">
-                  <div
-                    className="h-px w-full"
-                    style={{
-                      backgroundColor: isCompleted
-                        ? "var(--color-success)"
-                        : "var(--color-border)",
-                    }}
-                  />
+                  <div className={`h-px w-full ${isCompleted ? "bg-success" : "bg-border"}`} />
                 </div>
               )}
             </div>

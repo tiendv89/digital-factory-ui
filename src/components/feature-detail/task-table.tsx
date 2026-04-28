@@ -2,14 +2,14 @@ import Link from "next/link";
 import type { TaskYaml, TaskStatus, ActorType } from "@/types/task";
 import { formatRelativeTime } from "@/lib/utils";
 
-const TASK_STATUS_BADGE: Record<TaskStatus, { bg: string; color: string; label: string }> = {
-  todo: { bg: "var(--color-border)", color: "var(--color-text-muted)", label: "Todo" },
-  ready: { bg: "var(--color-ready-bg)", color: "var(--color-ready)", label: "Ready" },
-  in_progress: { bg: "var(--color-success-bg)", color: "var(--color-success)", label: "In Progress" },
-  blocked: { bg: "var(--color-danger-bg)", color: "var(--color-danger)", label: "Blocked" },
-  in_review: { bg: "var(--color-warning-bg)", color: "var(--color-warning)", label: "In Review" },
-  done: { bg: "var(--color-primary-light)", color: "var(--color-primary)", label: "Done" },
-  cancelled: { bg: "var(--color-border)", color: "var(--color-text-muted)", label: "Cancelled" },
+const TASK_STATUS_BADGE: Record<TaskStatus, { className: string; label: string }> = {
+  todo: { className: "bg-border text-text-muted", label: "Todo" },
+  ready: { className: "bg-ready-bg text-ready", label: "Ready" },
+  in_progress: { className: "bg-success-bg text-success", label: "In Progress" },
+  blocked: { className: "bg-danger-bg text-danger", label: "Blocked" },
+  in_review: { className: "bg-warning-bg text-warning", label: "In Review" },
+  done: { className: "bg-primary-light text-primary", label: "Done" },
+  cancelled: { className: "bg-border text-text-muted", label: "Cancelled" },
 };
 
 const ACTOR_LABEL: Record<ActorType, string> = {
@@ -19,12 +19,9 @@ const ACTOR_LABEL: Record<ActorType, string> = {
 };
 
 function StatusBadge({ status }: { status: TaskStatus }) {
-  const { bg, color, label } = TASK_STATUS_BADGE[status];
+  const { className, label } = TASK_STATUS_BADGE[status];
   return (
-    <span
-      className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-none"
-      style={{ backgroundColor: bg, color }}
-    >
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${className}`}>
       {label}
     </span>
   );

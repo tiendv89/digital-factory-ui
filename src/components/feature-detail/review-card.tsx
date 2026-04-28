@@ -5,11 +5,11 @@ import { approveStage } from "@/actions/approve";
 import type { LifecycleStage, StageReview, StageReviewStatus } from "@/types/feature";
 import { formatStageLabel } from "@/lib/utils";
 
-const REVIEW_BADGE: Record<StageReviewStatus, { bg: string; color: string; label: string }> = {
-  approved: { bg: "var(--color-success-bg)", color: "var(--color-success)", label: "Approved" },
-  awaiting_approval: { bg: "var(--color-warning-bg)", color: "var(--color-warning)", label: "Awaiting Approval" },
-  rejected: { bg: "var(--color-danger-bg)", color: "var(--color-danger)", label: "Rejected" },
-  draft: { bg: "var(--color-border)", color: "var(--color-text-muted)", label: "Draft" },
+const REVIEW_BADGE: Record<StageReviewStatus, { className: string; label: string }> = {
+  approved: { className: "bg-success-bg text-success", label: "Approved" },
+  awaiting_approval: { className: "bg-warning-bg text-warning", label: "Awaiting Approval" },
+  rejected: { className: "bg-danger-bg text-danger", label: "Rejected" },
+  draft: { className: "bg-border text-text-muted", label: "Draft" },
 };
 
 interface ReviewCardProps {
@@ -41,8 +41,7 @@ export function ReviewCard({ workspaceId, featureId, stage, review }: ReviewCard
             </span>
           </div>
           <span
-            className="ml-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-none"
-            style={{ backgroundColor: badge.bg, color: badge.color }}
+            className={`ml-2 inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${badge.className}`}
           >
             {badge.label}
           </span>

@@ -1,4 +1,4 @@
-import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
+import { WorkspaceSwitcher } from "./workspace-switcher";
 
 interface HeaderProps {
   title?: string;
@@ -8,17 +8,14 @@ interface HeaderProps {
 export function Header({ title, workspaceIds }: HeaderProps) {
   return (
     <header
-      className="flex h-16 shrink-0 items-center justify-between border-b border-(--color-border) bg-(--color-surface) px-8"
+      className="flex h-16 shrink-0 items-center justify-between border-b border-border bg-surface px-8"
     >
       <div className="flex flex-col justify-center">
         {title && (
-          <h1 className="text-base font-semibold text-(--color-text-primary)">
+          <h1 className="text-base font-semibold text-text-primary">
             {title}
           </h1>
         )}
-        <p className="text-xs text-(--color-text-muted)">
-          Feature Status Dashboard
-        </p>
       </div>
       <WorkspaceSwitcher workspaceIds={workspaceIds} />
     </header>
