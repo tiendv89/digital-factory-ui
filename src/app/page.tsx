@@ -1,15 +1,15 @@
-import { StatCard } from "@/components/dashboard/StatCard";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
-import { NeedsAttention } from "@/components/dashboard/NeedsAttention";
-import { FeatureSummaryCard } from "@/components/dashboard/FeatureSummaryCard";
-import { WorkspaceAutoRedirect } from "@/components/dashboard/WorkspaceAutoRedirect";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { RecentActivity } from "@/components/dashboard/recent-activity";
+import { NeedsAttention } from "@/components/dashboard/needs-attention";
+import { FeatureSummaryCard } from "@/components/dashboard/feature-summary-card";
+import { WorkspaceAutoRedirect } from "@/components/dashboard/workspace-auto-redirect";
 import { listFeatures, loadFeatureStatus } from "@/lib/features";
 import { getWorkspaceByIdFromScan } from "@/lib/workspace";
 import { buildActivityFeed } from "@/lib/activity";
 import { listTasks, listAllTasksWithFeature } from "@/lib/tasks";
 import type { FeatureSummary, LifecycleStage, StageReviewStatus } from "@/types/feature";
-import type { AttentionTask } from "@/components/dashboard/NeedsAttention";
-import type { FeatureSummaryCardProps } from "@/components/dashboard/FeatureSummaryCard";
+import type { AttentionTask } from "@/components/dashboard/needs-attention";
+import type { FeatureSummaryCardProps } from "@/components/dashboard/feature-summary-card";
 
 const ACTIVE_STATUSES = new Set<string>([
   "in_design",
