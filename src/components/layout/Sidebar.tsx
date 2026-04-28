@@ -20,10 +20,7 @@ export function Sidebar() {
   }
 
   return (
-    <aside
-      className="flex h-screen w-[240px] shrink-0 flex-col border-r border-(--color-border) bg-(--color-surface)"
-      style={{ position: "sticky", top: 0 }}
-    >
+    <aside className="sticky top-0 flex h-screen w-[240px] shrink-0 flex-col border-r border-(--color-border) bg-(--color-surface)">
       {/* Workspace header */}
       <div className="flex h-16 items-center gap-2 border-b border-(--color-border) px-5">
         <div
