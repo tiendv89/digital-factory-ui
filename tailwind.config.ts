@@ -31,6 +31,8 @@ const config: Config = {
         "text-primary": "var(--color-text-primary)",
         "text-secondary": "var(--color-text-secondary)",
         "text-muted": "var(--color-text-muted)",
+        "chip-bg": "var(--color-chip-bg)",
+        "surface-subtle": "var(--color-surface-subtle)",
       },
     },
   },
