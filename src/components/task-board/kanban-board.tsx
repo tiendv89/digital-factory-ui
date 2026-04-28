@@ -78,7 +78,7 @@ export function KanbanBoard({ tasks, features, repos }: KanbanBoardProps) {
   const filteredTasks = tasks.filter((t) => {
     if (!selectedFeatures.has(t.featureId)) return false;
     if (!selectedRepos.has(t.repo)) return false;
-    if (actorFilter !== "all" && t.actorType !== actorFilter) return false;
+    if (actorFilter !== "all" && t.actorType !== actorFilter && t.actorType !== "either") return false;
     return true;
   });
 

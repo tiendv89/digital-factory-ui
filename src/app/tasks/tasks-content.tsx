@@ -67,6 +67,7 @@ export function TasksContent({ workspacesData }: TasksContentProps) {
       </div>
 
       <KanbanBoard
+        key={workspaceData.workspaceId}
         tasks={workspaceData.tasks}
         features={workspaceData.features}
         repos={workspaceData.repos}
