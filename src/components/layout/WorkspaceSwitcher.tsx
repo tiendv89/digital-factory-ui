@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useWorkspace } from "@/context/WorkspaceContext";
+import { Check, ChevronDown } from "lucide-react";
+import { useWorkspace } from "@/context/workspace-context";
 
 interface WorkspaceSwitcherProps {
   workspaceIds: string[];
@@ -33,22 +34,11 @@ export function WorkspaceSwitcher({ workspaceIds }: WorkspaceSwitcherProps) {
         <span className="max-w-[180px] truncate">
           {activeWorkspaceId ?? "Select workspace"}
         </span>
-        <svg
-          width="12"
-          height="12"
-          viewBox="0 0 12 12"
-          fill="none"
+        <ChevronDown
+          size={12}
           aria-hidden="true"
           className={`shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-        >
-          <path
-            d="M2 4l4 4 4-4"
-            stroke="#5a6380"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
+        />
       </button>
 
       {open && (
@@ -87,22 +77,7 @@ export function WorkspaceSwitcher({ workspaceIds }: WorkspaceSwitcherProps) {
                       {id}
                     </span>
                     {id === activeWorkspaceId && (
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 14 14"
-                        fill="none"
-                        aria-hidden="true"
-                        className="shrink-0"
-                      >
-                        <path
-                          d="M2 7l4 4 6-6"
-                          stroke="#5465e8"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
+                      <Check size={14} aria-hidden="true" className="shrink-0" />
                     )}
                   </button>
                 </li>

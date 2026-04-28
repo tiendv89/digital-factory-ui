@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Cousine } from "next/font/google";
 import "./globals.css";
-import { WorkspaceProvider } from "@/context/WorkspaceContext";
+import { WorkspaceProvider } from "@/context/workspace-context";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { listWorkspaceIds } from "@/lib/workspace";

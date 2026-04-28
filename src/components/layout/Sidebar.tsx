@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useWorkspace } from "@/context/WorkspaceContext";
+import { LayoutDashboard, List, CheckSquare } from "lucide-react";
+import { useWorkspace } from "@/context/workspace-context";
 
 const NAV_ITEMS = [
-  { label: "Dashboard", href: "/" },
-  { label: "Features", href: "/features" },
-  { label: "Tasks", href: "/tasks" },
+  { label: "Dashboard", href: "/", Icon: LayoutDashboard },
+  { label: "Features", href: "/features", Icon: List },
+  { label: "Tasks", href: "/tasks", Icon: CheckSquare },
 ] as const;
 
 export function Sidebar() {
@@ -42,7 +43,7 @@ export function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 pt-4">
-        {NAV_ITEMS.map(({ label, href }) => (
+        {NAV_ITEMS.map(({ label, href, Icon }) => (
           <Link
             key={href}
             href={href}
@@ -58,7 +59,7 @@ export function Sidebar() {
                 : undefined
             }
           >
-            <NavIcon label={label} active={isActive(href)} />
+            <Icon size={16} aria-hidden="true" />
             {label}
           </Link>
         ))}
@@ -74,70 +75,5 @@ export function Sidebar() {
         </div>
       </div>
     </aside>
-  );
-}
-
-function NavIcon({ label, active }: { label: string; active: boolean }) {
-  const color = active ? "#5465e8" : "#5a6380";
-  if (label === "Dashboard") {
-    return (
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        aria-hidden="true"
-      >
-        <rect x="1" y="1" width="6" height="6" rx="1" fill={color} />
-        <rect x="9" y="1" width="6" height="6" rx="1" fill={color} />
-        <rect x="1" y="9" width="6" height="6" rx="1" fill={color} />
-        <rect x="9" y="9" width="6" height="6" rx="1" fill={color} />
-      </svg>
-    );
-  }
-  if (label === "Features") {
-    return (
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        fill="none"
-        aria-hidden="true"
-      >
-        <path
-          d="M2 4h12M2 8h8M2 12h10"
-          stroke={color}
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      </svg>
-    );
-  }
-  // Tasks
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      aria-hidden="true"
-    >
-      <rect
-        x="1.5"
-        y="1.5"
-        width="13"
-        height="13"
-        rx="2"
-        stroke={color}
-        strokeWidth="1.5"
-      />
-      <path
-        d="M5 8l2 2 4-4"
-        stroke={color}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }
