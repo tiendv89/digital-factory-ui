@@ -31,7 +31,7 @@ export function SearchInput({ defaultValue }: SearchInputProps) {
       placeholder="Search title or id…"
       defaultValue={defaultValue}
       onChange={handleChange}
-      className="min-w-0 flex-1 bg-transparent text-[13px] text-(--color-text-primary) placeholder:text-(--color-text-muted) focus:outline-none"
+      className="min-w-0 flex-1 bg-transparent text-[13px] text-text-primary placeholder:text-text-muted focus:outline-none"
     />
   );
 }
