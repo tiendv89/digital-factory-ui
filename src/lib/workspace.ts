@@ -5,10 +5,10 @@ import type { WorkspaceConfig, WorkspaceSummary } from "@/types/workspace";
 import type { FeatureStatus } from "@/types/feature";
 import { listFeatures } from "@/lib/features";
 
-function getWorkspaceScanRoot(): string {
-  const root = process.env.WORKSPACE_SCAN_ROOT;
-  if (!root) throw new Error("WORKSPACE_SCAN_ROOT is not set");
-  return root;
+function getWorkspacePaths(): string[] {
+  const list = process.env.WORKSPACE_LIST;
+  if (!list) throw new Error("WORKSPACE_LIST is not set");
+  return list.split(",").map((p) => p.trim()).filter(Boolean);
 }
 
 export function loadWorkspaceConfig(workspaceRoot: string): WorkspaceConfig | null {
@@ -23,15 +23,10 @@ export function loadWorkspaceConfig(workspaceRoot: string): WorkspaceConfig | nu
 }
 
 export function scanWorkspaces(): Array<{ rootPath: string; config: WorkspaceConfig }> {
-  const scanRoot = getWorkspaceScanRoot();
-  if (!fs.existsSync(scanRoot)) return [];
-
-  const entries = fs.readdirSync(scanRoot, { withFileTypes: true });
+  const paths = getWorkspacePaths();
   const results: Array<{ rootPath: string; config: WorkspaceConfig }> = [];
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const workspaceRoot = path.join(scanRoot, entry.name);
+  for (const workspaceRoot of paths) {
     const config = loadWorkspaceConfig(workspaceRoot);
     if (config) {
       results.push({ rootPath: workspaceRoot, config });

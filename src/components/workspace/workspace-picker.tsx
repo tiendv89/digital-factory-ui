@@ -35,9 +35,9 @@ export function WorkspacePicker({ workspaces }: WorkspacePickerProps) {
               No workspaces found.
             </p>
             <p className="mt-1 text-xs text-(--color-text-muted)">
-              Set <code className="font-mono">WORKSPACE_SCAN_ROOT</code> to a
-              directory containing{" "}
-              <code className="font-mono">workspace.yaml</code> files.
+              Set <code className="font-mono">WORKSPACE_LIST</code> to a
+              comma-separated list of workspace paths, each containing a{" "}
+              <code className="font-mono">workspace.yaml</code>.
             </p>
           </div>
         ) : (
