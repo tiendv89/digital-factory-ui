@@ -9,7 +9,6 @@ export function buildActivityFeed(
   limit = 20
 ): ActivityEntry[] {
   const entries: ActivityEntry[] = [];
-
   let seq = 0;
 
   for (const feature of features) {
@@ -23,8 +22,9 @@ export function buildActivityFeed(
         action: h.action,
         subject: feature.title,
         subjectId: feature.featureId,
+        featureId: feature.featureId,
         by: h.by,
-        at: h.at,
+        at: String(h.at),
         note: h.note ?? null,
       });
     }
@@ -38,8 +38,9 @@ export function buildActivityFeed(
           action: log.action,
           subject: task.title,
           subjectId: task.id,
+          featureId: feature.featureId,
           by: log.by,
-          at: log.at,
+          at: String(log.at),
           note: log.note ?? null,
         });
       }
