@@ -29,6 +29,8 @@
   --color-text-primary: #1a1d27;
   --color-text-secondary: #5a6380;
   --color-text-muted: #8892b5;
+  --color-chip-bg: #f3f4f9;
+  --color-surface-subtle: #eef0f6;
 }
 
 :root {

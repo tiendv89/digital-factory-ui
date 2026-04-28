@@ -3,6 +3,10 @@ import path from "path";
 import yaml from "js-yaml";
 import type { TaskYaml, TaskStatus } from "@/types/task";
 
+export interface TaskWithContext extends TaskYaml {
+  featureId: string;
+}
+
 function getTasksDir(workspaceRoot: string, featureId: string): string {
   return path.join(workspaceRoot, "docs", "features", featureId, "tasks");
 }
@@ -70,6 +74,24 @@ export function listAllTasks(workspaceRoot: string): TaskYaml[] {
     if (!entry.isDirectory()) continue;
     const tasks = listTasks(workspaceRoot, entry.name);
     allTasks.push(...tasks);
+  }
+
+  return allTasks;
+}
+
+export function listAllTasksWithContext(workspaceRoot: string): TaskWithContext[] {
+  const featuresDir = path.join(workspaceRoot, "docs", "features");
+  if (!fs.existsSync(featuresDir)) return [];
+
+  const featureEntries = fs.readdirSync(featuresDir, { withFileTypes: true });
+  const allTasks: TaskWithContext[] = [];
+
+  for (const entry of featureEntries) {
+    if (!entry.isDirectory()) continue;
+    const tasks = listTasks(workspaceRoot, entry.name);
+    for (const task of tasks) {
+      allTasks.push({ ...task, featureId: entry.name });
+    }
   }
 
   return allTasks;
