@@ -52,11 +52,8 @@ export function TaskTable({ tasks }: TaskTableProps) {
     <div className="overflow-hidden rounded-xl border border-border bg-surface">
       {/* Table header */}
       <div
-        className="grid items-center px-5 py-3"
-        style={{
-          backgroundColor: "var(--color-surface-secondary)",
-          gridTemplateColumns: "60px 2fr 1fr 1fr 90px 80px 90px 100px",
-        }}
+        className="grid items-center bg-surface-secondary px-5 py-3"
+        style={{ gridTemplateColumns: "60px 2fr 1fr 1fr 90px 80px 90px 100px" }}
       >
         {(["ID", "Title", "Status", "Repo", "Actor", "PR", "Deps", "Updated"] as const).map(
           (col) => (

@@ -68,10 +68,7 @@ export function ReviewCard({ workspaceId, featureId, stage, review }: ReviewCard
 
         {/* Comment */}
         {review.review_comment && (
-          <div
-            className="rounded-lg px-4 py-3 text-[14px] font-normal text-text-secondary"
-            style={{ backgroundColor: "var(--color-surface-secondary)" }}
-          >
+          <div className="rounded-lg bg-surface-secondary px-4 py-3 text-[14px] font-normal text-text-secondary">
             {review.review_comment}
           </div>
         )}
@@ -81,16 +78,14 @@ export function ReviewCard({ workspaceId, featureId, stage, review }: ReviewCard
           <button
             onClick={() => handleAction("approve")}
             disabled={isPending}
-            className="rounded-lg px-4 py-2 text-[13px] font-medium text-white transition-opacity disabled:opacity-50 hover:opacity-90"
-            style={{ backgroundColor: "var(--color-primary)" }}
+            className="rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white transition-opacity disabled:opacity-50 hover:opacity-90"
           >
             Approve
           </button>
           <button
             onClick={() => handleAction("reject")}
             disabled={isPending}
-            className="rounded-lg px-4 py-2 text-[13px] font-medium text-white transition-opacity disabled:opacity-50 hover:opacity-90"
-            style={{ backgroundColor: "var(--color-danger)" }}
+            className="rounded-lg bg-danger px-4 py-2 text-[13px] font-medium text-white transition-opacity disabled:opacity-50 hover:opacity-90"
           >
             Reject
           </button>
