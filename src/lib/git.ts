@@ -1,4 +1,6 @@
 import simpleGit, { SimpleGit } from "simple-git";
+import { spawnSync } from "child_process";
+import os from "os";
 import path from "path";
 import fs from "fs";
 
@@ -12,14 +14,32 @@ interface GitCommitOptions {
   sshKeyPath?: string;
 }
 
+let tmpKeyFile: string | null = null;
+
+function resolveSshKeyFile(sshKeyPath?: string): string | null {
+  // Explicit path takes precedence
+  if (sshKeyPath) {
+    const expanded = sshKeyPath.replace(/^~/, process.env.HOME ?? "");
+    return fs.existsSync(expanded) ? expanded : null;
+  }
+
+  const keyContent = process.env.SSH_PRIVATE_KEY;
+  if (!keyContent) return null;
+
+  // Key content: write to a process-scoped temp file once
+  if (!tmpKeyFile) {
+    const tmp = path.join(os.tmpdir(), `df-ssh-key-${process.pid}`);
+    fs.writeFileSync(tmp, keyContent.replace(/\\n/g, "\n"), { mode: 0o600 });
+    tmpKeyFile = tmp;
+  }
+  return tmpKeyFile;
+}
+
 function buildGitEnv(sshKeyPath?: string): Record<string, string> {
   const env: Record<string, string> = { ...process.env } as Record<string, string>;
-  const keyPath = sshKeyPath ?? process.env.SSH_KEY_PATH;
-  if (keyPath) {
-    const expandedKey = keyPath.replace(/^~/, process.env.HOME ?? "");
-    if (fs.existsSync(expandedKey)) {
-      env["GIT_SSH_COMMAND"] = `ssh -i ${expandedKey} -o StrictHostKeyChecking=no`;
-    }
+  const keyFile = resolveSshKeyFile(sshKeyPath);
+  if (keyFile) {
+    env["GIT_SSH_COMMAND"] = `ssh -i ${keyFile} -o StrictHostKeyChecking=no`;
   }
   return env;
 }
