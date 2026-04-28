@@ -8,7 +8,7 @@ const STATUS_BADGE: Record<FeatureStatus, { bgClass: string; textClass: string; 
   in_tdd: { bgClass: "bg-purple-bg", textClass: "text-purple", label: "In TDD" },
   ready_for_implementation: { bgClass: "bg-purple-bg", textClass: "text-purple", label: "Ready" },
   in_implementation: { bgClass: "bg-yellow-bg", textClass: "text-yellow", label: "In Implementation" },
-  in_handoff: { bgClass: "bg-primary-light", textClass: "text-primary", label: "In Handoff" },
+  in_handoff: { bgClass: "bg-muted-bg", textClass: "text-text-muted", label: "In Handoff" },
   done: { bgClass: "bg-success-bg", textClass: "text-success", label: "Done" },
   blocked: { bgClass: "bg-danger-bg", textClass: "text-danger", label: "Blocked" },
   cancelled: { bgClass: "bg-muted-bg", textClass: "text-text-muted", label: "Cancelled" },

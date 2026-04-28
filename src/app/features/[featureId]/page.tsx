@@ -14,15 +14,15 @@ import { FeatureDetailWorkspaceBridge } from "@/components/feature-detail/featur
 
 export const dynamic = "force-dynamic";
 
-const FEATURE_STATUS_BADGE: Record<FeatureStatus, { bg: string; color: string; label: string }> = {
-  in_design: { bg: "var(--color-primary-light)", color: "var(--color-primary)", label: "In Design" },
-  in_tdd: { bg: "var(--color-ready-bg)", color: "var(--color-ready)", label: "In TDD" },
-  ready_for_implementation: { bg: "var(--color-ready-bg)", color: "var(--color-ready)", label: "Ready" },
-  in_implementation: { bg: "var(--color-success-bg)", color: "var(--color-success)", label: "In Implementation" },
-  in_handoff: { bg: "var(--color-warning-bg)", color: "var(--color-warning)", label: "In Handoff" },
-  done: { bg: "var(--color-primary-light)", color: "var(--color-primary)", label: "Done" },
-  blocked: { bg: "var(--color-danger-bg)", color: "var(--color-danger)", label: "Blocked" },
-  cancelled: { bg: "var(--color-border)", color: "var(--color-text-muted)", label: "Cancelled" },
+const FEATURE_STATUS_BADGE: Record<FeatureStatus, { bgClass: string; textClass: string; label: string }> = {
+  in_design: { bgClass: "bg-purple-bg", textClass: "text-purple", label: "In Design" },
+  in_tdd: { bgClass: "bg-purple-bg", textClass: "text-purple", label: "In TDD" },
+  ready_for_implementation: { bgClass: "bg-purple-bg", textClass: "text-purple", label: "Ready" },
+  in_implementation: { bgClass: "bg-yellow-bg", textClass: "text-yellow", label: "In Implementation" },
+  in_handoff: { bgClass: "bg-muted-bg", textClass: "text-text-muted", label: "In Handoff" },
+  done: { bgClass: "bg-success-bg", textClass: "text-success", label: "Done" },
+  blocked: { bgClass: "bg-danger-bg", textClass: "text-danger", label: "Blocked" },
+  cancelled: { bgClass: "bg-muted-bg", textClass: "text-text-muted", label: "Cancelled" },
 };
 
 interface PageProps {
@@ -91,8 +91,7 @@ export default async function FeatureDetailPage({ params, searchParams }: PagePr
             {featureStatus.title}
           </h1>
           <span
-            className="mt-1 inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-none"
-            style={{ backgroundColor: badge.bg, color: badge.color }}
+            className={`mt-1 inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-[11px] font-medium leading-none ${badge.bgClass} ${badge.textClass}`}
           >
             {badge.label}
           </span>
