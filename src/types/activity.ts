@@ -4,7 +4,6 @@ export interface ActivityEntry {
   action: string;
   subject: string;
   subjectId: string;
-  featureId: string;
   by: string;
   at: string;
   note?: string | null;
