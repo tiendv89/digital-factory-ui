@@ -114,7 +114,7 @@ export function FeaturesTable({ features, searchQuery }: FeaturesTableProps) {
           return (
             <li key={feature.featureId}>
               <Link
-                href={`/features/${feature.featureId}`}
+                href={`/features/${feature.featureId}?workspace=${feature.workspaceId}`}
                 className="grid h-16 items-center px-5 transition-colors hover:bg-bg"
                 style={{ gridTemplateColumns: GRID_COLS }}
               >

@@ -184,7 +184,7 @@ export default async function Home({ searchParams }: PageProps) {
               View all →
             </a>
           </div>
-          <div className="-mx-8 flex gap-4 overflow-x-auto px-8 pb-2">
+          <div className="flex gap-4 overflow-x-auto pb-2">
             {activeFeatureCards.map(card => (
               <FeatureSummaryCard key={card.featureId} {...card} />
             ))}

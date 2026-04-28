@@ -12,16 +12,25 @@ const REVIEW_BADGE: Record<StageReviewStatus, { className: string; label: string
   draft: { className: "bg-border text-text-muted", label: "Draft" },
 };
 
+const DRAFT_REVIEW: StageReview = {
+  review_status: "draft",
+  reviewed_by: null,
+  reviewed_at: null,
+  review_comment: null,
+  review_history: [],
+};
+
 interface ReviewCardProps {
   workspaceId: string;
   featureId: string;
   stage: LifecycleStage;
-  review: StageReview;
+  review?: StageReview | null;
 }
 
 export function ReviewCard({ workspaceId, featureId, stage, review }: ReviewCardProps) {
   const [isPending, startTransition] = useTransition();
-  const badge = REVIEW_BADGE[review.review_status];
+  const resolved = review ?? DRAFT_REVIEW;
+  const badge = REVIEW_BADGE[resolved.review_status];
 
   function handleAction(action: "approve" | "reject" | "reset") {
     startTransition(async () => {
@@ -52,23 +61,23 @@ export function ReviewCard({ workspaceId, featureId, stage, review }: ReviewCard
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-normal text-text-muted">Reviewed By</span>
             <span className="text-[14px] font-normal text-text-primary">
-              {review.reviewed_by ?? "—"}
+              {resolved.reviewed_by ?? "—"}
             </span>
           </div>
           <div className="flex flex-col gap-1">
             <span className="text-[11px] font-normal text-text-muted">Reviewed At</span>
             <span className="text-[14px] font-normal text-text-primary">
-              {review.reviewed_at
-                ? new Date(review.reviewed_at).toLocaleDateString("en-CA")
+              {resolved.reviewed_at
+                ? new Date(resolved.reviewed_at).toLocaleDateString("en-CA")
                 : "—"}
             </span>
           </div>
         </div>
 
         {/* Comment */}
-        {review.review_comment && (
+        {resolved.review_comment && (
           <div className="rounded-lg bg-surface-secondary px-4 py-3 text-[14px] font-normal text-text-secondary">
-            {review.review_comment}
+            {resolved.review_comment}
           </div>
         )}
 
