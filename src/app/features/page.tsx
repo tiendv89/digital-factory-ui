@@ -10,8 +10,6 @@ import { NewFeatureModal } from "@/components/features/new-feature-modal";
 
 export const dynamic = "force-dynamic";
 
-export const dynamic = "force-dynamic";
-
 interface PageProps {
   searchParams: Promise<{
     workspace?: string;
@@ -48,6 +46,10 @@ export default async function FeaturesPage({ searchParams }: PageProps) {
     }
   }
 
+  const repos = resolvedWorkspaceId
+    ? (getWorkspaceByIdFromScan(resolvedWorkspaceId)?.config.repos ?? [])
+    : [];
+
   // Total unfiltered count for the "X of Y shown" label
   let totalAll = features.length;
   if (statusFilter && resolvedWorkspaceId) {
@@ -81,6 +83,7 @@ export default async function FeaturesPage({ searchParams }: PageProps) {
 
         <NewFeatureModal
           existingFeatureIds={features.map((f) => f.featureId)}
+          repos={repos}
         />
       </div>
 

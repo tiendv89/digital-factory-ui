@@ -2,10 +2,11 @@
 
 import { useState, useTransition, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Modal, useOverlayState, Button } from "@heroui/react";
+import { Modal, useOverlayState } from "@heroui/react";
 import { Plus, X } from "lucide-react";
 import { initFeature } from "@/actions/init-feature";
 import { useWorkspace } from "@/context/workspace-context";
+import type { WorkspaceRepo } from "@/types/workspace";
 
 function toSlug(title: string): string {
   return title
@@ -25,11 +26,16 @@ interface FormErrors {
   general?: string;
 }
 
+
 interface NewFeatureModalProps {
   existingFeatureIds?: string[];
+  repos?: WorkspaceRepo[];
 }
 
-export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProps) {
+export function NewFeatureModal({
+  existingFeatureIds = [],
+  repos = [],
+}: NewFeatureModalProps) {
   const { activeWorkspaceId } = useWorkspace();
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -39,6 +45,7 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
   const [description, setDescription] = useState("");
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
+  const [selectedRepos, setSelectedRepos] = useState<Set<string>>(new Set());
 
   const resetForm = useCallback(() => {
     setTitle("");
@@ -46,9 +53,10 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
     setDescription("");
     setSlugManuallyEdited(false);
     setErrors({});
+    setSelectedRepos(new Set());
   }, []);
 
-  // Reset form whenever the modal closes (covers backdrop click, Escape, and explicit close button)
+
   const state = useOverlayState({
     onOpenChange: (open) => {
       if (!open) resetForm();
@@ -75,13 +83,18 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
     [errors.featureId],
   );
 
+  function toggleRepo(repoId: string) {
+    setSelectedRepos((prev) => {
+      const next = new Set(prev);
+      if (next.has(repoId)) next.delete(repoId);
+      else next.add(repoId);
+      return next;
+    });
+  }
+
   function validate(): boolean {
     const next: FormErrors = {};
-
-    if (!title.trim()) {
-      next.title = "Feature name is required.";
-    }
-
+    if (!title.trim()) next.title = "Feature name is required.";
     if (!featureId.trim()) {
       next.featureId = "Feature ID is required.";
     } else if (!SLUG_PATTERN.test(featureId)) {
@@ -90,7 +103,6 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
     } else if (existingFeatureIds.includes(featureId)) {
       next.featureId = `Feature ID "${featureId}" already exists.`;
     }
-
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -102,7 +114,6 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
       setErrors({ general: "No workspace selected." });
       return;
     }
-
     startTransition(async () => {
       const result = await initFeature({
         workspaceId: activeWorkspaceId,
@@ -110,7 +121,6 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
         title: title.trim(),
         description: description.trim() || undefined,
       });
-
       if (!result.ok) {
         if (result.error?.includes("already exists")) {
           setErrors({ featureId: result.error });
@@ -119,7 +129,6 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
         }
         return;
       }
-
       state.close();
       router.refresh();
     });
@@ -129,71 +138,71 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
 
   return (
     <>
-      <Button
-        variant="primary"
-        size="sm"
-        onPress={state.open}
-        className="flex items-center gap-1.5"
+      <button
+        type="button"
+        onClick={state.open}
+        className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
       >
         <Plus size={14} aria-hidden="true" />
         New Feature
-      </Button>
+      </button>
 
       <Modal state={state}>
         <Modal.Backdrop isDismissable={!isPending}>
           <Modal.Container size="lg" placement="center">
-            <Modal.Dialog>
+            <Modal.Dialog className="max-w-160!">
               <form onSubmit={handleSubmit}>
                 {/* Header */}
-                <Modal.Header className="flex items-start justify-between gap-4 border-b border-border px-6 pb-4 pt-5">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-sm font-bold text-white"
-                      style={{
-                        background:
-                          "linear-gradient(135deg, #5465e8 0%, #6c7fff 100%)",
-                      }}
+                <Modal.Header className="border-b border-border">
+                  <div className="flex items-center justify-between gap-4 px-6 py-[17px]">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-white"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, #5465e8 0%, #6c7fff 100%)",
+                        }}
+                      >
+                        <Plus size={14} aria-hidden="true" />
+                      </div>
+                      <div>
+                        <Modal.Heading className="text-[15px] font-semibold leading-tight text-text-primary">
+                          New Feature
+                        </Modal.Heading>
+                        <p className="text-[11px] tracking-[0.065px] text-text-muted">
+                          Seed a feature at the start of the lifecycle
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={state.close}
+                      className="rounded p-0.5 text-text-muted transition-colors hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      aria-label="Close modal"
                     >
-                      <Plus size={16} aria-hidden="true" />
-                    </div>
-                    <div>
-                      <Modal.Heading className="text-base font-semibold text-text-primary">
-                        New Feature
-                      </Modal.Heading>
-                      <p className="text-xs text-text-muted">
-                        Seed a feature at the start of the lifecycle
-                      </p>
-                    </div>
+                      <X size={18} aria-hidden="true" />
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={state.close}
-                    className="rounded-lg p-1 text-text-muted transition-colors hover:bg-bg hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    aria-label="Close modal"
-                  >
-                    <X size={16} aria-hidden="true" />
-                  </button>
                 </Modal.Header>
 
                 {/* Body */}
-                <Modal.Body className="flex flex-col gap-5 px-6 py-5">
+                <Modal.Body className="flex flex-col gap-5 px-6 pt-5 pb-1">
                   {errors.general && (
                     <div className="rounded-lg bg-danger-bg px-4 py-3 text-sm text-danger">
                       {errors.general}
                     </div>
                   )}
 
-                  {/* Title field */}
+                  {/* Title */}
                   <div className="flex flex-col gap-1.5">
-                    <label
-                      className="text-sm font-medium text-text-primary"
-                      htmlFor="new-feature-title"
-                    >
-                      Feature Name{" "}
-                      <span className="text-danger" aria-hidden="true">
-                        *
-                      </span>
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label
+                        htmlFor="new-feature-title"
+                        className="text-[11px] font-medium uppercase tracking-[0.5645px] text-text-muted"
+                      >
+                        Title <span className="text-danger">*</span>
+                      </label>
+                    </div>
                     <input
                       id="new-feature-title"
                       type="text"
@@ -203,7 +212,7 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
                       disabled={isPending}
                       autoFocus
                       className={[
-                        "w-full rounded-lg border px-3 py-2 text-sm text-text-primary placeholder:text-text-muted",
+                        "h-10 w-full rounded-lg border px-3 text-[14px] text-text-primary placeholder:text-text-muted",
                         "bg-surface outline-none transition-colors",
                         "focus:border-primary focus:ring-2 focus:ring-primary/20",
                         "disabled:cursor-not-allowed disabled:opacity-50",
@@ -217,17 +226,21 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
                     )}
                   </div>
 
-                  {/* Feature ID field */}
+                  {/* Feature ID */}
                   <div className="flex flex-col gap-1.5">
-                    <label
-                      className="text-sm font-medium text-text-primary"
-                      htmlFor="new-feature-id"
-                    >
-                      Feature ID{" "}
-                      <span className="text-danger" aria-hidden="true">
-                        *
-                      </span>
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label
+                        htmlFor="new-feature-id"
+                        className="text-[11px] font-medium uppercase tracking-[0.5645px] text-text-muted"
+                      >
+                        Feature ID <span className="text-danger">*</span>
+                      </label>
+                      {!errors.featureId && (
+                        <span className="text-[11px] tracking-[0.065px] text-text-muted">
+                          Auto-generated from title. Click to customize.
+                        </span>
+                      )}
+                    </div>
                     <input
                       id="new-feature-id"
                       type="text"
@@ -235,8 +248,8 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
                       onChange={(e) => handleFeatureIdChange(e.target.value)}
                       disabled={isPending}
                       className={[
-                        "w-full rounded-lg border px-3 py-2 text-sm text-text-primary placeholder:text-text-muted",
-                        "bg-surface font-mono outline-none transition-colors",
+                        "h-10 w-full rounded-lg border px-3 font-mono text-[13px] text-text-primary placeholder:text-text-muted",
+                        "bg-surface outline-none transition-colors",
                         "focus:border-primary focus:ring-2 focus:ring-primary/20",
                         "disabled:cursor-not-allowed disabled:opacity-50",
                         errors.featureId
@@ -244,69 +257,104 @@ export function NewFeatureModal({ existingFeatureIds = [] }: NewFeatureModalProp
                           : "border-border",
                       ].join(" ")}
                     />
-                    {errors.featureId ? (
+                    {errors.featureId && (
                       <p className="text-xs text-danger">{errors.featureId}</p>
-                    ) : (
-                      <p className="text-xs text-text-muted">
-                        Auto-generated from title. Click to customize.
-                      </p>
                     )}
                   </div>
 
-                  {/* Description field */}
+                  {/* Description */}
                   <div className="flex flex-col gap-1.5">
-                    <label
-                      className="text-sm font-medium text-text-primary"
-                      htmlFor="new-feature-description"
-                    >
-                      Description
-                    </label>
+                    <div className="flex items-center justify-between">
+                      <label
+                        htmlFor="new-feature-description"
+                        className="text-[11px] font-medium uppercase tracking-[0.5645px] text-text-muted"
+                      >
+                        Description
+                      </label>
+                      <span className="text-[11px] tracking-[0.065px] text-text-muted">
+                        Short summary shown on the feature list
+                      </span>
+                    </div>
                     <textarea
                       id="new-feature-description"
                       rows={3}
-                      placeholder="Brief summary of this feature"
+                      placeholder="Why this feature? What's the goal?"
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
                       disabled={isPending}
                       className={[
-                        "w-full resize-none rounded-lg border border-border px-3 py-2 text-sm text-text-primary",
+                        "w-full resize-none rounded-lg border border-border px-3 py-2 text-[13px] text-text-primary",
                         "bg-surface placeholder:text-text-muted outline-none transition-colors",
                         "focus:border-primary focus:ring-2 focus:ring-primary/20",
                         "disabled:cursor-not-allowed disabled:opacity-50",
                       ].join(" ")}
                     />
-                    <p className="text-xs text-text-muted">
-                      Short summary shown on the feature list
-                    </p>
                   </div>
+
+                  {/* Target Repos */}
+                  {repos.length > 0 && (
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-medium uppercase tracking-[0.5645px] text-text-muted">
+                          Target Repos
+                        </span>
+                        <span className="text-[11px] tracking-[0.065px] text-text-muted">
+                          Select any repos this feature will touch
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {repos.map((repo) => {
+                          const isSelected = selectedRepos.has(repo.id);
+                          return (
+                            <button
+                              key={repo.id}
+                              type="button"
+                              onClick={() => toggleRepo(repo.id)}
+                              className={[
+                                "inline-flex h-7 items-center rounded-full border px-3 font-mono text-[12px] transition-colors",
+                                isSelected
+                                  ? "border-primary bg-primary-light text-primary"
+                                  : "border-border bg-surface text-text-secondary hover:border-primary hover:text-primary",
+                              ].join(" ")}
+                            >
+                              {repo.id}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </Modal.Body>
 
                 {/* Footer */}
-                <Modal.Footer className="flex items-center justify-between gap-4 border-t border-border px-6 pb-5 pt-4">
-                  <p className="text-xs text-text-muted">
+                <Modal.Footer className="flex items-center justify-between gap-4 border-t border-border bg-surface-secondary px-6 py-4 mt-4">
+                  <p className="text-[12px] text-text-muted">
                     Will create{" "}
-                    <code className="rounded bg-bg px-1 py-0.5 font-mono text-text-secondary">
+                    <code className="rounded bg-bg px-1 font-mono text-[12px] text-text-primary">
                       docs/features/{featureId || "<id>"}
                     </code>
                   </p>
                   <div className="flex items-center gap-2">
-                    <Button
+                    <button
                       type="button"
-                      variant="secondary"
-                      size="sm"
-                      onPress={state.close}
-                      isDisabled={isPending}
+                      onClick={state.close}
+                      disabled={isPending}
+                      className="h-9 rounded-lg border border-border px-4 text-[13px] font-medium text-text-secondary transition-colors hover:bg-bg disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       Cancel
-                    </Button>
-                    <Button
+                    </button>
+                    <button
                       type="submit"
-                      variant="primary"
-                      size="sm"
-                      isDisabled={isSubmitDisabled}
+                      disabled={isSubmitDisabled}
+                      className={[
+                        "h-9 rounded-lg px-4 text-[13px] font-medium text-white transition-colors",
+                        isSubmitDisabled
+                          ? "cursor-not-allowed bg-border"
+                          : "bg-primary hover:opacity-90",
+                      ].join(" ")}
                     >
                       {isPending ? "Creating…" : "Create feature"}
-                    </Button>
+                    </button>
                   </div>
                 </Modal.Footer>
               </form>
