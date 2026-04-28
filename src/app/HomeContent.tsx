@@ -1,6 +1,6 @@
 "use client";
 
-import { WorkspacePicker } from "@/components/workspace/WorkspacePicker";
+import { WorkspacePicker } from "@/components/workspace/workspace-picker";
 import { useWorkspace } from "@/context/workspace-context";
 import type { WorkspaceSummary } from "@/types/workspace";
 
