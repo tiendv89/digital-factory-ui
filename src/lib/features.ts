@@ -62,7 +62,6 @@ export async function listFeatures(
 
     const history = status.history ?? [];
     const lastHistoryEntry = history[history.length - 1];
-<<<<<<< HEAD
     const { done: tasksDone, total: tasksTotal } = countTasks(workspaceRoot, featureId);
 
     summaries.push({
@@ -97,7 +96,6 @@ export async function getFeatureSummary(
 
   const history = status.history ?? [];
   const lastHistoryEntry = history[history.length - 1];
-<<<<<<< HEAD
   const { done: tasksDone, total: tasksTotal } = countTasks(workspaceRoot, featureId);
 
   return {
