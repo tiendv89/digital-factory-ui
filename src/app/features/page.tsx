@@ -8,6 +8,8 @@ import { FeaturesTable } from "@/components/features/FeaturesTable";
 import { FeaturesWorkspaceBridge } from "@/components/features/FeaturesWorkspaceBridge";
 import { SearchInput } from "@/components/features/SearchInput";
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   searchParams: Promise<{
     workspace?: string;
