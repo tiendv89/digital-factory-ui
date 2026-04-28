@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { Plus } from "lucide-react";
 import type { FeatureStatus } from "@/types/feature";
 import { listFeatures } from "@/lib/features";
 import { getWorkspaceByIdFromScan, scanWorkspaces } from "@/lib/workspace";
@@ -7,6 +6,9 @@ import { FilterPills } from "@/components/features/FilterPills";
 import { FeaturesTable } from "@/components/features/FeaturesTable";
 import { FeaturesWorkspaceBridge } from "@/components/features/FeaturesWorkspaceBridge";
 import { SearchInput } from "@/components/features/SearchInput";
+import { NewFeatureModal } from "@/components/features/new-feature-modal";
+
+export const dynamic = "force-dynamic";
 
 export const dynamic = "force-dynamic";
 
@@ -77,10 +79,9 @@ export default async function FeaturesPage({ searchParams }: PageProps) {
           </p>
         </div>
 
-        <button className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90">
-          <Plus size={14} aria-hidden="true" />
-          New Feature
-        </button>
+        <NewFeatureModal
+          existingFeatureIds={features.map((f) => f.featureId)}
+        />
       </div>
 
       {/* Row 2: filter pills (left) + search box (right) */}
