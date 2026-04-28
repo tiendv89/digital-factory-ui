@@ -10,6 +10,7 @@ import { listTasks, listAllTasksWithFeature } from "@/lib/tasks";
 import type { FeatureSummary, LifecycleStage, StageReviewStatus } from "@/types/feature";
 import type { AttentionTask } from "@/components/dashboard/needs-attention";
 import type { FeatureSummaryCardProps } from "@/components/dashboard/feature-summary-card";
+import Link from "next/link";
 
 const ACTIVE_STATUSES = new Set<string>([
   "in_design",
@@ -180,9 +181,9 @@ export default async function Home({ searchParams }: PageProps) {
                 Features currently moving through the lifecycle
               </p>
             </div>
-            <a href="/features" className="text-[13px] font-medium leading-[19.5px] text-primary">
+            <Link href="/features" className="text-[13px] font-medium leading-[19.5px] text-primary">
               View all →
-            </a>
+            </Link>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-2">
             {activeFeatureCards.map(card => (

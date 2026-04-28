@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const STATUS_CONFIG = {
   blocked: {
     borderColor: "#ff5e7d",
@@ -37,9 +39,9 @@ export function NeedsAttention({ items }: NeedsAttentionProps) {
             Blocked or in review
           </p>
         </div>
-        <a href="/features" className="text-[13px] font-medium leading-[19.5px] text-primary">
+        <Link href="/features" className="text-[13px] font-medium leading-[19.5px] text-primary">
           View all →
-        </a>
+        </Link>
       </div>
 
       <div className="flex flex-col gap-3">
