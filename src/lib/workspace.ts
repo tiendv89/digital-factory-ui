@@ -86,3 +86,11 @@ export function getWorkspaceByIdFromScan(workspaceId: string): {
   const workspaces = scanWorkspaces();
   return workspaces.find((w) => w.config.workspace_id === workspaceId) ?? null;
 }
+
+export function listWorkspaceIds(): string[] {
+  try {
+    return scanWorkspaces().map((w) => w.config.workspace_id);
+  } catch {
+    return [];
+  }
+}
