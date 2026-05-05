@@ -14,11 +14,8 @@ export type ParsedTask = {
   dependsOn: string[];
   execution?: { actor_type: string };
   branch?: string;
-  pr?: {
-    url?: string;
-    status?: string;
-    workspace_pr?: { url?: string; status?: string };
-  };
+  pr?: { url?: string; status?: string };
+  workspace_pr?: { url?: string; status?: string };
   blockedReason?: string;
   log?: LogEntry[];
 };
@@ -44,11 +41,8 @@ type RawTask = {
   depends_on?: string[];
   execution?: { actor_type?: string };
   branch?: string;
-  pr?: {
-    url?: string;
-    status?: string;
-    workspace_pr?: { url?: string; status?: string };
-  };
+  pr?: { url?: string; status?: string };
+  workspace_pr?: { url?: string; status?: string };
   blocked_reason?: string;
   log?: Array<{ action?: string; by?: string; at?: string; note?: string }>;
 };
@@ -100,6 +94,7 @@ export function parseTaskYaml(id: string, raw: string): ParsedTask | null {
       : {}),
     ...(typeof data.branch === "string" ? { branch: data.branch } : {}),
     ...(data.pr !== undefined ? { pr: data.pr } : {}),
+    ...(data.workspace_pr !== undefined ? { workspace_pr: data.workspace_pr } : {}),
     ...(typeof data.blocked_reason === "string" && data.blocked_reason !== null
       ? { blockedReason: data.blocked_reason }
       : {}),

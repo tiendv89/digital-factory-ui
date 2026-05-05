@@ -123,6 +123,7 @@ depends_on: []
     expect(task!.execution).toBeUndefined();
     expect(task!.branch).toBeUndefined();
     expect(task!.pr).toBeUndefined();
+    expect(task!.workspace_pr).toBeUndefined();
     expect(task!.blockedReason).toBeUndefined();
     expect(task!.log).toBeUndefined();
   });
@@ -185,7 +186,7 @@ log:
     expect(task!.log![0].action).toBe("created");
   });
 
-  it("parses pr field with workspace_pr", () => {
+  it("parses pr and workspace_pr as separate top-level fields", () => {
     const raw = `
 id: T7
 title: Task
@@ -194,14 +195,16 @@ depends_on: []
 pr:
   url: "https://github.com/owner/repo/pull/1"
   status: open
-  workspace_pr:
-    url: "https://github.com/owner/mgmt/pull/5"
-    status: open
+workspace_pr:
+  url: "https://github.com/owner/mgmt/pull/5"
+  status: open
 `;
     const task = parseTaskYaml("T7", raw);
     expect(task).not.toBeNull();
     expect(task!.pr?.url).toBe("https://github.com/owner/repo/pull/1");
-    expect(task!.pr?.workspace_pr?.url).toBe("https://github.com/owner/mgmt/pull/5");
+    expect(task!.pr?.status).toBe("open");
+    expect(task!.workspace_pr?.url).toBe("https://github.com/owner/mgmt/pull/5");
+    expect(task!.workspace_pr?.status).toBe("open");
   });
 
   it("exports correct TypeScript types", () => {
