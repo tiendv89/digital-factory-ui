@@ -1,5 +1,11 @@
 "use client";
-interface AppProvidersProps { children: React.ReactNode }
+
+import { HeroUIProvider } from "@heroui/react";
+
+interface AppProvidersProps {
+  children: React.ReactNode;
+}
+
 export function AppProviders({ children }: AppProvidersProps) {
-  return <>{children}</>;
+  return <HeroUIProvider>{children}</HeroUIProvider>;
 }
