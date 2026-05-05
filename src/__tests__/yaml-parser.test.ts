@@ -186,6 +186,24 @@ log:
     expect(task!.log![0].action).toBe("created");
   });
 
+  it("parses execution with last_updated_by and last_updated_at fields", () => {
+    const raw = `
+id: T2
+title: GitHub Contents API client
+status: in_review
+depends_on: []
+execution:
+  actor_type: agent
+  last_updated_by: user@example.com
+  last_updated_at: "2026-05-05T09:36:54.679Z"
+`;
+    const task = parseTaskYaml("T2", raw);
+    expect(task).not.toBeNull();
+    expect(task!.execution?.actor_type).toBe("agent");
+    expect(task!.execution?.last_updated_by).toBe("user@example.com");
+    expect(task!.execution?.last_updated_at).toBe("2026-05-05T09:36:54.679Z");
+  });
+
   it("parses pr and workspace_pr as separate top-level fields", () => {
     const raw = `
 id: T7

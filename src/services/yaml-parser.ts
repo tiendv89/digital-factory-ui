@@ -12,7 +12,7 @@ export type ParsedTask = {
   title: string;
   status: string;
   dependsOn: string[];
-  execution?: { actor_type: string };
+  execution?: { actor_type: string; last_updated_by?: string; last_updated_at?: string };
   branch?: string;
   pr?: { url?: string; status?: string };
   workspace_pr?: { url?: string; status?: string };
@@ -39,7 +39,7 @@ type RawTask = {
   title?: string;
   status?: string;
   depends_on?: string[];
-  execution?: { actor_type?: string };
+  execution?: { actor_type?: string; last_updated_by?: string; last_updated_at?: string };
   branch?: string;
   pr?: { url?: string; status?: string };
   workspace_pr?: { url?: string; status?: string };
@@ -90,7 +90,17 @@ export function parseTaskYaml(id: string, raw: string): ParsedTask | null {
       ? data.depends_on.filter((d) => typeof d === "string")
       : [],
     ...(data.execution?.actor_type
-      ? { execution: { actor_type: data.execution.actor_type } }
+      ? {
+          execution: {
+            actor_type: data.execution.actor_type,
+            ...(typeof data.execution.last_updated_by === "string"
+              ? { last_updated_by: data.execution.last_updated_by }
+              : {}),
+            ...(typeof data.execution.last_updated_at === "string"
+              ? { last_updated_at: data.execution.last_updated_at }
+              : {}),
+          },
+        }
       : {}),
     ...(typeof data.branch === "string" ? { branch: data.branch } : {}),
     ...(data.pr !== undefined ? { pr: data.pr } : {}),
