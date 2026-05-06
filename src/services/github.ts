@@ -88,6 +88,8 @@ export class GitHubClient {
 
   async getFileContent(path: string): Promise<string> {
     const data = await this.request<GitHubFileResponse>(path);
-    return atob(data.content.replace(/\s/g, ""));
+    const binary = atob(data.content.replace(/\s/g, ""));
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new TextDecoder("utf-8").decode(bytes);
   }
 }

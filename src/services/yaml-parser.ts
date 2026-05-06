@@ -47,8 +47,17 @@ type RawTask = {
   log?: Array<{ action?: string; by?: string; at?: string; note?: string }>;
 };
 
-export function parseFeatureStatus(raw: string): RawFeatureStatus {
-  return (yamlLoad(raw) as RawFeatureStatus) ?? {};
+export function parseFeatureStatus(
+  raw: string,
+  featureId?: string,
+): RawFeatureStatus {
+  try {
+    return (yamlLoad(raw) as RawFeatureStatus) ?? {};
+  } catch (err) {
+    const id = featureId ?? "<unknown>";
+    console.warn(`[yaml-parser] Failed to parse status.yaml for ${id}:`, err);
+    return {};
+  }
 }
 
 export function parseTaskYaml(id: string, raw: string): ParsedTask | null {
