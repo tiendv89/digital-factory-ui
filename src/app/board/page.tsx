@@ -5,10 +5,37 @@ import { useRouter } from "next/navigation";
 import { getWorkspace } from "@/services/workspace-store";
 import type { StoredWorkspace } from "@/types/workspace";
 import { BoardHeader } from "@/features/board/components/BoardHeader";
-import {
-  BoardProvider,
-  KanbanBoard,
-} from "@/features/board/components/KanbanBoard";
+
+import { BoardProvider, useBoardContext, KanbanBoard} from "@/features/board/components/KanbanBoard";
+import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
+
+function BoardStatus() {
+  const { loading, error, features } = useBoardContext();
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-sm text-text-muted">Loading board…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-sm text-danger">{error.message}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-1 items-center justify-center">
+      <p className="text-sm text-text-muted">
+        {features.length} feature{features.length === 1 ? "" : "s"} loaded.
+      </p>
+    </div>
+  );
+}
 
 export default function BoardPage() {
   const router = useRouter();
@@ -40,6 +67,10 @@ export default function BoardPage() {
       <BoardProvider workspace={workspace}>
         <BoardHeader />
         <KanbanBoard />
+        <div className="flex flex-1 overflow-hidden">
+          <TaskTrackingPanel />
+          <BoardStatus />
+        </div>
       </BoardProvider>
     </main>
   );
