@@ -1,0 +1,147 @@
+import { describe, it, expect } from "vitest";
+import {
+  findStatusLogEntry,
+  formatElapsed,
+  formatTimestamp,
+  getElapsedSinceStatus,
+} from "../lib/time";
+import type { LogEntry } from "../services/yaml-parser";
+
+const makeEntry = (action: string, at: string, by = "u@e.com"): LogEntry => ({
+  action,
+  by,
+  at,
+});
+
+describe("findStatusLogEntry", () => {
+  it("finds the most recent matching entry for in_progress (started)", () => {
+    const log: LogEntry[] = [
+      makeEntry("created", "2026-01-01T00:00:00Z"),
+      makeEntry("ready", "2026-01-02T00:00:00Z"),
+      makeEntry("started", "2026-01-03T00:00:00Z"),
+    ];
+    const entry = findStatusLogEntry(log, "in_progress");
+    expect(entry?.at).toBe("2026-01-03T00:00:00Z");
+  });
+
+  it("matches in_progress action verbatim too", () => {
+    const log: LogEntry[] = [
+      makeEntry("started", "2026-01-01T00:00:00Z"),
+      makeEntry("in_progress", "2026-01-04T00:00:00Z"),
+    ];
+    const entry = findStatusLogEntry(log, "in_progress");
+    expect(entry?.at).toBe("2026-01-04T00:00:00Z");
+  });
+
+  it("matches in_review and moved_to_review", () => {
+    const a: LogEntry[] = [makeEntry("in_review", "2026-02-01T00:00:00Z")];
+    expect(findStatusLogEntry(a, "in_review")?.at).toBe(
+      "2026-02-01T00:00:00Z",
+    );
+    const b: LogEntry[] = [makeEntry("moved_to_review", "2026-02-02T00:00:00Z")];
+    expect(findStatusLogEntry(b, "in_review")?.at).toBe(
+      "2026-02-02T00:00:00Z",
+    );
+  });
+
+  it("returns null when no entry matches", () => {
+    const log: LogEntry[] = [makeEntry("created", "2026-01-01T00:00:00Z")];
+    expect(findStatusLogEntry(log, "in_progress")).toBeNull();
+  });
+
+  it("returns null when log is undefined or empty", () => {
+    expect(findStatusLogEntry(undefined, "ready")).toBeNull();
+    expect(findStatusLogEntry([], "ready")).toBeNull();
+  });
+
+  it("returns null for unknown statuses (todo, done, etc.)", () => {
+    const log: LogEntry[] = [makeEntry("done", "2026-01-01T00:00:00Z")];
+    expect(findStatusLogEntry(log, "done")).toBeNull();
+    expect(findStatusLogEntry(log, "todo")).toBeNull();
+  });
+
+  it("picks the latest occurrence when an action repeats", () => {
+    const log: LogEntry[] = [
+      makeEntry("started", "2026-01-01T00:00:00Z"),
+      makeEntry("ready", "2026-01-02T00:00:00Z"),
+      makeEntry("started", "2026-01-05T00:00:00Z"),
+    ];
+    expect(findStatusLogEntry(log, "in_progress")?.at).toBe(
+      "2026-01-05T00:00:00Z",
+    );
+  });
+});
+
+describe("formatElapsed", () => {
+  it("formats sub-day elapsed as Xh Ym", () => {
+    expect(formatElapsed(0)).toBe("0h 0m");
+    expect(formatElapsed(45 * 60 * 1000)).toBe("0h 45m");
+    expect(formatElapsed(3 * 60 * 60 * 1000 + 12 * 60 * 1000)).toBe("3h 12m");
+    expect(formatElapsed(23 * 60 * 60 * 1000 + 59 * 60 * 1000)).toBe(
+      "23h 59m",
+    );
+  });
+
+  it("formats >= 24h elapsed as Xd Yh", () => {
+    const ms = 24 * 60 * 60 * 1000;
+    expect(formatElapsed(ms)).toBe("1d 0h");
+    expect(formatElapsed(ms + 5 * 60 * 60 * 1000)).toBe("1d 5h");
+    expect(formatElapsed(3 * ms + 12 * 60 * 60 * 1000)).toBe("3d 12h");
+  });
+
+  it("returns em-dash for negative input", () => {
+    expect(formatElapsed(-1)).toBe("—");
+  });
+});
+
+describe("getElapsedSinceStatus", () => {
+  it("computes elapsed time from the matching log entry", () => {
+    const now = new Date("2026-01-01T05:30:00Z");
+    const task = {
+      status: "in_progress",
+      log: [makeEntry("started", "2026-01-01T03:00:00Z")],
+    };
+    expect(getElapsedSinceStatus(task, now)).toBe("2h 30m");
+  });
+
+  it("returns em-dash when no matching entry exists", () => {
+    const task = {
+      status: "in_progress",
+      log: [makeEntry("created", "2026-01-01T00:00:00Z")],
+    };
+    expect(getElapsedSinceStatus(task)).toBe("—");
+  });
+
+  it("returns em-dash when the log entry has an unparseable date", () => {
+    const task = {
+      status: "ready",
+      log: [makeEntry("ready", "not-a-date")],
+    };
+    expect(getElapsedSinceStatus(task)).toBe("—");
+  });
+
+  it("returns em-dash when log is undefined", () => {
+    const task = { status: "ready", log: undefined };
+    expect(getElapsedSinceStatus(task)).toBe("—");
+  });
+
+  it("returns em-dash when elapsed is negative (clock skew)", () => {
+    const now = new Date("2026-01-01T00:00:00Z");
+    const task = {
+      status: "ready",
+      log: [makeEntry("ready", "2026-01-02T00:00:00Z")],
+    };
+    expect(getElapsedSinceStatus(task, now)).toBe("—");
+  });
+});
+
+describe("formatTimestamp", () => {
+  it("formats a valid ISO timestamp as MMM d HH:mm", () => {
+    const formatted = formatTimestamp("2026-05-06T09:42:00Z");
+    expect(formatted).toMatch(/May 6 \d{2}:\d{2}/);
+  });
+
+  it("returns the raw input when the timestamp is unparseable", () => {
+    expect(formatTimestamp("garbage")).toBe("garbage");
+  });
+});
