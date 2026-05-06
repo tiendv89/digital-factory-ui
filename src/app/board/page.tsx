@@ -6,6 +6,7 @@ import { getWorkspace } from "@/services/workspace-store";
 import type { StoredWorkspace } from "@/types/workspace";
 import { BoardHeader } from "@/features/board/components/BoardHeader";
 import { BoardProvider, useBoardContext } from "@/features/board/components/KanbanBoard";
+import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
 
 function BoardStatus() {
   const { loading, error, features } = useBoardContext();
@@ -61,10 +62,13 @@ export default function BoardPage() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col bg-bg">
+    <main className="flex h-screen flex-col bg-bg">
       <BoardProvider workspace={workspace}>
         <BoardHeader />
-        <BoardStatus />
+        <div className="flex flex-1 overflow-hidden">
+          <TaskTrackingPanel />
+          <BoardStatus />
+        </div>
       </BoardProvider>
     </main>
   );
