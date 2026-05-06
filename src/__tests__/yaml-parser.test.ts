@@ -32,6 +32,20 @@ stage: tasks/approved
     expect(result.feature_status).toBe("in_design");
     expect(result.title).toBeUndefined();
   });
+
+  it("returns empty object and warns for malformed YAML instead of throwing", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    // YAML 1.2 disallows C1 control bytes (0x80-0x9F). This is the same shape
+    // of payload that crashed the board before the UTF-8 base64 fix.
+    const malformed = `title: bad\u0080value\n`;
+    const result = parseFeatureStatus(malformed, "feature-x");
+    expect(result).toEqual({});
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("feature-x"),
+      expect.anything(),
+    );
+    warnSpy.mockRestore();
+  });
 });
 
 describe("parseTaskYaml", () => {

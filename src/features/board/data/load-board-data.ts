@@ -64,16 +64,9 @@ async function loadFeature(
   let featureStatus = "unknown";
   let title = featureId;
   if (statusRaw) {
-    try {
-      const parsed = parseFeatureStatus(statusRaw);
-      if (parsed.feature_status) featureStatus = parsed.feature_status;
-      if (parsed.title) title = parsed.title;
-    } catch (err) {
-      throw new BoardLoadFailure({
-        kind: "parse_error",
-        message: `Failed to parse status.yaml for ${featureId}: ${err instanceof Error ? err.message : String(err)}`,
-      });
-    }
+    const parsed = parseFeatureStatus(statusRaw, featureId);
+    if (parsed.feature_status) featureStatus = parsed.feature_status;
+    if (parsed.title) title = parsed.title;
   }
 
   const yamlEntries = taskEntries.filter(

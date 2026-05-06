@@ -20,7 +20,11 @@ describe("GitHubClient", () => {
   beforeEach(() => {
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    vi.stubGlobal("atob", (s: string) => Buffer.from(s, "base64").toString("utf-8"));
+    // Mirror browser atob: returns a binary (latin-1) string where each char
+    // is one decoded byte. UTF-8 decoding is the caller's responsibility.
+    vi.stubGlobal("atob", (s: string) =>
+      Buffer.from(s, "base64").toString("binary"),
+    );
   });
 
   afterEach(() => {
@@ -113,6 +117,17 @@ describe("GitHubClient", () => {
       const client = new GitHubClient({ owner: "o", repo: "r" });
       const content = await client.getFileContent("some/file.yaml");
       expect(content).toBe("hello: world\n");
+    });
+
+    it("decodes multi-byte UTF-8 content (en-dash, em-dash, smart quotes)", async () => {
+      const text = "note: >-\n  Resolved Q1\u2013Q8 with decisions D1\u2014D10. \u201cDone\u201d.\n";
+      const encoded = Buffer.from(text, "utf-8").toString("base64");
+      fetchMock.mockResolvedValueOnce(
+        makeResponse(200, { content: encoded, encoding: "base64" }),
+      );
+      const client = new GitHubClient({ owner: "o", repo: "r" });
+      const content = await client.getFileContent("status.yaml");
+      expect(content).toBe(text);
     });
 
     it("strips whitespace from base64 before decoding", async () => {

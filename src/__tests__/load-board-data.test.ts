@@ -208,6 +208,34 @@ depends_on: []
     consoleWarn.mockRestore();
   });
 
+  it("loads feature with default title and status when status.yaml is malformed", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const list = vi.fn();
+    list.mockResolvedValueOnce([dirEntry("epsilon")]);
+    list.mockResolvedValueOnce([]); // empty tasks dir
+
+    const get = vi.fn();
+    get.mockImplementation(async (p: string) => {
+      // Mimic the C1 control byte that previously crashed the board.
+      if (p === "docs/features/epsilon/status.yaml") {
+        return `title: bad\u0080value\nfeature_status: in_design\n`;
+      }
+      throw new GitHubNotFoundError(p);
+    });
+
+    const client = makeClient({ listDirectory: list, getFileContent: get });
+    const features = await fetchBoardData(client);
+
+    expect(features).toHaveLength(1);
+    expect(features[0].id).toBe("epsilon");
+    // Falls back to defaults; does not throw BoardLoadFailure(parse_error).
+    expect(features[0].title).toBe("epsilon");
+    expect(features[0].featureStatus).toBe("unknown");
+    expect(consoleWarn).toHaveBeenCalled();
+    consoleWarn.mockRestore();
+  });
+
   it("sorts features by id", async () => {
     const list = vi.fn();
     list.mockResolvedValueOnce([dirEntry("zeta"), dirEntry("alpha")]);
