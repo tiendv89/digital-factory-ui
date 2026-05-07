@@ -1,4 +1,7 @@
 import { describe, it, expect } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import type { ParsedFeature } from "../services/yaml-parser";
 import {
   STATUS_COLUMNS,
   getStatusColor,
@@ -6,6 +9,8 @@ import {
   getFeatureStatusColor,
   getFeatureStatusLabel,
 } from "../features/board/lib/status";
+import { FeatureRow } from "../features/board/components/FeatureRow";
+import { TaskCard } from "../features/board/components/TaskCard";
 
 describe("STATUS_COLUMNS", () => {
   it("defines exactly 7 columns", () => {
@@ -31,6 +36,12 @@ describe("STATUS_COLUMNS", () => {
       expect(col.color).toMatch(/^#[0-9a-fA-F]{6}$/);
     }
   });
+
+  it("uses color squares instead of icon metadata for column headers", () => {
+    for (const col of STATUS_COLUMNS) {
+      expect("iconName" in col).toBe(false);
+    }
+  });
 });
 
 describe("getStatusColor", () => {
@@ -51,29 +62,33 @@ describe("getStatusColor", () => {
 });
 
 describe("getNextAction", () => {
-  it("returns a non-empty action string for each canonical status", () => {
+  it("returns an action string for statuses that have a next action", () => {
     const statuses = [
       "todo",
       "ready",
       "in_progress",
       "blocked",
       "in_review",
-      "done",
       "cancelled",
     ];
     for (const status of statuses) {
       expect(getNextAction(status)).toBeTruthy();
     }
+    expect(getNextAction("done")).toBe("");
   });
 
   it("returns empty string for unknown status", () => {
     expect(getNextAction("unknown_xyz")).toBe("");
   });
 
-  it("maps status → meaningful action label", () => {
-    expect(getNextAction("ready")).toContain("Claim");
-    expect(getNextAction("in_progress")).toContain("review");
-    expect(getNextAction("blocked")).toContain("Resolve");
+  it("maps status → workflow transition label from the task status diagram", () => {
+    expect(getNextAction("todo")).toBe("Auto-ready when last dependency is done");
+    expect(getNextAction("ready")).toBe("Start implementation");
+    expect(getNextAction("in_progress")).toBe("Waiting for result");
+    expect(getNextAction("blocked")).toBe("Human resolves");
+    expect(getNextAction("in_review")).toBe("Human approves or rejects");
+    expect(getNextAction("done")).toBe("");
+    expect(getNextAction("cancelled")).toBe("Do nothing");
   });
 });
 
@@ -113,5 +128,120 @@ describe("getFeatureStatusLabel", () => {
     expect(getFeatureStatusLabel("some_unknown_state")).toBe(
       "some_unknown_state",
     );
+  });
+});
+
+describe("FeatureRow task grid", () => {
+  it("renders expanded tasks as one task row with one status cell per row", () => {
+    const feature: ParsedFeature = {
+      id: "auth-system",
+      title: "Authentication System",
+      featureStatus: "in_implementation",
+      tasks: [
+        {
+          id: "T1",
+          title: "Setup OAuth providers",
+          status: "todo",
+          dependsOn: [],
+        },
+        {
+          id: "T2",
+          title: "User registration API",
+          status: "ready",
+          dependsOn: [],
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureRow, {
+        feature,
+        isExpanded: true,
+        onToggle: () => undefined,
+        onSelectTask: () => undefined,
+        minColumnWidth: 140,
+      }),
+    );
+
+    expect(html.match(/data-task-grid-row/g) ?? []).toHaveLength(2);
+    expect(html.match(/data-status-cell/g) ?? []).toHaveLength(
+      feature.tasks.length * STATUS_COLUMNS.length,
+    );
+    expect(html).toContain('data-task-id="T1"');
+    expect(html).toContain('data-task-id="T2"');
+  });
+
+  it("renders a per-segment progress tooltip only for statuses with tasks", () => {
+    const feature: ParsedFeature = {
+      id: "auth-system",
+      title: "Authentication System",
+      featureStatus: "in_implementation",
+      tasks: [
+        {
+          id: "T1",
+          title: "Setup OAuth providers",
+          status: "todo",
+          dependsOn: [],
+        },
+        {
+          id: "T2",
+          title: "User registration API",
+          status: "ready",
+          dependsOn: [],
+        },
+        {
+          id: "T3",
+          title: "JWT verification",
+          status: "in_review",
+          dependsOn: ["T1", "T2"],
+        },
+        {
+          id: "T4",
+          title: "Login UI components",
+          status: "in_review",
+          dependsOn: ["T3"],
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureRow, {
+        feature,
+        isExpanded: false,
+        onToggle: () => undefined,
+        onSelectTask: () => undefined,
+        minColumnWidth: 140,
+      }),
+    );
+
+    expect(html).toContain("data-progress-tooltip");
+    expect(html.match(/data-progress-segment/g) ?? []).toHaveLength(3);
+    expect(html).toContain("todo: 1");
+    expect(html).toContain("ready: 1");
+    expect(html).toContain("in_review: 2");
+    expect(html).not.toContain("blocked: 0");
+    expect(html).not.toContain("done: 0");
+  });
+});
+
+describe("TaskCard", () => {
+  it("does not render an actor badge icon", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(TaskCard, {
+        featureId: "auth-system",
+        featureTitle: "Authentication System",
+        onSelect: () => undefined,
+        task: {
+          id: "T3",
+          title: "JWT verification",
+          status: "in_progress",
+          dependsOn: [],
+          execution: { actor_type: "agent" },
+        },
+      }),
+    );
+
+    expect(html).not.toContain("Executed by agent");
+    expect(html).not.toContain("lucide-bot");
   });
 });

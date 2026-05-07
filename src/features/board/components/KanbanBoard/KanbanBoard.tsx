@@ -19,16 +19,16 @@ function ColumnHeader({
 }) {
   return (
     <div
-      className="flex min-w-0 flex-1 items-center justify-between border-r border-border bg-bg px-3 py-2.5 last:border-r-0"
+      className="flex min-w-0 flex-1 items-center justify-between border-r border-border bg-surface-secondary px-3 py-2.5 last:border-r-0"
       style={{ minWidth: MIN_COLUMN_WIDTH }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 items-center gap-2">
         <div
           className="h-2 w-2 rounded-sm"
           style={{ background: color }}
           aria-hidden="true"
         />
-        <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
+        <span className="truncate text-xs font-semibold uppercase tracking-wide text-text-secondary">
           {label}
         </span>
       </div>

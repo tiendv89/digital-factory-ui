@@ -28,13 +28,13 @@ export const STATUS_COLOR: Record<string, string> = Object.fromEntries(
 );
 
 export const NEXT_ACTIONS: Record<string, string> = {
-  todo: "Wait for dependencies",
-  ready: "Claim task",
-  in_progress: "Submit for review",
-  blocked: "Resolve block",
-  in_review: "Await review decision",
-  done: "Merge and close",
-  cancelled: "Cancelled",
+  todo: "Auto-ready when last dependency is done",
+  ready: "Start implementation",
+  in_progress: "Waiting for result",
+  blocked: "Human resolves",
+  in_review: "Human approves or rejects",
+  done: "",
+  cancelled: "Do nothing",
 };
 
 export function getStatusColor(status: string): string {
