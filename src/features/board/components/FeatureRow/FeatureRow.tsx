@@ -8,7 +8,9 @@ import {
   STATUS_COLUMNS,
   getFeatureStatusColor,
   getFeatureStatusLabel,
+  getFeatureNextAction,
   getStatusColor,
+  getStatusLabel,
 } from "../../lib/status";
 
 type FeatureRowProps = {
@@ -30,7 +32,7 @@ function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
           key={task.id}
           className="h-full flex-1"
           style={{ background: getStatusColor(task.status) }}
-          title={`${task.id}: ${task.status}`}
+          title={getStatusLabel(task.status)}
         />
       ))}
     </div>
@@ -63,6 +65,7 @@ export function FeatureRow({
 }: FeatureRowProps) {
   const totalTasks = feature.tasks.length;
   const doneTasks = feature.tasks.filter((t) => t.status === "done").length;
+  const nextAction = getFeatureNextAction(feature.tasks);
 
   const tasksByStatus = STATUS_COLUMNS.reduce<Record<string, ParsedTask[]>>(
     (acc, col) => {
@@ -104,6 +107,11 @@ export function FeatureRow({
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text-primary">
           {feature.title || feature.id}
         </span>
+        {nextAction && (
+          <span className="shrink-0 truncate text-xs text-text-muted" title={nextAction}>
+            → {nextAction}
+          </span>
+        )}
         <FeatureStatusPill status={feature.featureStatus} />
         <span className="shrink-0 text-xs text-text-muted">
           {doneTasks}/{totalTasks}

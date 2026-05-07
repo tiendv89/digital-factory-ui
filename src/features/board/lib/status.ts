@@ -45,6 +45,10 @@ export function getNextAction(status: string): string {
   return NEXT_ACTIONS[status] ?? "";
 }
 
+export function getStatusLabel(status: string): string {
+  return STATUS_COLUMNS.find((c) => c.key === status)?.label ?? status.toUpperCase().replace(/_/g, " ");
+}
+
 const FEATURE_STATUS_LABELS: Record<string, string> = {
   in_design: "In Design",
   in_tdd: "In TDD",
@@ -73,4 +77,21 @@ export function getFeatureStatusLabel(status: string): string {
 
 export function getFeatureStatusColor(status: string): string {
   return FEATURE_STATUS_COLORS[status] ?? "#8892b5";
+}
+
+const FEATURE_NEXT_ACTION_PRIORITY: TaskStatus[] = [
+  "blocked",
+  "in_review",
+  "in_progress",
+  "ready",
+  "todo",
+];
+
+export function getFeatureNextAction(tasks: Array<{ status: string }>): string | null {
+  for (const status of FEATURE_NEXT_ACTION_PRIORITY) {
+    if (tasks.some((t) => t.status === status)) {
+      return NEXT_ACTIONS[status] ?? null;
+    }
+  }
+  return null;
 }
