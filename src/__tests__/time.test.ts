@@ -4,8 +4,10 @@ import {
   formatElapsed,
   formatTimestamp,
   getElapsedSinceStatus,
+  getFeatureLastModifiedAt,
+  isTodayTimestamp,
 } from "../lib/time";
-import type { LogEntry } from "../services/yaml-parser";
+import type { LogEntry, ParsedFeature } from "../services/yaml-parser";
 
 const makeEntry = (action: string, at: string, by = "u@e.com"): LogEntry => ({
   action,
@@ -143,5 +145,101 @@ describe("formatTimestamp", () => {
 
   it("returns the raw input when the timestamp is unparseable", () => {
     expect(formatTimestamp("garbage")).toBe("garbage");
+  });
+});
+
+describe("isTodayTimestamp", () => {
+  it("returns true when timestamp is on the same local day", () => {
+    const now = new Date(2026, 4, 7, 15, 0);
+    const timestamp = new Date(2026, 4, 7, 1, 30).toISOString();
+
+    expect(isTodayTimestamp(timestamp, now)).toBe(true);
+  });
+
+  it("returns false when timestamp is on another local day", () => {
+    const now = new Date(2026, 4, 7, 15, 0);
+    const timestamp = new Date(2026, 4, 6, 23, 30).toISOString();
+
+    expect(isTodayTimestamp(timestamp, now)).toBe(false);
+  });
+
+  it("returns false for an invalid timestamp", () => {
+    expect(isTodayTimestamp("bad-date", new Date(2026, 4, 7, 15, 0))).toBe(
+      false,
+    );
+  });
+});
+
+describe("getFeatureLastModifiedAt", () => {
+  it("returns the latest valid task log timestamp in a feature", () => {
+    const feature: ParsedFeature = {
+      id: "auth",
+      title: "Auth",
+      featureStatus: "in_implementation",
+      tasks: [
+        {
+          id: "T1",
+          title: "First",
+          status: "done",
+          dependsOn: [],
+          log: [
+            makeEntry("created", "2026-05-01T00:00:00Z"),
+            makeEntry("done", "2026-05-03T00:00:00Z"),
+          ],
+        },
+        {
+          id: "T2",
+          title: "Second",
+          status: "ready",
+          dependsOn: [],
+          log: [makeEntry("ready", "2026-05-05T12:30:00Z")],
+        },
+      ],
+    };
+
+    expect(getFeatureLastModifiedAt(feature)).toBe("2026-05-05T12:30:00Z");
+  });
+
+  it("uses execution.last_updated_at when it is newer than log entries", () => {
+    const feature: ParsedFeature = {
+      id: "auth",
+      title: "Auth",
+      featureStatus: "in_implementation",
+      tasks: [
+        {
+          id: "T1",
+          title: "First",
+          status: "in_progress",
+          dependsOn: [],
+          execution: {
+            actor_type: "agent",
+            last_updated_at: "2026-05-07T08:45:00Z",
+          },
+          log: [makeEntry("started", "2026-05-06T01:00:00Z")],
+        },
+      ],
+    };
+
+    expect(getFeatureLastModifiedAt(feature)).toBe("2026-05-07T08:45:00Z");
+  });
+
+  it("returns null when no task has a valid timestamp", () => {
+    const feature: ParsedFeature = {
+      id: "auth",
+      title: "Auth",
+      featureStatus: "in_implementation",
+      tasks: [
+        {
+          id: "T1",
+          title: "First",
+          status: "ready",
+          dependsOn: [],
+          execution: { actor_type: "agent", last_updated_at: "bad-date" },
+          log: [makeEntry("ready", "bad-date")],
+        },
+      ],
+    };
+
+    expect(getFeatureLastModifiedAt(feature)).toBeNull();
   });
 });

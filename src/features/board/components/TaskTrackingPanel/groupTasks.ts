@@ -5,6 +5,17 @@ import {
   type TrackedStatus,
 } from "./TaskTrackingPanel.types";
 
+function isOpenPullRequestStatus(status: string | undefined): boolean {
+  return status?.toLowerCase() === "open";
+}
+
+function hasOpenPullRequest(task: ParsedFeature["tasks"][number]): boolean {
+  return (
+    isOpenPullRequestStatus(task.pr?.status) ||
+    isOpenPullRequestStatus(task.workspace_pr?.status)
+  );
+}
+
 export function groupTrackedTasks(
   features: ParsedFeature[],
 ): TrackedSection[] {
@@ -15,9 +26,12 @@ export function groupTrackedTasks(
 
   for (const feature of features) {
     for (const task of feature.tasks) {
+      if (!hasOpenPullRequest(task)) continue;
+      
       const bucket = buckets.get(task.status as TrackedStatus);
-      if (!bucket) continue;
-      bucket.items.push({ task, feature });
+      if (bucket) {
+        bucket.items.push({ task, feature });
+      }
     }
   }
 

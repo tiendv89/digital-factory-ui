@@ -1,4 +1,4 @@
-import type { LogEntry, ParsedTask } from "@/services/yaml-parser";
+import type { LogEntry, ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 
 const STATUS_TO_LOG_ACTIONS: Record<string, readonly string[]> = {
   in_progress: ["in_progress", "started", "claimed"],
@@ -54,6 +54,36 @@ export function getElapsedSinceStatus(
   return formatElapsed(elapsed);
 }
 
+function latestValidIsoTimestamp(
+  current: string | null,
+  candidate: string | undefined,
+): string | null {
+  if (!candidate) return current;
+  const candidateTime = new Date(candidate).getTime();
+  if (Number.isNaN(candidateTime)) return current;
+  if (!current) return candidate;
+
+  const currentTime = new Date(current).getTime();
+  return candidateTime > currentTime ? candidate : current;
+}
+
+export function getFeatureLastModifiedAt(feature: ParsedFeature): string | null {
+  let latest: string | null = null;
+
+  for (const task of feature.tasks) {
+    latest = latestValidIsoTimestamp(
+      latest,
+      task.execution?.last_updated_at,
+    );
+
+    for (const entry of task.log ?? []) {
+      latest = latestValidIsoTimestamp(latest, entry.at);
+    }
+  }
+
+  return latest;
+}
+
 const TIMESTAMP_FORMATTER = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -66,4 +96,15 @@ export function formatTimestamp(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return TIMESTAMP_FORMATTER.format(date).replace(",", "");
+}
+
+export function isTodayTimestamp(iso: string, now: Date = new Date()): boolean {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return false;
+
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
 }

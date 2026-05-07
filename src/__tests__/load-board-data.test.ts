@@ -1,9 +1,11 @@
 import { describe, it, expect, vi } from "vitest";
 import {
   fetchBoardData,
+  fetchPullRequestTaskData,
   BoardLoadFailure,
   mapClientError,
   type BoardDataClient,
+  type BoardPullRequest,
 } from "../features/board/data/load-board-data";
 import {
   GitHubAccessError,
@@ -13,10 +15,16 @@ import {
 } from "../services/github";
 
 function makeClient(overrides: Partial<BoardDataClient> = {}): BoardDataClient {
-  return {
+  const client: BoardDataClient = {
     listDirectory: overrides.listDirectory ?? vi.fn().mockResolvedValue([]),
     getFileContent: overrides.getFileContent ?? vi.fn().mockResolvedValue(""),
+    listOpenPullRequests:
+      overrides.listOpenPullRequests ?? vi.fn().mockResolvedValue([]),
   };
+  if (overrides.listPullRequestFiles) {
+    client.listPullRequestFiles = overrides.listPullRequestFiles;
+  }
+  return client;
 }
 
 function dirEntry(name: string, path = `docs/features/${name}`): GitHubEntry {
@@ -28,6 +36,18 @@ function fileEntry(
   parentPath = "docs/features/test/tasks",
 ): GitHubEntry {
   return { name, path: `${parentPath}/${name}`, type: "file", sha: "y" };
+}
+
+function openPullRequest(
+  overrides: Partial<BoardPullRequest> = {},
+): BoardPullRequest {
+  return {
+    number: 4,
+    state: "open",
+    htmlUrl: "https://github.com/owner/repo/pull/4",
+    headRef: "feature/dashboard-T4",
+    ...overrides,
+  };
 }
 
 describe("mapClientError", () => {
@@ -106,7 +126,7 @@ describe("fetchBoardData — success", () => {
     const client = makeClient({
       listDirectory: vi.fn().mockResolvedValue([]),
     });
-    const features = await fetchBoardData(client);
+    const features = await fetchPullRequestTaskData(client);
     expect(features).toEqual([]);
   });
 
@@ -154,6 +174,247 @@ depends_on: []
     expect(features[0].tasks).toHaveLength(1);
     expect(features[0].tasks[0].id).toBe("T1");
     expect(features[0].tasks[0].status).toBe("ready");
+  });
+
+  it("keeps Kanban board data on the main branch without reading pull requests", async () => {
+    const list = vi.fn();
+    list.mockResolvedValueOnce([dirEntry("dashboard")]);
+    list.mockResolvedValueOnce([
+      fileEntry("T5.yaml", "docs/features/dashboard/tasks"),
+    ]);
+
+    const get = vi.fn();
+    get.mockImplementation(async (p: string) => {
+      if (p === "docs/features/dashboard/status.yaml") {
+        return `feature_id: dashboard\nfeature_status: in_implementation\n`;
+      }
+      if (p === "docs/features/dashboard/tasks/T5.yaml") {
+        return `id: T5\ntitle: Base task\nstatus: todo\ndepends_on: []\n`;
+      }
+      throw new GitHubNotFoundError(p);
+    });
+    const listOpenPullRequests = vi.fn().mockResolvedValue([
+      openPullRequest({
+        number: 5,
+        htmlUrl: "https://github.com/owner/repo/pull/5",
+        headRef: "feature/dashboard-T5",
+      }),
+    ]);
+
+    const features = await fetchBoardData(
+      makeClient({
+        listDirectory: list,
+        getFileContent: get,
+        listOpenPullRequests,
+      }),
+    );
+
+    expect(listOpenPullRequests).not.toHaveBeenCalled();
+    expect(features[0].tasks[0].status).toBe("todo");
+  });
+
+  it("uses the task YAML from the matching open PR branch for current task status", async () => {
+    const statusYaml = `
+feature_id: dashboard
+title: Dashboard
+feature_status: in_implementation
+`;
+    const baseTaskYaml = `
+id: T4
+title: Build review panel
+status: in_progress
+depends_on: []
+branch: feature/dashboard-T4
+`;
+    const branchTaskYaml = `
+id: T4
+title: Build review panel
+status: in_review
+depends_on: []
+branch: feature/dashboard-T4
+`;
+
+    const list = vi.fn();
+    list.mockResolvedValueOnce([dirEntry("dashboard")]);
+    list.mockResolvedValueOnce([
+      fileEntry("T4.yaml", "docs/features/dashboard/tasks"),
+    ]);
+
+    const get = vi.fn();
+    get.mockImplementation(async (p: string, opts?: { ref?: string }) => {
+      if (p === "docs/features/dashboard/status.yaml") return statusYaml;
+      if (
+        p === "docs/features/dashboard/tasks/T4.yaml" &&
+        opts?.ref === "feature/dashboard-T4"
+      ) {
+        return branchTaskYaml;
+      }
+      if (p === "docs/features/dashboard/tasks/T4.yaml") return baseTaskYaml;
+      throw new GitHubNotFoundError(p);
+    });
+
+    const listOpenPullRequests = vi
+      .fn()
+      .mockResolvedValue([openPullRequest()]);
+
+    const client = makeClient({
+      listDirectory: list,
+      getFileContent: get,
+      listOpenPullRequests,
+    });
+    const features = await fetchPullRequestTaskData(client);
+
+    expect(listOpenPullRequests).toHaveBeenCalledTimes(1);
+    expect(get).toHaveBeenCalledWith("docs/features/dashboard/tasks/T4.yaml", {
+      ref: "feature/dashboard-T4",
+    });
+    expect(features[0].tasks[0]).toMatchObject({
+      id: "T4",
+      status: "in_review",
+      branch: "feature/dashboard-T4",
+      workspace_pr: {
+        url: "https://github.com/owner/repo/pull/4",
+        status: "open",
+      },
+    });
+  });
+
+  it("scans open pull request files and upserts T*.yaml tasks from the PR branch", async () => {
+    const list = vi.fn();
+    list.mockResolvedValueOnce([dirEntry("dashboard")]);
+    list.mockResolvedValueOnce([]);
+
+    const listOpenPullRequests = vi.fn().mockResolvedValue([
+      openPullRequest({
+        number: 5,
+        htmlUrl: "https://github.com/owner/repo/pull/5",
+        headRef: "feature/dashboard-T5",
+      }),
+    ]);
+    const listPullRequestFiles = vi.fn().mockResolvedValue([
+      { filename: "docs/features/dashboard/tasks/T5.yaml" },
+      { filename: "docs/features/dashboard/tasks/notes.yaml" },
+      { filename: "docs/features/dashboard/tasks/task-5.yaml" },
+      { filename: "docs/other/tasks/T1.yaml" },
+    ]);
+
+    const get = vi.fn();
+    get.mockImplementation(async (p: string, opts?: { ref?: string }) => {
+      if (p === "docs/features/dashboard/status.yaml") {
+        return `feature_id: dashboard\ntitle: Dashboard\nfeature_status: in_implementation\n`;
+      }
+      if (
+        p === "docs/features/dashboard/tasks/T5.yaml" &&
+        opts?.ref === "feature/dashboard-T5"
+      ) {
+        return `id: T5\ntitle: Left task tracking panel\nstatus: in_review\ndepends_on: []\n`;
+      }
+      throw new GitHubNotFoundError(p);
+    });
+
+    const features = await fetchPullRequestTaskData(
+      makeClient({
+        listDirectory: list,
+        getFileContent: get,
+        listOpenPullRequests,
+        listPullRequestFiles,
+      }),
+    );
+
+    expect(listPullRequestFiles).toHaveBeenCalledWith(5);
+    expect(get).toHaveBeenCalledWith("docs/features/dashboard/tasks/T5.yaml", {
+      ref: "feature/dashboard-T5",
+    });
+    expect(features[0].tasks).toHaveLength(1);
+    expect(features[0].tasks[0]).toMatchObject({
+      id: "T5",
+      title: "Left task tracking panel",
+      status: "in_review",
+      branch: "feature/dashboard-T5",
+      workspace_pr: {
+        url: "https://github.com/owner/repo/pull/5",
+        status: "open",
+      },
+    });
+  });
+
+  it("matches an open PR branch by task id when the base task has no branch field", async () => {
+    const list = vi.fn();
+    list.mockResolvedValueOnce([dirEntry("dashboard")]);
+    list.mockResolvedValueOnce([
+      fileEntry("T4.yaml", "docs/features/dashboard/tasks"),
+    ]);
+
+    const get = vi.fn();
+    get.mockImplementation(async (p: string, opts?: { ref?: string }) => {
+      if (p === "docs/features/dashboard/status.yaml") {
+        return `feature_id: dashboard\nfeature_status: in_implementation\n`;
+      }
+      if (
+        p === "docs/features/dashboard/tasks/T4.yaml" &&
+        opts?.ref === "feature/dashboard-T4"
+      ) {
+        return `id: T4\ntitle: Branch task\nstatus: ready\ndepends_on: []\n`;
+      }
+      if (p === "docs/features/dashboard/tasks/T4.yaml") {
+        return `id: T4\ntitle: Base task\nstatus: todo\ndepends_on: []\n`;
+      }
+      throw new GitHubNotFoundError(p);
+    });
+
+    const features = await fetchPullRequestTaskData(
+      makeClient({
+        listDirectory: list,
+        getFileContent: get,
+        listOpenPullRequests: vi.fn().mockResolvedValue([openPullRequest()]),
+      }),
+    );
+
+    expect(features[0].tasks[0].status).toBe("ready");
+  });
+
+  it("uses the branch feature segment to disambiguate repeated task ids", async () => {
+    const list = vi.fn();
+    list.mockResolvedValueOnce([dirEntry("alpha"), dirEntry("dashboard")]);
+    list.mockResolvedValueOnce([
+      fileEntry("T4.yaml", "docs/features/alpha/tasks"),
+    ]);
+    list.mockResolvedValueOnce([
+      fileEntry("T4.yaml", "docs/features/dashboard/tasks"),
+    ]);
+
+    const get = vi.fn();
+    get.mockImplementation(async (p: string, opts?: { ref?: string }) => {
+      if (p.endsWith("/status.yaml")) {
+        return `feature_id: x\nfeature_status: in_implementation\n`;
+      }
+      if (
+        p === "docs/features/dashboard/tasks/T4.yaml" &&
+        opts?.ref === "feature/dashboard-T4"
+      ) {
+        return `id: T4\ntitle: Dashboard branch task\nstatus: in_review\ndepends_on: []\n`;
+      }
+      if (p === "docs/features/alpha/tasks/T4.yaml") {
+        return `id: T4\ntitle: Alpha base task\nstatus: todo\ndepends_on: []\n`;
+      }
+      if (p === "docs/features/dashboard/tasks/T4.yaml") {
+        return `id: T4\ntitle: Dashboard base task\nstatus: todo\ndepends_on: []\n`;
+      }
+      throw new GitHubNotFoundError(p);
+    });
+
+    const features = await fetchPullRequestTaskData(
+      makeClient({
+        listDirectory: list,
+        getFileContent: get,
+        listOpenPullRequests: vi.fn().mockResolvedValue([openPullRequest()]),
+      }),
+    );
+
+    const alpha = features.find((feature) => feature.id === "alpha")!;
+    const dashboard = features.find((feature) => feature.id === "dashboard")!;
+    expect(alpha.tasks[0].status).toBe("todo");
+    expect(dashboard.tasks[0].status).toBe("in_review");
   });
 
   it("falls back to defaults when status.yaml is missing", async () => {
