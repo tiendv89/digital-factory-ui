@@ -1,28 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import type { ParsedFeature } from "@/services/yaml-parser";
 import { useBoardContext } from "./KanbanBoard.context";
 import { FeatureRow } from "../FeatureRow";
 import { STATUS_COLUMNS } from "../../lib/status";
+import { matchesSearch, matchesStatusFilter } from "../../lib/filter";
 
 const COLUMN_WIDTH = 200;
-
-function matchesSearch(feature: ParsedFeature, query: string): boolean {
-  if (!query) return true;
-  const q = query.toLowerCase();
-  if (feature.title.toLowerCase().includes(q)) return true;
-  if (feature.id.toLowerCase().includes(q)) return true;
-  return feature.tasks.some(
-    (t) =>
-      t.title.toLowerCase().includes(q) || t.id.toLowerCase().includes(q),
-  );
-}
-
-function matchesFilters(feature: ParsedFeature, statuses: string[]): boolean {
-  if (statuses.length === 0) return true;
-  return feature.tasks.some((t) => statuses.includes(t.status));
-}
 
 function ColumnHeader({
   label,
@@ -85,7 +69,7 @@ export function KanbanBoard() {
       features.filter(
         (f) =>
           matchesSearch(f, searchQuery) &&
-          matchesFilters(f, activeFilters.statuses),
+          matchesStatusFilter(f, activeFilters.statuses),
       ),
     [features, searchQuery, activeFilters],
   );
