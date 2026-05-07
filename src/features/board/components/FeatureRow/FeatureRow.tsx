@@ -18,7 +18,7 @@ type FeatureRowProps = {
   isExpanded: boolean;
   onToggle: () => void;
   onSelectTask: (task: SelectedTask) => void;
-  columnWidth: number;
+  minColumnWidth: number;
 };
 
 function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
@@ -61,7 +61,7 @@ export function FeatureRow({
   isExpanded,
   onToggle,
   onSelectTask,
-  columnWidth,
+  minColumnWidth,
 }: FeatureRowProps) {
   const totalTasks = feature.tasks.length;
   const doneTasks = feature.tasks.filter((t) => t.status === "done").length;
@@ -82,10 +82,8 @@ export function FeatureRow({
     }
   }
 
-  const totalWidth = STATUS_COLUMNS.length * columnWidth;
-
   return (
-    <div className="border-b border-border" style={{ minWidth: totalWidth }}>
+    <div className="w-full border-b border-border">
       {/* Feature header — spans full width */}
       <div
         role="button"
@@ -94,8 +92,7 @@ export function FeatureRow({
         onKeyDown={handleKeyDown}
         aria-expanded={isExpanded}
         aria-controls={`feature-tasks-${feature.id}`}
-        className="flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
-        style={{ minWidth: totalWidth }}
+        className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       >
         <ChevronRight
           className={
@@ -123,16 +120,15 @@ export function FeatureRow({
       {isExpanded && (
         <div
           id={`feature-tasks-${feature.id}`}
-          className="flex border-t border-border"
-          style={{ minWidth: totalWidth }}
+          className="flex w-full border-t border-border"
         >
           {STATUS_COLUMNS.map((col) => {
             const colTasks = tasksByStatus[col.key] ?? [];
             return (
               <div
                 key={col.key}
-                className="flex flex-col gap-2 border-r border-border p-2 last:border-r-0"
-                style={{ minWidth: columnWidth, width: columnWidth }}
+                className="flex min-w-0 flex-1 flex-col gap-2 border-r border-border p-2 last:border-r-0"
+                style={{ minWidth: minColumnWidth }}
                 role="group"
                 aria-label={`${col.label} tasks for ${feature.title || feature.id}`}
               >

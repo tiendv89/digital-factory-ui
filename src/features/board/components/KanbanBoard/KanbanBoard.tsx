@@ -6,23 +6,21 @@ import { FeatureRow } from "../FeatureRow";
 import { STATUS_COLUMNS } from "../../lib/status";
 import { matchesSearch, matchesStatusFilter } from "../../lib/filter";
 
-const COLUMN_WIDTH = 200;
+const MIN_COLUMN_WIDTH = 140;
 
 function ColumnHeader({
   label,
   color,
   count,
-  width,
 }: {
   label: string;
   color: string;
   count: number;
-  width: number;
 }) {
   return (
     <div
-      className="flex shrink-0 items-center justify-between border-r border-border bg-bg px-3 py-2.5 last:border-r-0"
-      style={{ width, minWidth: width }}
+      className="flex min-w-0 flex-1 items-center justify-between border-r border-border bg-bg px-3 py-2.5 last:border-r-0"
+      style={{ minWidth: MIN_COLUMN_WIDTH }}
     >
       <div className="flex items-center gap-2">
         <div
@@ -111,16 +109,14 @@ export function KanbanBoard() {
     );
   }
 
-  const totalWidth = STATUS_COLUMNS.length * COLUMN_WIDTH;
-
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Scrollable board area */}
       <div className="flex-1 overflow-auto">
-        <div style={{ minWidth: totalWidth }}>
+        <div className="w-full" style={{ minWidth: MIN_COLUMN_WIDTH * STATUS_COLUMNS.length }}>
           {/* Sticky column header row */}
           <div
-            className="sticky top-0 z-10 flex border-b border-border"
+            className="sticky top-0 z-10 flex w-full border-b border-border"
             role="row"
             aria-label="Status columns"
           >
@@ -130,7 +126,6 @@ export function KanbanBoard() {
                 label={col.label}
                 color={col.color}
                 count={columnCounts[col.key] ?? 0}
-                width={COLUMN_WIDTH}
               />
             ))}
           </div>
@@ -144,7 +139,7 @@ export function KanbanBoard() {
                   isExpanded={expandedFeatureIds.has(feature.id)}
                   onToggle={() => toggleFeature(feature.id)}
                   onSelectTask={setSelectedTask}
-                  columnWidth={COLUMN_WIDTH}
+                  minColumnWidth={MIN_COLUMN_WIDTH}
                 />
               </div>
             ))}
