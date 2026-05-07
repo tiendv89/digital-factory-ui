@@ -11,6 +11,7 @@ import {
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import type { StoredWorkspace } from "@/types/workspace";
 import { useBoardData, type UseBoardDataOptions } from "../../hooks/useBoardData";
+import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
 import type { ActiveFilters, BoardLoadError } from "../../types";
 
 export type SelectedTask = {
@@ -22,6 +23,7 @@ export type SelectedTask = {
 export type BoardContextValue = {
   workspace: StoredWorkspace;
   features: ParsedFeature[];
+  trackedFeatures: ParsedFeature[];
   loading: boolean;
   error: BoardLoadError | null;
   reload: () => void;
@@ -50,6 +52,12 @@ export function BoardProvider({
   const { features, loading, error, reload } = useBoardData(workspace, {
     clientFactory,
   });
+  const {
+    trackedFeatures,
+    reload: reloadTracking,
+  } = usePullRequestTaskData(workspace, {
+    clientFactory,
+  });
 
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
@@ -72,13 +80,19 @@ export function BoardProvider({
     });
   }, []);
 
+  const reloadAll = useCallback(() => {
+    reload();
+    reloadTracking();
+  }, [reload, reloadTracking]);
+
   const value = useMemo<BoardContextValue>(
     () => ({
       workspace,
       features,
+      trackedFeatures,
       loading,
       error,
-      reload,
+      reload: reloadAll,
       searchQuery,
       setSearchQuery,
       activeFilters,
@@ -91,9 +105,10 @@ export function BoardProvider({
     [
       workspace,
       features,
+      trackedFeatures,
       loading,
       error,
-      reload,
+      reloadAll,
       searchQuery,
       activeFilters,
       expandedFeatureIds,

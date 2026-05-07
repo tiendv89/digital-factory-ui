@@ -106,6 +106,16 @@ describe("GitHubClient", () => {
       const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
       expect(url).toBe("https://api.github.com/repos/myorg/myrepo/contents/docs/features");
     });
+
+    it("adds ref query when reading from a branch", async () => {
+      fetchMock.mockResolvedValueOnce(makeResponse(200, []));
+      const client = new GitHubClient({ owner: "myorg", repo: "myrepo" });
+      await client.listDirectory("docs/features", { ref: "feature/dashboard-T4" });
+      const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(
+        "https://api.github.com/repos/myorg/myrepo/contents/docs/features?ref=feature%2Fdashboard-T4",
+      );
+    });
   });
 
   describe("getFileContent", () => {
@@ -152,6 +162,173 @@ describe("GitHubClient", () => {
       fetchMock.mockResolvedValueOnce(makeResponse(404, {}));
       const client = new GitHubClient({ owner: "o", repo: "r" });
       await expect(client.getFileContent("path")).rejects.toThrow(GitHubNotFoundError);
+    });
+
+    it("adds ref query when reading a task YAML from a PR branch", async () => {
+      const encoded = Buffer.from("status: in_review\n", "utf-8").toString("base64");
+      fetchMock.mockResolvedValueOnce(
+        makeResponse(200, { content: encoded, encoding: "base64" }),
+      );
+      const client = new GitHubClient({ owner: "owner", repo: "repo" });
+
+      await client.getFileContent("docs/features/dashboard/tasks/T4.yaml", {
+        ref: "feature/dashboard-T4",
+      });
+
+      const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(
+        "https://api.github.com/repos/owner/repo/contents/docs/features/dashboard/tasks/T4.yaml?ref=feature%2Fdashboard-T4",
+      );
+    });
+  });
+
+  describe("listOpenPullRequests", () => {
+    it("requests open pulls and returns normalized branch metadata", async () => {
+      fetchMock.mockResolvedValueOnce(
+        makeResponse(200, [
+          {
+            number: 4,
+            state: "open",
+            html_url: "https://github.com/owner/repo/pull/4",
+            head: {
+              ref: "feature/dashboard-T4",
+              sha: "abc123",
+            },
+          },
+        ]),
+      );
+      const client = new GitHubClient({ owner: "owner", repo: "repo" });
+
+      const pulls = await client.listOpenPullRequests();
+
+      const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(
+        "https://api.github.com/repos/owner/repo/pulls?state=open&per_page=100",
+      );
+      expect(pulls).toEqual([
+        {
+          number: 4,
+          state: "open",
+          htmlUrl: "https://github.com/owner/repo/pull/4",
+          headRef: "feature/dashboard-T4",
+          headSha: "abc123",
+        },
+      ]);
+    });
+
+    it("continues reading open pull request pages until the final partial page", async () => {
+      fetchMock
+        .mockResolvedValueOnce(
+          makeResponse(
+            200,
+            Array.from({ length: 100 }, (_, index) => ({
+              number: index + 1,
+              state: "open",
+              html_url: `https://github.com/owner/repo/pull/${index + 1}`,
+              head: {
+                ref: `feature/dashboard-T${index + 1}`,
+                sha: `sha-${index + 1}`,
+              },
+            })),
+          ),
+        )
+        .mockResolvedValueOnce(
+          makeResponse(200, [
+            {
+              number: 101,
+              state: "open",
+              html_url: "https://github.com/owner/repo/pull/101",
+              head: {
+                ref: "feature/dashboard-T101",
+                sha: "sha-101",
+              },
+            },
+          ]),
+        );
+      const client = new GitHubClient({ owner: "owner", repo: "repo" });
+
+      const pulls = await client.listOpenPullRequests();
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect((fetchMock.mock.calls[0] as [string, RequestInit])[0]).toBe(
+        "https://api.github.com/repos/owner/repo/pulls?state=open&per_page=100",
+      );
+      expect((fetchMock.mock.calls[1] as [string, RequestInit])[0]).toBe(
+        "https://api.github.com/repos/owner/repo/pulls?state=open&per_page=100&page=2",
+      );
+      expect(pulls).toHaveLength(101);
+      expect(pulls[100]).toMatchObject({
+        number: 101,
+        headRef: "feature/dashboard-T101",
+      });
+    });
+  });
+
+  describe("listPullRequestFiles", () => {
+    it("requests files for a pull request and returns normalized filenames", async () => {
+      fetchMock.mockResolvedValueOnce(
+        makeResponse(200, [
+          {
+            filename: "docs/features/dashboard/tasks/T5.yaml",
+            status: "modified",
+            sha: "abc123",
+          },
+        ]),
+      );
+      const client = new GitHubClient({ owner: "owner", repo: "repo" });
+
+      const files = await client.listPullRequestFiles(5);
+
+      const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(url).toBe(
+        "https://api.github.com/repos/owner/repo/pulls/5/files?per_page=100",
+      );
+      expect(files).toEqual([
+        {
+          filename: "docs/features/dashboard/tasks/T5.yaml",
+          status: "modified",
+          sha: "abc123",
+        },
+      ]);
+    });
+
+    it("continues reading pull request file pages until the final partial page", async () => {
+      fetchMock
+        .mockResolvedValueOnce(
+          makeResponse(
+            200,
+            Array.from({ length: 100 }, (_, index) => ({
+              filename: `docs/features/dashboard/tasks/T${index + 1}.yaml`,
+              status: "modified",
+              sha: `sha-${index + 1}`,
+            })),
+          ),
+        )
+        .mockResolvedValueOnce(
+          makeResponse(200, [
+            {
+              filename: "docs/features/dashboard/tasks/T101.yaml",
+              status: "added",
+              sha: "sha-101",
+            },
+          ]),
+        );
+      const client = new GitHubClient({ owner: "owner", repo: "repo" });
+
+      const files = await client.listPullRequestFiles(5);
+
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect((fetchMock.mock.calls[0] as [string, RequestInit])[0]).toBe(
+        "https://api.github.com/repos/owner/repo/pulls/5/files?per_page=100",
+      );
+      expect((fetchMock.mock.calls[1] as [string, RequestInit])[0]).toBe(
+        "https://api.github.com/repos/owner/repo/pulls/5/files?per_page=100&page=2",
+      );
+      expect(files).toHaveLength(101);
+      expect(files[100]).toMatchObject({
+        filename: "docs/features/dashboard/tasks/T101.yaml",
+        status: "added",
+      });
     });
   });
 });

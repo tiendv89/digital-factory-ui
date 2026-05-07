@@ -1,14 +1,18 @@
 "use client";
 
-import { ArrowRight, ChevronRight, Layers3 } from "lucide-react";
+import { ArrowRight, ChevronRight, Clock3, Layers3 } from "lucide-react";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
+import {
+  formatTimestamp,
+  getFeatureLastModifiedAt,
+  isTodayTimestamp,
+} from "@/lib/time";
 import type { SelectedTask } from "../KanbanBoard/KanbanBoard.context";
 import { TaskCard } from "../TaskCard";
 import {
   STATUS_COLUMNS,
   getFeatureStatusColor,
   getFeatureStatusLabel,
-  getFeatureNextAction,
 } from "../../lib/status";
 
 type FeatureRowProps = {
@@ -27,7 +31,10 @@ function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
 
   if (tasks.length === 0) {
     return (
-      <div className="relative h-1.5 w-24 rounded" style={{ background: "#e4e7ef" }} />
+      <div
+        className="relative h-1.5 w-24 rounded"
+        style={{ background: "#e4e7ef" }}
+      />
     );
   }
 
@@ -100,7 +107,10 @@ export function FeatureRow({
 }: FeatureRowProps) {
   const totalTasks = feature.tasks.length;
   const doneTasks = feature.tasks.filter((t) => t.status === "done").length;
-  const nextAction = getFeatureNextAction(feature.tasks);
+  const lastModifiedAt = getFeatureLastModifiedAt(feature);
+  const modifiedToday = lastModifiedAt
+    ? isTodayTimestamp(lastModifiedAt)
+    : false;
   const gridTemplateColumns = `repeat(${STATUS_COLUMNS.length}, minmax(${minColumnWidth}px, 1fr))`;
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -139,6 +149,24 @@ export function FeatureRow({
         </span>
         <SegmentBar tasks={feature.tasks} />
         <span className="min-w-0 flex-1" aria-hidden="true" />
+        {lastModifiedAt && (
+          <span
+            data-feature-modified-at={lastModifiedAt}
+            data-modified-today={modifiedToday ? "true" : "false"}
+            className={
+              "ml-auto flex min-w-0 shrink-0 items-center gap-1.5 rounded px-2 py-1 text-xs " +
+              (modifiedToday
+                ? "bg-success-bg font-semibold text-success"
+                : "text-text-muted")
+            }
+            title={`Modified ${lastModifiedAt}`}
+          >
+            <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="truncate">
+              Modified {formatTimestamp(lastModifiedAt)}
+            </span>
+          </span>
+        )}
       </div>
 
       {/* Expanded task grid — 7 equal columns */}
@@ -148,7 +176,9 @@ export function FeatureRow({
           className="w-full border-t border-border"
         >
           {feature.tasks.map((task) => {
-            const taskColumnKey = STATUS_COLUMNS.some((col) => col.key === task.status)
+            const taskColumnKey = STATUS_COLUMNS.some(
+              (col) => col.key === task.status,
+            )
               ? task.status
               : STATUS_COLUMNS[0].key;
 

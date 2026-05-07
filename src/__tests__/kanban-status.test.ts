@@ -222,6 +222,82 @@ describe("FeatureRow task grid", () => {
     expect(html).not.toContain("blocked: 0");
     expect(html).not.toContain("done: 0");
   });
+
+  it("renders the feature last modified timestamp when task timestamps exist", () => {
+    const feature: ParsedFeature = {
+      id: "auth-system",
+      title: "Authentication System",
+      featureStatus: "in_implementation",
+      tasks: [
+        {
+          id: "T1",
+          title: "Setup OAuth providers",
+          status: "todo",
+          dependsOn: [],
+          log: [
+            {
+              action: "created",
+              by: "agent",
+              at: "2026-05-05T09:30:00Z",
+            },
+          ],
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureRow, {
+        feature,
+        isExpanded: false,
+        onToggle: () => undefined,
+        onSelectTask: () => undefined,
+        minColumnWidth: 140,
+      }),
+    );
+
+    expect(html).toContain("Modified");
+    expect(html).toContain("May 5");
+    expect(html).toContain("data-feature-modified-at");
+    expect(html).toContain("ml-auto");
+    expect(html).toContain('data-modified-today="false"');
+  });
+
+  it("highlights the feature timestamp when it was modified today", () => {
+    const feature: ParsedFeature = {
+      id: "auth-system",
+      title: "Authentication System",
+      featureStatus: "in_implementation",
+      tasks: [
+        {
+          id: "T1",
+          title: "Setup OAuth providers",
+          status: "todo",
+          dependsOn: [],
+          log: [
+            {
+              action: "created",
+              by: "agent",
+              at: new Date().toISOString(),
+            },
+          ],
+        },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureRow, {
+        feature,
+        isExpanded: false,
+        onToggle: () => undefined,
+        onSelectTask: () => undefined,
+        minColumnWidth: 140,
+      }),
+    );
+
+    expect(html).toContain('data-modified-today="true"');
+    expect(html).toContain("bg-success-bg");
+    expect(html).toContain("text-success");
+  });
 });
 
 describe("TaskCard", () => {
