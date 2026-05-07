@@ -5,3 +5,4 @@ export {
   type BoardProviderProps,
   type SelectedTask,
 } from "./KanbanBoard.context";
+export { KanbanBoard } from "./KanbanBoard";
