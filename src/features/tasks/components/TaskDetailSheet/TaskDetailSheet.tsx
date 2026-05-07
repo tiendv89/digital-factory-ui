@@ -57,8 +57,8 @@ export function TaskDetailSheet({
     <div
       aria-hidden={!open}
       className={
-        "pointer-events-none fixed inset-0 z-40 " +
-        (open ? "pointer-events-auto" : "")
+        "fixed inset-0 z-40 " +
+        (open ? "pointer-events-auto" : "pointer-events-none")
       }
     >
       <button
@@ -163,12 +163,12 @@ function DetailHeader({
     <header className="flex items-start justify-between gap-3 border-b border-border bg-surface px-6 py-4">
       <div className="flex min-w-0 flex-col gap-2">
         <div className="flex items-center gap-2">
-          <span className="rounded-md bg-chip-bg px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
+          <span className="bg-chip-bg px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
             {task.id}
           </span>
           <span
             className={
-              "rounded-md px-2 py-0.5 text-xs font-semibold uppercase tracking-wide " +
+              "px-2 py-0.5 text-xs font-semibold uppercase tracking-wide " +
               statusStyle.bg +
               " " +
               statusStyle.text
@@ -194,7 +194,7 @@ function DetailHeader({
         type="button"
         onClick={onClose}
         aria-label="Close"
-        className="shrink-0 rounded p-1 text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
+        className="shrink-0 p-1 text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
       >
         <X className="h-4 w-4" aria-hidden="true" />
       </button>
@@ -277,7 +277,7 @@ function MetadataSection({
             {task.dependsOn.map((dep) => (
               <span
                 key={dep}
-                className="rounded bg-chip-bg px-2 py-0.5 text-xs font-medium text-text-secondary"
+                className="bg-chip-bg px-2 py-0.5 text-xs font-medium text-text-secondary"
               >
                 {dep}
               </span>
@@ -301,7 +301,7 @@ function MetadataSection({
         fullWidth
       >
         {task.blockedReason ? (
-          <div className="flex items-start gap-2 rounded-lg border border-danger bg-danger-bg px-3 py-2">
+          <div className="flex items-start gap-2 border border-danger bg-danger-bg px-3 py-2">
             <AlertCircle
               className="mt-0.5 h-4 w-4 shrink-0 text-danger"
               aria-hidden="true"
@@ -315,7 +315,7 @@ function MetadataSection({
 
       <MetaField label="Blocked Context" fullWidth>
         {task.blockedContext ? (
-          <pre className="whitespace-pre-wrap rounded-lg bg-yellow-bg px-3 py-2 text-xs text-yellow">
+          <pre className="whitespace-pre-wrap bg-yellow-bg px-3 py-2 text-xs text-yellow">
             {JSON.stringify(task.blockedContext, null, 2)}
           </pre>
         ) : (
@@ -354,9 +354,7 @@ function NoneValue() {
 
 function PullRequestsSection({ task }: { task: ParsedTask }) {
   const workspacePrUrl = task.workspace_pr?.url ?? undefined;
-  const workspacePrStatus = task.workspace_pr?.status ?? undefined;
   const repoPrUrl = task.pr?.url ?? undefined;
-  const repoPrStatus = task.pr?.status ?? undefined;
 
   return (
     <section className="mt-6 border-t border-border pt-5">
@@ -367,13 +365,11 @@ function PullRequestsSection({ task }: { task: ParsedTask }) {
         <PullRequestCard
           label="Workspace PR"
           url={workspacePrUrl}
-          status={workspacePrStatus}
           icon={<ExternalLink className="h-4 w-4" aria-hidden="true" />}
         />
         <PullRequestCard
           label="Repository PR"
           url={repoPrUrl}
-          status={repoPrStatus}
           icon={<GitPullRequest className="h-4 w-4" aria-hidden="true" />}
         />
       </div>
@@ -381,38 +377,20 @@ function PullRequestsSection({ task }: { task: ParsedTask }) {
   );
 }
 
-function PrStatusBadge({ status }: { status: string }) {
-  const isOpen = status.toLowerCase() === "open";
-  return (
-    <span
-      className={
-        "rounded px-1.5 py-0.5 text-xs font-medium " +
-        (isOpen
-          ? "bg-success-bg text-success"
-          : "bg-muted-bg text-text-muted")
-      }
-    >
-      {status}
-    </span>
-  );
-}
-
 function PullRequestCard({
   label,
   url,
-  status,
   icon,
 }: {
   label: string;
   url: string | undefined;
-  status: string | undefined;
   icon: React.ReactNode;
 }) {
   if (!url) {
     return (
       <div
         aria-disabled="true"
-        className="pointer-events-none flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2.5 opacity-70"
+        className="pointer-events-none flex items-center justify-between border border-border bg-surface px-3 py-2.5 opacity-70"
       >
         <div className="flex items-center gap-2">
           <span className="text-text-muted">{icon}</span>
@@ -428,14 +406,13 @@ function PullRequestCard({
       href={url}
       target="_blank"
       rel="noreferrer noopener"
-      className="flex items-center justify-between rounded-lg border border-border bg-surface px-3 py-2.5 transition-colors hover:border-primary-light hover:bg-surface-subtle"
+      className="flex items-center justify-between border border-border bg-surface px-3 py-2.5 transition-colors hover:border-primary-light hover:bg-surface-subtle"
     >
       <div className="flex items-center gap-2">
         <span className="text-text-secondary">{icon}</span>
         <span className="text-sm font-medium text-text-primary">{label}</span>
       </div>
       <div className="flex items-center gap-2">
-        {status ? <PrStatusBadge status={status} /> : null}
         <ExternalLink
           className="h-3.5 w-3.5 text-text-muted"
           aria-hidden="true"

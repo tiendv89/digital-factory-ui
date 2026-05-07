@@ -42,30 +42,24 @@ const STATUS_STYLES: Record<string, StatusBadgeStyle> = {
   },
 };
 
-const FALLBACK: StatusBadgeStyle = {
-  bg: "bg-muted-bg",
-  text: "text-text-secondary",
-  dot: "bg-text-muted",
-};
-
 export function getStatusStyle(status: string): StatusBadgeStyle {
-  return STATUS_STYLES[status] ?? FALLBACK;
+  return STATUS_STYLES[status] ?? STATUS_STYLES["todo"];
 }
 
 export function formatStatusLabel(status: string): string {
   return status.replace(/_/g, " ");
 }
 
-const STATUS_NEXT_ACTIONS: Record<string, string> = {
-  todo: "Awaiting dependencies",
-  ready: "Ready to claim",
-  in_progress: "Implementation underway",
-  blocked: "Needs attention — resolve block",
-  in_review: "Awaiting human review",
-  done: "Completed",
-  cancelled: "Cancelled",
+export const NEXT_ACTIONS: Record<string, string> = {
+  todo: "Auto-ready when last dependency is done",
+  ready: "Start implementation",
+  in_progress: "Waiting for result",
+  blocked: "Human resolves",
+  in_review: "Human approves or rejects",
+  done: "",
+  cancelled: "Do nothing",
 };
 
 export function getNextActionLabel(status: string): string | undefined {
-  return STATUS_NEXT_ACTIONS[status];
+  return NEXT_ACTIONS[status];
 }

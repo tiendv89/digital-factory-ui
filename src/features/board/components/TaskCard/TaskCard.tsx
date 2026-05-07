@@ -34,7 +34,7 @@ export function TaskCard({ task, featureId, featureTitle, onSelect }: TaskCardPr
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       data-task-id={task.id}
-      className="relative min-h-[76px] cursor-pointer rounded-sm border border-border bg-surface p-3 transition-colors hover:border-primary hover:bg-surface-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      className="relative min-h-[76px] cursor-pointer border border-border bg-surface p-3 transition-colors hover:border-primary hover:bg-surface-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
       aria-label={`Task ${task.id}: ${task.title}`}
     >
       <div className="mb-1 flex items-start gap-1">
