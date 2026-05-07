@@ -19,6 +19,7 @@ import {
   TaskTrackingPanel,
   type PanelSelection,
 } from "@/features/board/components/TaskTrackingPanel";
+import { TaskDetailSheetMount } from "@/features/tasks";
 
 export default function BoardPage() {
   const router = useRouter();
@@ -70,6 +71,7 @@ export default function BoardPage() {
             <TaskTrackingDetailPanel selectedPanel={selectedPanel} />
           )}
         </div>
+        <TaskDetailSheetMount />
       </BoardProvider>
     </main>
   );

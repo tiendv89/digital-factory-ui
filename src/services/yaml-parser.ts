@@ -17,6 +17,7 @@ export type ParsedTask = {
   pr?: { url?: string; status?: string };
   workspace_pr?: { url?: string; status?: string };
   blockedReason?: string;
+  blockedContext?: Record<string, unknown>;
   log?: LogEntry[];
 };
 
@@ -44,6 +45,7 @@ type RawTask = {
   pr?: { url?: string; status?: string };
   workspace_pr?: { url?: string; status?: string };
   blocked_reason?: string;
+  blocked_context?: Record<string, unknown>;
   log?: Array<{ action?: string; by?: string; at?: string; note?: string }>;
 };
 
@@ -116,6 +118,9 @@ export function parseTaskYaml(id: string, raw: string): ParsedTask | null {
     ...(data.workspace_pr !== undefined ? { workspace_pr: data.workspace_pr } : {}),
     ...(typeof data.blocked_reason === "string" && data.blocked_reason !== null
       ? { blockedReason: data.blocked_reason }
+      : {}),
+    ...(data.blocked_context != null && typeof data.blocked_context === "object"
+      ? { blockedContext: data.blocked_context }
       : {}),
     ...(log !== undefined ? { log } : {}),
   };
