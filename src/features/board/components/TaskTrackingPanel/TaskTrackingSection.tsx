@@ -1,14 +1,36 @@
 "use client";
 
-import { ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { TaskTrackingItem } from "./TaskTrackingItem";
 import type { TrackedSection, TrackedStatus } from "./TaskTrackingPanel.types";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 
-const STATUS_DOT_CLASS: Record<TrackedStatus, string> = {
-  in_progress: "bg-warning",
-  ready: "bg-ready",
-  in_review: "bg-purple",
+const STATUS_ICON_STYLE: Record<
+  TrackedStatus,
+  { icon: LucideIcon; boxClass: string; iconClass: string }
+> = {
+  in_progress: {
+    icon: Zap,
+    boxClass: "bg-warning-bg",
+    iconClass: "text-warning",
+  },
+  in_review: {
+    icon: Clock3,
+    boxClass: "bg-purple-bg",
+    iconClass: "text-purple",
+  },
+  ready: {
+    icon: Check,
+    boxClass: "bg-primary-light",
+    iconClass: "text-primary",
+  },
 };
 
 export type TaskTrackingSectionProps = {
@@ -26,6 +48,7 @@ export function TaskTrackingSection({
 }: TaskTrackingSectionProps) {
   const { label, status, items } = section;
   const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
+  const StatusIcon = STATUS_ICON_STYLE[status].icon;
 
   return (
     <section
@@ -36,7 +59,7 @@ export function TaskTrackingSection({
         type="button"
         onClick={onToggle}
         aria-expanded={isExpanded}
-        className="flex w-full items-center justify-between px-3 pb-2 pt-3 text-left transition-colors hover:bg-surface focus:outline-none focus-visible:bg-primary-light/30"
+        className="flex h-12 w-full items-center justify-between px-4 text-left transition-colors hover:bg-surface focus:outline-none focus-visible:bg-primary-light/30"
       >
         <div className="flex items-center gap-2">
           <ChevronIcon
@@ -44,22 +67,32 @@ export function TaskTrackingSection({
             aria-hidden="true"
           />
           <span
-            className={"h-1.5 w-1.5 shrink-0 rounded-full " + STATUS_DOT_CLASS[status]}
+            className={
+              "flex h-5 w-5 shrink-0 items-center justify-center " +
+              STATUS_ICON_STYLE[status].boxClass
+            }
             aria-hidden="true"
-          />
+          >
+            <StatusIcon
+              className={"h-3 w-3 " + STATUS_ICON_STYLE[status].iconClass}
+            />
+          </span>
           <span className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
             {label}
           </span>
         </div>
-        <span className="font-mono text-[10px] text-text-muted">
+        <span
+          aria-label={`${label} task count`}
+          className="min-w-8 border border-border bg-surface px-2 text-center font-mono text-sm font-bold leading-6 text-text-primary shadow-sm"
+        >
           {items.length}
         </span>
       </button>
 
       {isExpanded && (
-        <div className="flex flex-col gap-1 px-2 pb-3">
+        <div className="flex flex-col gap-2 px-4 pb-3">
           {items.length === 0 ? (
-            <p className="px-3 py-2 text-[11px] italic text-text-muted">
+            <p className="flex min-h-[68px] items-center justify-center border border-dashed border-border text-[11px] text-text-muted">
               No tasks.
             </p>
           ) : (

@@ -2,6 +2,7 @@
 
 import { getNextAction } from "@/features/board/lib/status";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
+import { ArrowRight, Bot, Layers } from "lucide-react";
 
 export type TaskTrackingItemProps = {
   task: ParsedTask;
@@ -24,7 +25,13 @@ export function TaskTrackingItem({
     ? ACTOR_TYPE_LABEL[task.execution.actor_type] ?? task.execution.actor_type
     : null;
 
-  const nextInfo = task.blockedReason
+  const priorityLabel = task.priority?.trim()
+    ? task.priority.trim().toUpperCase()
+    : null;
+
+  const nextInfo = task.description?.trim()
+    ? task.description
+    : task.blockedReason
     ? task.blockedReason
     : getNextAction(task.status);
 
@@ -32,26 +39,41 @@ export function TaskTrackingItem({
     <button
       type="button"
       onClick={() => onSelect(task, feature)}
-      className="group flex w-full flex-col gap-1 rounded-md border border-transparent px-3 py-2 text-left transition-colors hover:border-border hover:bg-surface-subtle focus:outline-none focus-visible:border-primary focus-visible:bg-primary-light/30"
+      className="group flex w-full flex-col gap-2 border border-border bg-surface px-3 py-3 text-left transition-colors hover:border-primary-light hover:bg-surface-subtle focus:outline-none focus-visible:border-primary focus-visible:bg-primary-light/30"
     >
-      <p className="truncate text-xs font-medium text-text-primary">
-        <span className="font-mono text-[10px] text-text-muted">{task.id}</span>{" "}
-        {task.title || "Untitled task"}
-      </p>
-      <p className="truncate text-[11px] text-text-muted">
-        {feature.title || feature.id}
-      </p>
-      {(actorLabel || nextInfo) && (
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-text-muted">
-          {actorLabel && (
-            <span className="rounded bg-chip-bg px-1.5 py-0.5 font-mono">
-              {actorLabel}
-            </span>
-          )}
-          {nextInfo && (
-            <span className="truncate italic">{nextInfo}</span>
-          )}
-        </div>
+      <div className="flex min-w-0 items-start gap-2">
+        <span
+          aria-label={`Task ${task.id}`}
+          className="shrink-0 border border-primary-light bg-primary-light px-2 py-0.5 font-mono text-[11px] font-bold leading-4 text-primary"
+        >
+          {task.id}
+        </span>
+        <p className="line-clamp-2 min-w-0 text-xs font-semibold leading-snug text-text-primary">
+          {task.title || "Untitled task"}
+        </p>
+      </div>
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] leading-4 text-text-secondary">
+        <span className="flex max-w-full items-center gap-1 bg-chip-bg px-1.5">
+          <Layers className="h-2.5 w-2.5 shrink-0 text-text-secondary" />
+          <span className="truncate">{feature.title || feature.id}</span>
+        </span>
+        {priorityLabel && (
+          <span className="bg-chip-bg px-1.5 font-mono text-text-secondary">
+            {priorityLabel}
+          </span>
+        )}
+        {actorLabel && (
+          <span className="flex items-center gap-1 bg-chip-bg px-1.5">
+            <Bot className="h-2.5 w-2.5 shrink-0 text-ready" />
+            {actorLabel}
+          </span>
+        )}
+      </div>
+      {nextInfo && (
+        <p className="flex min-w-0 items-center gap-1 text-[10px] leading-4 text-text-muted">
+          <ArrowRight className="h-3 w-3 shrink-0 text-success" />
+          <span className="truncate">{nextInfo}</span>
+        </p>
       )}
     </button>
   );

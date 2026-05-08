@@ -173,4 +173,71 @@ describe("groupTrackedTasks", () => {
     expect(inReview.items).toHaveLength(1);
     expect(ready.items).toHaveLength(0);
   });
+
+  it("sorts tasks in each section by newest task time first", () => {
+    const f = makeFeature("alpha", [
+      makeTask("T1", "in_review", "Older review", {
+        log: [
+          { action: "in_review", by: "agent", at: "2026-05-01T00:00:00Z" },
+        ],
+      }),
+      makeTask("T2", "in_review", "Newest review", {
+        log: [
+          { action: "in_review", by: "agent", at: "2026-05-03T00:00:00Z" },
+        ],
+      }),
+      makeTask("T3", "in_review", "Middle review", {
+        execution: {
+          actor_type: "agent",
+          last_updated_at: "2026-05-02T00:00:00Z",
+        },
+      }),
+    ]);
+
+    const sections = groupTrackedTasks([f]);
+    const inReview = sections.find((s) => s.status === "in_review")!;
+
+    expect(inReview.items.map((item) => item.task.id)).toEqual([
+      "T2",
+      "T3",
+      "T1",
+    ]);
+  });
+
+  it("uses the newest available log or execution timestamp and keeps untimed tasks last", () => {
+    const f = makeFeature("alpha", [
+      makeTask("T1", "ready", "No timestamp"),
+      makeTask("T2", "ready", "Execution only", {
+        execution: {
+          actor_type: "agent",
+          last_updated_at: "2026-05-02T00:00:00Z",
+        },
+      }),
+      makeTask("T3", "ready", "Newer log beats older execution", {
+        execution: {
+          actor_type: "agent",
+          last_updated_at: "2026-05-01T00:00:00Z",
+        },
+        log: [
+          { action: "ready", by: "agent", at: "2026-05-04T00:00:00Z" },
+        ],
+      }),
+      makeTask("T4", "ready", "Invalid timestamp", {
+        execution: {
+          actor_type: "agent",
+          last_updated_at: "not-a-date",
+        },
+      }),
+    ]);
+
+    const sections = groupTrackedTasks([f]);
+    const ready = sections.find((s) => s.status === "ready")!;
+
+    expect(ready.items.map((item) => item.task.id)).toEqual([
+      "T3",
+      "T2",
+      "T1",
+      "T4",
+    ]);
+  });
 });

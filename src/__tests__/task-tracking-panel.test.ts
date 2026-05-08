@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import type { ActiveFilters } from "../features/board/types";
 import type { ParsedFeature } from "../services/yaml-parser";
 
 const mockSetSelectedTask = vi.fn();
@@ -23,6 +24,8 @@ const mockData = vi.hoisted(() => {
           title: "User registration API",
           status: "ready",
           dependsOn: [],
+          description: "Implement POST /api/auth/register endpoint",
+          priority: "HIGH",
         },
         {
           id: "T3",
@@ -32,9 +35,11 @@ const mockData = vi.hoisted(() => {
         },
         {
           id: "T4",
-          title: "Token refresh flow",
+          title: "JWT Token verification",
           status: "in_progress",
           dependsOn: [],
+          description: "Add middleware to verify JWT in protected routes",
+          priority: "MID",
           execution: { actor_type: "agent" },
         },
       ],
@@ -49,28 +54,46 @@ const mockData = vi.hoisted(() => {
     },
   ];
 
-  return { features };
+  const context = {
+    features,
+    trackedFeatures: features,
+    searchQuery: "",
+    activeFilters: { statuses: [] } as ActiveFilters,
+  };
+
+  return { context, features };
 });
 
 vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
   useBoardContext: () => ({
-    features: mockData.features,
-    trackedFeatures: [],
+    features: mockData.context.features,
+    trackedFeatures: mockData.context.trackedFeatures,
     setSelectedTask: mockSetSelectedTask,
-    searchQuery: "",
-    activeFilters: { statuses: [] },
+    searchQuery: mockData.context.searchQuery,
+    activeFilters: mockData.context.activeFilters,
   }),
 }));
 
 import { TaskTrackingPanel } from "../features/board/components/TaskTrackingPanel";
+import { TaskTrackingItem } from "../features/board/components/TaskTrackingPanel/TaskTrackingItem";
 import { TaskTrackingSection } from "../features/board/components/TaskTrackingPanel/TaskTrackingSection";
 import { groupTrackedTasks } from "../features/board/components/TaskTrackingPanel/groupTasks";
 
 describe("TaskTrackingPanel — companion panel", () => {
-  it("renders the sidebar header with title and description", () => {
+  beforeEach(() => {
+    mockData.context.features = mockData.features;
+    mockData.context.trackedFeatures = mockData.features;
+    mockData.context.searchQuery = "";
+    mockData.context.activeFilters = { statuses: [] };
+    mockSetSelectedTask.mockClear();
+  });
+
+  it("renders the compact sidebar header without helper copy", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
     expect(html).toContain("Tasks Sidebar");
-    expect(html).toContain("Expand each status to view tasks directly in the sidebar");
+    expect(html).not.toContain(
+      "Expand each status to view tasks directly in the sidebar",
+    );
   });
 
   it("renders all 3 status sections", () => {
@@ -97,9 +120,26 @@ describe("TaskTrackingPanel — companion panel", () => {
 
   it("shows task cards inside sections when tasks exist", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
-    expect(html).toContain("Token refresh flow");
+    expect(html).toContain("JWT Token verification");
     expect(html).toContain("JWT verification");
     expect(html).toContain("User registration API");
+  });
+
+  it("renders task metadata and action copy in the reference card shape", () => {
+    const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
+    expect(html).toContain("Authentication System");
+    expect(html).toContain("MID");
+    expect(html).toContain("HIGH");
+    expect(html).toContain("Agent");
+    expect(html).toContain("Add middleware to verify JWT in protected routes");
+    expect(html).toContain("Implement POST /api/auth/register endpoint");
+  });
+
+  it("renders each task id as a visible card header badge", () => {
+    const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
+    expect(html).toContain('aria-label="Task T4"');
+    expect(html).toContain('aria-label="Task T3"');
+    expect(html).toContain('aria-label="Task T2"');
   });
 
   it("does not show tasks with statuses outside the 3 tracked statuses", () => {
@@ -111,6 +151,72 @@ describe("TaskTrackingPanel — companion panel", () => {
   it("shows actor type badge when available", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
     expect(html).toContain("Agent");
+  });
+
+  it("renders pull-request tracked data instead of stale board data", () => {
+    mockData.context.features = [
+      {
+        id: "dashboard",
+        title: "Dashboard",
+        featureStatus: "in_implementation",
+        tasks: [
+          {
+            id: "T9",
+            title: "Stale main branch task",
+            status: "todo",
+            dependsOn: [],
+          },
+        ],
+      },
+    ];
+    mockData.context.trackedFeatures = [
+      {
+        id: "dashboard",
+        title: "Dashboard",
+        featureStatus: "in_implementation",
+        tasks: [
+          {
+            id: "T9",
+            title: "Live PR task",
+            status: "in_review",
+            dependsOn: [],
+            workspace_pr: {
+              status: "open",
+              url: "https://github.com/owner/repo/pull/9",
+            },
+          },
+        ],
+      },
+    ];
+
+    const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
+
+    expect(html).toContain("Live PR task");
+    expect(html).not.toContain("Stale main branch task");
+  });
+
+  it("does not apply Kanban board search or filters to the sidebar source", () => {
+    mockData.context.trackedFeatures = [
+      {
+        id: "dashboard",
+        title: "Dashboard",
+        featureStatus: "in_implementation",
+        tasks: [
+          {
+            id: "T9",
+            title: "Live PR task",
+            status: "in_review",
+            dependsOn: [],
+          },
+        ],
+      },
+    ];
+    mockData.context.searchQuery = "does-not-match";
+    mockData.context.activeFilters = { statuses: ["ready"] };
+
+    const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
+
+    expect(html).toContain("Live PR task");
   });
 });
 
@@ -186,6 +292,85 @@ describe("TaskTrackingSection — collapse/expand", () => {
       }),
     );
     expect(html).not.toContain("No tasks.");
+  });
+
+  it("renders the section task count as a prominent badge", () => {
+    const denseSection = {
+      ...section,
+      items: Array.from({ length: 12 }, (_, index) => ({
+        task: {
+          id: `T${index + 1}`,
+          title: `Task ${index + 1}`,
+          status: "in_progress",
+          dependsOn: [],
+        },
+        feature: section.items[0].feature,
+      })),
+    };
+    const html = renderToStaticMarkup(
+      React.createElement(TaskTrackingSection, {
+        section: denseSection,
+        isExpanded: false,
+        onToggle: () => undefined,
+        onSelectTask: () => undefined,
+      }),
+    );
+    expect(html).toContain('aria-label="IN PROGRESS task count"');
+    expect(html).toContain("text-sm");
+    expect(html).toContain("font-bold");
+    expect(html).toContain(">12</span>");
+  });
+});
+
+describe("TaskTrackingItem — metadata rendering", () => {
+  const feature: ParsedFeature = {
+    id: "auth",
+    title: "Authentication",
+    featureStatus: "in_implementation",
+    tasks: [],
+  };
+
+  it("prefers task description over blocked reason and default next action", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(TaskTrackingItem, {
+        feature,
+        task: {
+          id: "T7",
+          title: "JWT Token verification",
+          status: "ready",
+          dependsOn: [],
+          description: "Verify JWT before protected route access",
+          blockedReason: "Blocked by dependency",
+          priority: " high ",
+        },
+        onSelect: () => undefined,
+      }),
+    );
+
+    expect(html).toContain("Verify JWT before protected route access");
+    expect(html).not.toContain("Blocked by dependency");
+    expect(html).not.toContain("Start implementation");
+    expect(html).toContain("HIGH");
+  });
+
+  it("falls back to blocked reason when description is empty", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(TaskTrackingItem, {
+        feature,
+        task: {
+          id: "T8",
+          title: "Blocked task",
+          status: "ready",
+          dependsOn: [],
+          description: "   ",
+          blockedReason: "Waiting on T7",
+        },
+        onSelect: () => undefined,
+      }),
+    );
+
+    expect(html).toContain("Waiting on T7");
+    expect(html).not.toContain("Start implementation");
   });
 });
 

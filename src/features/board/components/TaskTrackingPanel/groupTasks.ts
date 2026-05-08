@@ -12,6 +12,42 @@ const SIDEBAR_STATUSES = new Set<TrackedStatus>([
   "ready",
 ]);
 
+function parseTimestampMs(timestamp: string | undefined): number | null {
+  if (!timestamp) return null;
+  const ms = new Date(timestamp).getTime();
+  return Number.isNaN(ms) ? null : ms;
+}
+
+function getTaskTimeMs(task: ParsedFeature["tasks"][number]): number | null {
+  let latest = parseTimestampMs(task.execution?.last_updated_at);
+
+  for (const entry of task.log ?? []) {
+    const entryMs = parseTimestampMs(entry.at);
+    if (entryMs === null) continue;
+    if (latest === null || entryMs > latest) {
+      latest = entryMs;
+    }
+  }
+
+  return latest;
+}
+
+function sortNewestTaskFirst(
+  a: TrackedSection["items"][number],
+  b: TrackedSection["items"][number],
+): number {
+  const aTime = getTaskTimeMs(a.task);
+  const bTime = getTaskTimeMs(b.task);
+
+  if (aTime !== null && bTime !== null && aTime !== bTime) {
+    return bTime - aTime;
+  }
+  if (aTime !== null && bTime === null) return -1;
+  if (aTime === null && bTime !== null) return 1;
+
+  return 0;
+}
+
 function matchesQuery(
   task: ParsedFeature["tasks"][number],
   feature: ParsedFeature,
@@ -55,5 +91,11 @@ export function groupTrackedTasks(
     }
   }
 
-  return TRACKED_SECTIONS.map(({ status }) => buckets.get(status)!);
+  return TRACKED_SECTIONS.map(({ status }) => {
+    const section = buckets.get(status)!;
+    return {
+      ...section,
+      items: [...section.items].sort(sortNewestTaskFirst),
+    };
+  });
 }
