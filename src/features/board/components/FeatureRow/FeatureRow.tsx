@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, ChevronRight, Clock3, Layers3 } from "lucide-react";
+import { ChevronRight, Clock3, Layers3 } from "lucide-react";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import {
   formatTimestamp,
@@ -24,11 +24,6 @@ type FeatureRowProps = {
 };
 
 function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
-  const statusSegments = STATUS_COLUMNS.map((col) => ({
-    ...col,
-    count: tasks.filter((task) => task.status === col.key).length,
-  })).filter((status) => status.count > 0);
-
   if (tasks.length === 0) {
     return (
       <div
@@ -43,35 +38,38 @@ function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
       className="flex h-1.5 w-24 overflow-visible rounded-full"
       aria-label="Task progress by status"
     >
-      {statusSegments.map((status) => (
-        <div
-          key={status.key}
-          data-progress-segment
-          className="group/segment relative h-full min-w-2 first:rounded-l-full last:rounded-r-full"
-          style={{
-            background: status.color,
-            flexBasis: 0,
-            flexGrow: status.count,
-          }}
-          aria-label={`${status.key}: ${status.count}`}
-          tabIndex={0}
-        >
+      {tasks.map((task) => {
+        const col = STATUS_COLUMNS.find((c) => c.key === task.status);
+        const color = col?.color ?? "#8892b5";
+        const statusLabel =
+          col?.label ?? task.status.toUpperCase().replace(/_/g, " ");
+
+        return (
           <div
-            data-progress-tooltip
-            role="tooltip"
-            className="pointer-events-none absolute left-1/2 top-3 z-30 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-text-primary opacity-0 shadow-lg transition-opacity group-hover/segment:opacity-100 group-focus/segment:opacity-100"
+            key={task.id}
+            data-progress-segment
+            className="group/segment relative h-full flex-1 first:rounded-l-full last:rounded-r-full"
+            style={{ background: color }}
+            aria-label={`${task.id}: ${task.status}`}
+            tabIndex={0}
           >
-            <span className="flex items-center gap-2">
-              <span
-                className="h-2 w-2 rounded-sm"
-                style={{ background: status.color }}
-                aria-hidden="true"
-              />
-              {status.key}: {status.count}
-            </span>
+            <div
+              data-progress-tooltip
+              role="tooltip"
+              className="pointer-events-none absolute left-1/2 top-3 z-30 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-text-primary opacity-0 shadow-lg transition-opacity group-hover/segment:opacity-100 group-focus/segment:opacity-100"
+            >
+              <span className="flex items-center gap-2">
+                <span
+                  className="h-2 w-2 rounded-sm"
+                  style={{ background: color }}
+                  aria-hidden="true"
+                />
+                {task.id}: {statusLabel}
+              </span>
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -141,7 +139,7 @@ export function FeatureRow({
         />
         <Layers3 className="h-4 w-4 shrink-0 text-success" aria-hidden="true" />
         <span className="min-w-0 max-w-[320px] truncate text-sm font-semibold uppercase text-text-primary">
-          {feature.title || feature.id}
+          {feature.id}
         </span>
         <FeatureStatusPill status={feature.featureStatus} />
         <span className="shrink-0 text-xs font-semibold text-text-secondary">

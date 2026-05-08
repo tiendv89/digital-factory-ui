@@ -171,7 +171,7 @@ describe("FeatureRow task grid", () => {
     expect(html).toContain('data-task-id="T2"');
   });
 
-  it("renders a per-segment progress tooltip only for statuses with tasks", () => {
+  it("renders one segment per task with per-task tooltips", () => {
     const feature: ParsedFeature = {
       id: "auth-system",
       title: "Authentication System",
@@ -215,10 +215,11 @@ describe("FeatureRow task grid", () => {
     );
 
     expect(html).toContain("data-progress-tooltip");
-    expect(html.match(/data-progress-segment/g) ?? []).toHaveLength(3);
-    expect(html).toContain("todo: 1");
-    expect(html).toContain("ready: 1");
-    expect(html).toContain("in_review: 2");
+    expect(html.match(/data-progress-segment/g) ?? []).toHaveLength(4);
+    expect(html).toContain("T1: TODO");
+    expect(html).toContain("T2: READY");
+    expect(html).toContain("T3: IN REVIEW");
+    expect(html).toContain("T4: IN REVIEW");
     expect(html).not.toContain("blocked: 0");
     expect(html).not.toContain("done: 0");
   });
@@ -297,6 +298,104 @@ describe("FeatureRow task grid", () => {
     expect(html).toContain('data-modified-today="true"');
     expect(html).toContain("bg-success-bg");
     expect(html).toContain("text-success");
+  });
+});
+
+describe("FeatureRow feature label", () => {
+  it("renders feature.id as the primary label, not feature.title", () => {
+    const feature: ParsedFeature = {
+      id: "auth-system",
+      title: "Authentication System",
+      featureStatus: "in_implementation",
+      tasks: [],
+    };
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureRow, {
+        feature,
+        isExpanded: false,
+        onToggle: () => undefined,
+        onSelectTask: () => undefined,
+        minColumnWidth: 140,
+      }),
+    );
+
+    expect(html).toContain("auth-system");
+    expect(html).not.toContain("Authentication System");
+  });
+
+  it("renders feature.id even when feature.title is empty", () => {
+    const feature: ParsedFeature = {
+      id: "my-feature",
+      title: "",
+      featureStatus: "in_implementation",
+      tasks: [],
+    };
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureRow, {
+        feature,
+        isExpanded: false,
+        onToggle: () => undefined,
+        onSelectTask: () => undefined,
+        minColumnWidth: 140,
+      }),
+    );
+
+    expect(html).toContain("my-feature");
+  });
+});
+
+describe("FeatureRow segment bar equal-width", () => {
+  it("renders one segment per task with flex-1 for equal widths", () => {
+    const feature: ParsedFeature = {
+      id: "auth-system",
+      title: "Authentication System",
+      featureStatus: "in_implementation",
+      tasks: [
+        { id: "T1", title: "Task one", status: "done", dependsOn: [] },
+        { id: "T2", title: "Task two", status: "done", dependsOn: [] },
+        { id: "T3", title: "Task three", status: "in_progress", dependsOn: [] },
+      ],
+    };
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureRow, {
+        feature,
+        isExpanded: false,
+        onToggle: () => undefined,
+        onSelectTask: () => undefined,
+        minColumnWidth: 140,
+      }),
+    );
+
+    expect(html.match(/data-progress-segment/g) ?? []).toHaveLength(3);
+    expect(html).toContain("T1: DONE");
+    expect(html).toContain("T2: DONE");
+    expect(html).toContain("T3: IN PROGRESS");
+    expect(html).toContain("flex-1");
+  });
+
+  it("renders empty bar when feature has no tasks", () => {
+    const feature: ParsedFeature = {
+      id: "empty-feature",
+      title: "",
+      featureStatus: "in_design",
+      tasks: [],
+    };
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureRow, {
+        feature,
+        isExpanded: false,
+        onToggle: () => undefined,
+        onSelectTask: () => undefined,
+        minColumnWidth: 140,
+      }),
+    );
+
+    expect(html.match(/data-progress-segment/g) ?? []).toHaveLength(0);
+    expect(html).toContain("e4e7ef");
   });
 });
 
