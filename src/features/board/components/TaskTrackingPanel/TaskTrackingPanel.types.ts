@@ -20,6 +20,6 @@ export const TRACKED_SECTIONS: ReadonlyArray<{
   label: string;
 }> = [
   { status: "in_progress", label: "IN PROGRESS" },
-  { status: "ready", label: "READY" },
   { status: "in_review", label: "IN REVIEW" },
+  { status: "ready", label: "READY" },
 ];

@@ -103,6 +103,38 @@ depends_on:
     expect(task!.dependsOn).toEqual(["T1", "T2"]);
   });
 
+  it("parses optional sidebar metadata fields", () => {
+    const raw = `
+id: T8
+title: JWT Token verification
+status: in_progress
+depends_on: []
+description: Add middleware to verify JWT in protected routes
+priority: MID
+`;
+    const task = parseTaskYaml("T8", raw);
+    expect(task).not.toBeNull();
+    expect(task!.description).toBe(
+      "Add middleware to verify JWT in protected routes",
+    );
+    expect(task!.priority).toBe("MID");
+  });
+
+  it("omits optional sidebar metadata fields when they are blank", () => {
+    const raw = `
+id: T9
+title: Empty sidebar metadata
+status: ready
+depends_on: []
+description: "   "
+priority: ""
+`;
+    const task = parseTaskYaml("T9", raw);
+    expect(task).not.toBeNull();
+    expect(task!.description).toBeUndefined();
+    expect(task!.priority).toBeUndefined();
+  });
+
   it("returns null and warns for malformed YAML", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const raw = `

@@ -12,6 +12,8 @@ export type ParsedTask = {
   title: string;
   status: string;
   dependsOn: string[];
+  description?: string;
+  priority?: string;
   execution?: { actor_type: string; last_updated_by?: string; last_updated_at?: string };
   branch?: string;
   pr?: { url?: string; status?: string };
@@ -40,6 +42,8 @@ type RawTask = {
   title?: string;
   status?: string;
   depends_on?: string[];
+  description?: string;
+  priority?: string;
   execution?: { actor_type?: string; last_updated_by?: string; last_updated_at?: string };
   branch?: string;
   pr?: { url?: string; status?: string };
@@ -100,6 +104,12 @@ export function parseTaskYaml(id: string, raw: string): ParsedTask | null {
     dependsOn: Array.isArray(data.depends_on)
       ? data.depends_on.filter((d) => typeof d === "string")
       : [],
+    ...(typeof data.description === "string" && data.description.trim() !== ""
+      ? { description: data.description }
+      : {}),
+    ...(typeof data.priority === "string" && data.priority.trim() !== ""
+      ? { priority: data.priority }
+      : {}),
     ...(data.execution?.actor_type
       ? {
           execution: {
