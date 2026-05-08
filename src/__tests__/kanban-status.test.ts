@@ -259,7 +259,7 @@ describe("FeatureRow task grid", () => {
     expect(html).toContain("Modified");
     expect(html).toContain("May 5");
     expect(html).toContain("data-feature-modified-at");
-    expect(html).toContain("ml-auto");
+    expect(html).toContain("text-text-muted");
     expect(html).toContain('data-modified-today="false"');
   });
 
@@ -324,10 +324,10 @@ describe("FeatureRow feature label", () => {
     expect(html).not.toContain("Authentication System");
   });
 
-  it("renders feature.id even when feature.title is empty", () => {
+  it("keeps long feature ids truncatable", () => {
     const feature: ParsedFeature = {
-      id: "my-feature",
-      title: "",
+      id: "ui-interaction-updates-with-a-very-long-feature-id",
+      title: "UI Interaction Updates",
       featureStatus: "in_implementation",
       tasks: [],
     };
@@ -342,12 +342,17 @@ describe("FeatureRow feature label", () => {
       }),
     );
 
-    expect(html).toContain("my-feature");
+    expect(html).toContain(feature.id);
+    expect(html).toContain(`title="${feature.id}"`);
+    expect(html).toContain(
+      'class="min-w-0 truncate text-sm font-semibold uppercase text-text-primary"',
+    );
+    expect(html).not.toContain("UI Interaction Updates");
   });
 });
 
 describe("FeatureRow segment bar equal-width", () => {
-  it("renders one segment per task with flex-1 for equal widths", () => {
+  it("renders rounded separated segments with flex-1 for equal widths", () => {
     const feature: ParsedFeature = {
       id: "auth-system",
       title: "Authentication System",
@@ -373,7 +378,9 @@ describe("FeatureRow segment bar equal-width", () => {
     expect(html).toContain("T1: DONE");
     expect(html).toContain("T2: DONE");
     expect(html).toContain("T3: IN PROGRESS");
+    expect(html).toContain("gap-0.5");
     expect(html).toContain("flex-1");
+    expect(html).toContain("rounded-full");
   });
 
   it("renders empty bar when feature has no tasks", () => {
@@ -396,6 +403,7 @@ describe("FeatureRow segment bar equal-width", () => {
 
     expect(html.match(/data-progress-segment/g) ?? []).toHaveLength(0);
     expect(html).toContain("e4e7ef");
+    expect(html).toContain("rounded-full");
   });
 });
 
