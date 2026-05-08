@@ -1,106 +1,77 @@
 "use client";
 
-import { Check, Clock3, Layers3, Zap } from "lucide-react";
-import { useMemo } from "react";
+import { LayoutList } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { groupTrackedTasks } from "./groupTasks";
-import type { PanelSelection, TrackedStatus } from "./TaskTrackingPanel.types";
+import type { TrackedStatus } from "./TaskTrackingPanel.types";
+import { TaskTrackingSection } from "./TaskTrackingSection";
+import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 
-const PANEL_ORDER: TrackedStatus[] = ["in_review", "in_progress", "ready"];
-
-const STATUS_ICON = {
-  in_review: Clock3,
-  in_progress: Zap,
-  ready: Check,
-} satisfies Record<TrackedStatus, typeof Clock3>;
-
-const STATUS_STYLE = {
-  in_review: "bg-purple-bg text-purple",
-  in_progress: "bg-warning-bg text-warning",
-  ready: "bg-primary-light text-primary",
-} satisfies Record<TrackedStatus, string>;
-
-type TaskTrackingPanelProps = {
-  selectedPanel: PanelSelection;
-  onSelectPanel: (panel: PanelSelection) => void;
+const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
+  in_progress: true,
+  in_review: true,
+  ready: true,
 };
 
-export function TaskTrackingPanel({
-  selectedPanel,
-  onSelectPanel,
-}: TaskTrackingPanelProps) {
-  const { trackedFeatures } = useBoardContext();
+export function TaskTrackingPanel() {
+  const { features, setSelectedTask, searchQuery, activeFilters } =
+    useBoardContext();
 
   const sections = useMemo(
-    () => groupTrackedTasks(trackedFeatures),
-    [trackedFeatures],
+    () => groupTrackedTasks(features, searchQuery, activeFilters),
+    [features, searchQuery, activeFilters],
   );
-  const orderedSections = useMemo(
-    () =>
-      PANEL_ORDER.map((status) => sections.find((section) => section.status === status))
-        .filter((section): section is (typeof sections)[number] => Boolean(section)),
-    [sections],
+
+  const [expanded, setExpanded] =
+    useState<Record<TrackedStatus, boolean>>(ALL_EXPANDED);
+
+  const toggleSection = useCallback((status: TrackedStatus) => {
+    setExpanded((prev) => ({ ...prev, [status]: !prev[status] }));
+  }, []);
+
+  const handleSelectTask = useCallback(
+    (task: ParsedTask, feature: ParsedFeature) => {
+      setSelectedTask({
+        task,
+        featureId: feature.id,
+        featureTitle: feature.title,
+      });
+    },
+    [setSelectedTask],
   );
-  const isBoardSelected = selectedPanel === "kanban_board";
 
   return (
     <aside
-      className="flex w-72 shrink-0 flex-col border-r border-border bg-surface-secondary"
-      aria-label="Task tracking panel"
+      className="flex shrink-0 flex-col overflow-hidden border-r border-border bg-surface-secondary"
+      style={{ width: "15%", minWidth: "11rem", maxWidth: "20rem" }}
+      aria-label="Tasks sidebar"
     >
-      <button
-        type="button"
-        onClick={() => onSelectPanel("kanban_board")}
-        className={
-          "flex h-10 w-full items-center gap-2 border-b border-border border-l-2 px-4 text-left transition-colors hover:bg-surface " +
-          (isBoardSelected
-            ? "border-l-success "
-            : "border-l-transparent bg-surface-secondary")
-        }
-        aria-pressed={isBoardSelected}
-      >
-        <Layers3 className="h-3.5 w-3.5 text-success" aria-hidden="true" />
-        <h2 className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
-          Kanban Board
-        </h2>
-      </button>
-      <div className="flex-1 overflow-y-auto">
-        {orderedSections.map((section) => {
-          const Icon = STATUS_ICON[section.status];
-          const isActive = selectedPanel === section.status;
+      <header className="shrink-0 border-b border-border px-4 py-3">
+        <div className="flex items-center gap-2">
+          <LayoutList
+            className="h-4 w-4 shrink-0 text-primary"
+            aria-hidden="true"
+          />
+          <h2 className="text-[11px] font-bold uppercase tracking-wider text-text-secondary">
+            Tasks Sidebar
+          </h2>
+        </div>
+        <p className="mt-1 text-[10px] leading-tight text-text-muted">
+          Expand each status to view tasks directly in the sidebar.
+        </p>
+      </header>
 
-          return (
-            <button
-              key={section.status}
-              type="button"
-              onClick={() => onSelectPanel(section.status)}
-              className={
-                "flex h-11 w-full items-center justify-between border-b border-l-2 border-border px-4 text-left transition-colors hover:bg-surface " +
-                (isActive
-                  ? "border-l-primary bg-surface"
-                  : "border-l-transparent bg-surface-secondary")
-              }
-              aria-pressed={isActive}
-            >
-              <span className="flex min-w-0 items-center gap-2">
-                <span
-                  className={
-                    "flex h-5 w-5 shrink-0 items-center justify-center " +
-                    STATUS_STYLE[section.status]
-                  }
-                >
-                  <Icon className="h-3 w-3" aria-hidden="true" />
-                </span>
-                <span className="truncate text-[11px] font-bold uppercase tracking-wider text-text-secondary">
-                  {section.label}
-                </span>
-              </span>
-              <span className="rounded bg-muted-bg px-1.5 py-0.5 font-mono text-[10px] text-text-secondary">
-                {section.items.length}
-              </span>
-            </button>
-          );
-        })}
+      <div className="flex-1 overflow-y-auto">
+        {sections.map((section) => (
+          <TaskTrackingSection
+            key={section.status}
+            section={section}
+            isExpanded={expanded[section.status]}
+            onToggle={() => toggleSection(section.status)}
+            onSelectTask={handleSelectTask}
+          />
+        ))}
       </div>
     </aside>
   );
