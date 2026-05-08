@@ -4,7 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -13,6 +15,11 @@ import type { StoredWorkspace } from "@/types/workspace";
 import { useBoardData, type UseBoardDataOptions } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
 import type { ActiveFilters, BoardLoadError } from "../../types";
+import {
+  getDefaultStatusFilter,
+  getStoredStatusFilter,
+  saveStatusFilter,
+} from "../../lib/status-filter-store";
 
 export type SelectedTask = {
   task: ParsedTask;
@@ -60,9 +67,9 @@ export function BoardProvider({
   });
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({
-    statuses: [],
-  });
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>(() => ({
+    statuses: getStoredStatusFilter() ?? getDefaultStatusFilter(),
+  }));
   const [expandedFeatureIds, setExpandedFeatureIds] = useState<Set<string>>(
     () => new Set(),
   );
@@ -85,6 +92,23 @@ export function BoardProvider({
     reloadTracking();
   }, [reload, reloadTracking]);
 
+  const reloadAllRef = useRef(reloadAll);
+  useEffect(() => {
+    reloadAllRef.current = reloadAll;
+  }, [reloadAll]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      reloadAllRef.current();
+    }, 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleSetActiveFilters = useCallback((filters: ActiveFilters) => {
+    saveStatusFilter(filters.statuses);
+    setActiveFilters(filters);
+  }, []);
+
   const value = useMemo<BoardContextValue>(
     () => ({
       workspace,
@@ -96,7 +120,7 @@ export function BoardProvider({
       searchQuery,
       setSearchQuery,
       activeFilters,
-      setActiveFilters,
+      setActiveFilters: handleSetActiveFilters,
       expandedFeatureIds,
       toggleFeature,
       selectedTask,
@@ -111,6 +135,7 @@ export function BoardProvider({
       reloadAll,
       searchQuery,
       activeFilters,
+      handleSetActiveFilters,
       expandedFeatureIds,
       toggleFeature,
       selectedTask,
