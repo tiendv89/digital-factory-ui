@@ -11,6 +11,13 @@ import {
   toggleAllStatusFilter,
   toggleStatusFilter,
 } from "../../lib/status-filter";
+import {
+  AccessDeniedState,
+  EmptyBoardState,
+  NetworkErrorState,
+  NoWorkflowDataState,
+  ParseErrorState,
+} from "../ErrorStates";
 
 const MIN_COLUMN_WIDTH = 180;
 
@@ -213,13 +220,17 @@ export function KanbanBoard() {
       </div>
     );
   } else if (error) {
-    content = (
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-danger">{error.message}</p>
-      </div>
-    );
+    if (error.kind === "access_denied") {
+      content = <AccessDeniedState message={error.message} />;
+    } else if (error.kind === "not_found") {
+      content = <NoWorkflowDataState message={error.message} />;
+    } else if (error.kind === "parse_error") {
+      content = <ParseErrorState message={error.message} />;
+    } else {
+      content = <NetworkErrorState message={error.message} />;
+    }
   } else if (features.length === 0) {
-    content = <EmptyState message="No features found in this workspace." />;
+    content = <EmptyBoardState />;
   } else if (visibleFeatures.length === 0) {
     content = (
       <EmptyState message="No features match the current search or filters." />
