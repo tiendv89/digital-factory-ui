@@ -403,18 +403,8 @@ export async function fetchPullRequestTaskData(
       pulls,
     );
     
-    // Filter to only include tasks that are actually linked to an open PR from the 'pulls' array
-    const filteredFeatures = features
-      .map(f => {
-        const activeTasks = f.tasks.filter(t => 
-          pulls.some(p => p.htmlUrl === t.workspace_pr?.url || p.htmlUrl === t.pr?.url)
-        );
-        return { ...f, tasks: activeTasks };
-      })
-      .filter(f => f.tasks.length > 0);
-      
-    filteredFeatures.sort((a, b) => a.id.localeCompare(b.id));
-    return filteredFeatures;
+    features.sort((a, b) => a.id.localeCompare(b.id));
+    return features;
   } catch (err) {
     if (err instanceof BoardLoadFailure) throw err;
     throw new BoardLoadFailure(mapClientError(err));
