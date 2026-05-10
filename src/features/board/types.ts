@@ -1,4 +1,5 @@
 import type { ParsedTask } from "@/services/yaml-parser";
+import type { FeatureStatus } from "./lib/status";
 
 export type BoardLoadError =
   | { kind: "access_denied"; message: string }
@@ -8,4 +9,8 @@ export type BoardLoadError =
 
 export type ActiveFilters = {
   statuses: ParsedTask["status"][];
+};
+
+export type FeatureActiveFilters = {
+  statuses: FeatureStatus[];
 };

@@ -14,10 +14,17 @@ import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import type { StoredWorkspace } from "@/types/workspace";
 import { useBoardData, type UseBoardDataOptions } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
-import type { ActiveFilters, BoardLoadError } from "../../types";
+import type { ActiveFilters, BoardLoadError, FeatureActiveFilters } from "../../types";
 import {
+  type BoardMode,
+  getDefaultBoardMode,
+  getDefaultFeatureStatusFilter,
   getDefaultStatusFilter,
+  getStoredBoardMode,
+  getStoredFeatureStatusFilter,
   getStoredStatusFilter,
+  saveBoardMode,
+  saveFeatureStatusFilter,
   saveStatusFilter,
 } from "../../lib/status-filter-store";
 
@@ -34,14 +41,34 @@ export type BoardContextValue = {
   loading: boolean;
   error: BoardLoadError | null;
   reload: () => void;
+
+  boardMode: BoardMode;
+  setBoardMode: (mode: BoardMode) => void;
+
+  // Task Mode search/filter
+  taskSearchQuery: string;
+  setTaskSearchQuery: (query: string) => void;
+  taskActiveFilters: ActiveFilters;
+  setTaskActiveFilters: (filters: ActiveFilters) => void;
+
+  // Feature Mode search/filter
+  featureSearchQuery: string;
+  setFeatureSearchQuery: (query: string) => void;
+  featureActiveFilters: FeatureActiveFilters;
+  setFeatureActiveFilters: (filters: FeatureActiveFilters) => void;
+
+  // Aliases kept for existing Task Mode consumers
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   activeFilters: ActiveFilters;
   setActiveFilters: (filters: ActiveFilters) => void;
+
   expandedFeatureIds: Set<string>;
   toggleFeature: (featureId: string) => void;
   selectedTask: SelectedTask;
   setSelectedTask: (task: SelectedTask) => void;
+  selectedFeature: ParsedFeature | null;
+  setSelectedFeature: (feature: ParsedFeature | null) => void;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);
@@ -66,14 +93,25 @@ export function BoardProvider({
     clientFactory,
   });
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeFilters, setActiveFilters] = useState<ActiveFilters>(() => ({
-    statuses: getStoredStatusFilter() ?? getDefaultStatusFilter(),
-  }));
+  const [boardMode, setBoardModeState] = useState<BoardMode>(
+    () => getStoredBoardMode() ?? getDefaultBoardMode(),
+  );
+  const [taskSearchQuery, setTaskSearchQuery] = useState("");
+  const [featureSearchQuery, setFeatureSearchQuery] = useState("");
+  const [taskActiveFilters, setTaskActiveFiltersState] = useState<ActiveFilters>(
+    () => ({ statuses: getStoredStatusFilter() ?? getDefaultStatusFilter() }),
+  );
+  const [featureActiveFilters, setFeatureActiveFiltersState] =
+    useState<FeatureActiveFilters>(() => ({
+      statuses: getStoredFeatureStatusFilter() ?? getDefaultFeatureStatusFilter(),
+    }));
   const [expandedFeatureIds, setExpandedFeatureIds] = useState<Set<string>>(
     () => new Set(),
   );
   const [selectedTask, setSelectedTask] = useState<SelectedTask>(null);
+  const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(
+    null,
+  );
 
   const toggleFeature = useCallback((featureId: string) => {
     setExpandedFeatureIds((prev) => {
@@ -104,10 +142,23 @@ export function BoardProvider({
     return () => clearInterval(id);
   }, []);
 
-  const handleSetActiveFilters = useCallback((filters: ActiveFilters) => {
-    saveStatusFilter(filters.statuses);
-    setActiveFilters(filters);
+  const handleSetBoardMode = useCallback((mode: BoardMode) => {
+    saveBoardMode(mode);
+    setBoardModeState(mode);
   }, []);
+
+  const handleSetTaskActiveFilters = useCallback((filters: ActiveFilters) => {
+    saveStatusFilter(filters.statuses);
+    setTaskActiveFiltersState(filters);
+  }, []);
+
+  const handleSetFeatureActiveFilters = useCallback(
+    (filters: FeatureActiveFilters) => {
+      saveFeatureStatusFilter(filters.statuses);
+      setFeatureActiveFiltersState(filters);
+    },
+    [],
+  );
 
   const value = useMemo<BoardContextValue>(
     () => ({
@@ -117,14 +168,32 @@ export function BoardProvider({
       loading,
       error,
       reload: reloadAll,
-      searchQuery,
-      setSearchQuery,
-      activeFilters,
-      setActiveFilters: handleSetActiveFilters,
+
+      boardMode,
+      setBoardMode: handleSetBoardMode,
+
+      taskSearchQuery,
+      setTaskSearchQuery,
+      taskActiveFilters,
+      setTaskActiveFilters: handleSetTaskActiveFilters,
+
+      featureSearchQuery,
+      setFeatureSearchQuery,
+      featureActiveFilters,
+      setFeatureActiveFilters: handleSetFeatureActiveFilters,
+
+      // Aliases for existing Task Mode consumers
+      searchQuery: taskSearchQuery,
+      setSearchQuery: setTaskSearchQuery,
+      activeFilters: taskActiveFilters,
+      setActiveFilters: handleSetTaskActiveFilters,
+
       expandedFeatureIds,
       toggleFeature,
       selectedTask,
       setSelectedTask,
+      selectedFeature,
+      setSelectedFeature,
     }),
     [
       workspace,
@@ -133,12 +202,18 @@ export function BoardProvider({
       loading,
       error,
       reloadAll,
-      searchQuery,
-      activeFilters,
-      handleSetActiveFilters,
+      boardMode,
+      handleSetBoardMode,
+      taskSearchQuery,
+      taskActiveFilters,
+      handleSetTaskActiveFilters,
+      featureSearchQuery,
+      featureActiveFilters,
+      handleSetFeatureActiveFilters,
       expandedFeatureIds,
       toggleFeature,
       selectedTask,
+      selectedFeature,
     ],
   );
 

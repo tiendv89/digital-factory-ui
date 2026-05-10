@@ -7,8 +7,24 @@ export type TaskStatus =
   | "done"
   | "cancelled";
 
+export type FeatureStatus =
+  | "in_design"
+  | "in_tdd"
+  | "ready_for_implementation"
+  | "in_implementation"
+  | "in_handoff"
+  | "done"
+  | "blocked"
+  | "cancelled";
+
 export type StatusColumn = {
   key: TaskStatus;
+  label: string;
+  color: string;
+};
+
+export type FeatureStatusOption = {
+  key: FeatureStatus;
   label: string;
   color: string;
 };
@@ -54,7 +70,7 @@ const FEATURE_STATUS_LABELS: Record<string, string> = {
   in_tdd: "In TDD",
   ready_for_implementation: "Ready",
   in_implementation: "In Progress",
-  in_handoff: "In Handoff",
+  in_handoff: "Handoff",
   done: "Done",
   blocked: "Blocked",
   cancelled: "Cancelled",
@@ -70,6 +86,17 @@ const FEATURE_STATUS_COLORS: Record<string, string> = {
   blocked: "#e62a34",
   cancelled: "#5c636e",
 };
+
+export const FEATURE_STATUS_OPTIONS: FeatureStatusOption[] = [
+  { key: "in_design", label: "In Design", color: "#3274b4" },
+  { key: "in_tdd", label: "In TDD", color: "#3274b4" },
+  { key: "ready_for_implementation", label: "Ready", color: "#6e6de7" },
+  { key: "in_implementation", label: "In Progress", color: "#e08500" },
+  { key: "in_handoff", label: "Handoff", color: "#8e67cb" },
+  { key: "done", label: "Done", color: "#009252" },
+  { key: "blocked", label: "Blocked", color: "#e62a34" },
+  { key: "cancelled", label: "Cancelled", color: "#5c636e" },
+];
 
 export function getFeatureStatusLabel(status: string): string {
   return FEATURE_STATUS_LABELS[status] ?? status;
