@@ -12,6 +12,7 @@ import {
 } from "@/features/board/components/KanbanBoard";
 import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
 import { TaskDetailSheetMount } from "@/features/tasks";
+import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet";
 
 export default function BoardPage() {
   const router = useRouter();
@@ -49,6 +50,7 @@ export default function BoardPage() {
           </section>
         </div>
         <TaskDetailSheetMount />
+        <FeatureDetailSheetMount />
       </BoardProvider>
     </main>
   );
