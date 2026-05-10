@@ -1,13 +1,26 @@
-import { STATUS_COLUMNS, type TaskStatus } from "./status";
+import { FEATURE_STATUS_OPTIONS, STATUS_COLUMNS, type FeatureStatus, type TaskStatus } from "./status";
 
-const STORAGE_KEY = "dashboard:board-status-filter";
+const TASK_STORAGE_KEY = "dashboard:board-status-filter";
+const FEATURE_STORAGE_KEY = "dashboard:board-feature-status-filter";
+const BOARD_MODE_STORAGE_KEY = "dashboard:board-mode";
 
-const VALID_STATUSES = new Set<string>(STATUS_COLUMNS.map((s) => s.key));
+const VALID_TASK_STATUSES = new Set<string>(STATUS_COLUMNS.map((s) => s.key));
+const VALID_FEATURE_STATUSES = new Set<string>(
+  FEATURE_STATUS_OPTIONS.map((s) => s.key),
+);
+const VALID_BOARD_MODES = new Set(["task", "feature"]);
 
-function isValidStatusArray(value: unknown): value is TaskStatus[] {
+function isValidTaskStatusArray(value: unknown): value is TaskStatus[] {
   return (
     Array.isArray(value) &&
-    value.every((v) => typeof v === "string" && VALID_STATUSES.has(v))
+    value.every((v) => typeof v === "string" && VALID_TASK_STATUSES.has(v))
+  );
+}
+
+function isValidFeatureStatusArray(value: unknown): value is FeatureStatus[] {
+  return (
+    Array.isArray(value) &&
+    value.every((v) => typeof v === "string" && VALID_FEATURE_STATUSES.has(v))
   );
 }
 
@@ -18,10 +31,10 @@ export function getDefaultStatusFilter(): TaskStatus[] {
 export function getStoredStatusFilter(): TaskStatus[] | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(TASK_STORAGE_KEY);
     if (raw === null) return null;
     const parsed: unknown = JSON.parse(raw);
-    return isValidStatusArray(parsed) ? parsed : null;
+    return isValidTaskStatusArray(parsed) ? parsed : null;
   } catch {
     return null;
   }
@@ -30,8 +43,64 @@ export function getStoredStatusFilter(): TaskStatus[] | null {
 export function saveStatusFilter(statuses: string[]): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(statuses));
+    localStorage.setItem(TASK_STORAGE_KEY, JSON.stringify(statuses));
   } catch {
     // Ignore storage failures so the board remains usable in restricted browsers.
+  }
+}
+
+export function getDefaultFeatureStatusFilter(): FeatureStatus[] {
+  return FEATURE_STATUS_OPTIONS.filter((s) => s.key !== "done").map(
+    (s) => s.key,
+  );
+}
+
+export function getStoredFeatureStatusFilter(): FeatureStatus[] | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(FEATURE_STORAGE_KEY);
+    if (raw === null) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return isValidFeatureStatusArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveFeatureStatusFilter(statuses: string[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(FEATURE_STORAGE_KEY, JSON.stringify(statuses));
+  } catch {
+    // Ignore storage failures so the board remains usable in restricted browsers.
+  }
+}
+
+export type BoardMode = "task" | "feature";
+
+export function getDefaultBoardMode(): BoardMode {
+  return "task";
+}
+
+export function getStoredBoardMode(): BoardMode | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(BOARD_MODE_STORAGE_KEY);
+    if (raw === null) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === "string" && VALID_BOARD_MODES.has(parsed)
+      ? (parsed as BoardMode)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveBoardMode(mode: BoardMode): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(BOARD_MODE_STORAGE_KEY, JSON.stringify(mode));
+  } catch {
+    // Ignore storage failures.
   }
 }

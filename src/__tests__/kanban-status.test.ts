@@ -120,7 +120,7 @@ describe("getFeatureStatusLabel", () => {
   it("returns human-readable label for known feature statuses", () => {
     expect(getFeatureStatusLabel("in_implementation")).toBe("In Progress");
     expect(getFeatureStatusLabel("ready_for_implementation")).toBe("Ready");
-    expect(getFeatureStatusLabel("in_handoff")).toBe("In Handoff");
+    expect(getFeatureStatusLabel("in_handoff")).toBe("Handoff");
     expect(getFeatureStatusLabel("done")).toBe("Done");
   });
 
