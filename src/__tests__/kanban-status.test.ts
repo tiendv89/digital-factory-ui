@@ -159,7 +159,6 @@ describe("FeatureRow task grid", () => {
         isExpanded: true,
         onToggle: () => undefined,
         onSelectTask: () => undefined,
-        minColumnWidth: 140,
       }),
     );
 
@@ -210,16 +209,15 @@ describe("FeatureRow task grid", () => {
         isExpanded: false,
         onToggle: () => undefined,
         onSelectTask: () => undefined,
-        minColumnWidth: 140,
       }),
     );
 
     expect(html).toContain("data-progress-tooltip");
     expect(html.match(/data-progress-segment/g) ?? []).toHaveLength(4);
-    expect(html).toContain("T1: TODO");
-    expect(html).toContain("T2: READY");
-    expect(html).toContain("T3: IN REVIEW");
-    expect(html).toContain("T4: IN REVIEW");
+    expect(html).toContain("T1: Todo");
+    expect(html).toContain("T2: Ready");
+    expect(html).toContain("T3: In Review");
+    expect(html).toContain("T4: In Review");
     expect(html).not.toContain("blocked: 0");
     expect(html).not.toContain("done: 0");
   });
@@ -252,7 +250,6 @@ describe("FeatureRow task grid", () => {
         isExpanded: false,
         onToggle: () => undefined,
         onSelectTask: () => undefined,
-        minColumnWidth: 140,
       }),
     );
 
@@ -291,7 +288,6 @@ describe("FeatureRow task grid", () => {
         isExpanded: false,
         onToggle: () => undefined,
         onSelectTask: () => undefined,
-        minColumnWidth: 140,
       }),
     );
 
@@ -316,7 +312,6 @@ describe("FeatureRow feature label", () => {
         isExpanded: false,
         onToggle: () => undefined,
         onSelectTask: () => undefined,
-        minColumnWidth: 140,
       }),
     );
 
@@ -338,7 +333,6 @@ describe("FeatureRow feature label", () => {
         isExpanded: false,
         onToggle: () => undefined,
         onSelectTask: () => undefined,
-        minColumnWidth: 140,
       }),
     );
 
@@ -370,14 +364,13 @@ describe("FeatureRow segment bar equal-width", () => {
         isExpanded: false,
         onToggle: () => undefined,
         onSelectTask: () => undefined,
-        minColumnWidth: 140,
       }),
     );
 
     expect(html.match(/data-progress-segment/g) ?? []).toHaveLength(3);
-    expect(html).toContain("T1: DONE");
-    expect(html).toContain("T2: DONE");
-    expect(html).toContain("T3: IN PROGRESS");
+    expect(html).toContain("T1: Done");
+    expect(html).toContain("T2: Done");
+    expect(html).toContain("T3: In Progress");
     expect(html).toContain("gap-0.5");
     expect(html).toContain("flex-1");
     expect(html).toContain("rounded-full");
@@ -397,7 +390,6 @@ describe("FeatureRow segment bar equal-width", () => {
         isExpanded: false,
         onToggle: () => undefined,
         onSelectTask: () => undefined,
-        minColumnWidth: 140,
       }),
     );
 

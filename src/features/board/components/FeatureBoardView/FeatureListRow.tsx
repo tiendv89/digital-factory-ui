@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, Layers3 } from "lucide-react";
+import { Clock3 } from "lucide-react";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import {
   formatTimestamp,
@@ -38,7 +38,12 @@ function FeatureStatusPill({ status }: { status: string }) {
 
 export function FeatureListRow({ feature, onClick }: FeatureListRowProps) {
   const lastModifiedAt = getFeatureLastModifiedAt(feature);
-  const modifiedToday = lastModifiedAt ? isTodayTimestamp(lastModifiedAt) : false;
+  const modifiedToday = lastModifiedAt
+    ? isTodayTimestamp(lastModifiedAt)
+    : false;
+  const taskCountLabel = `${feature.tasks.length} ${
+    feature.tasks.length === 1 ? "task" : "tasks"
+  }`;
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
@@ -49,37 +54,43 @@ export function FeatureListRow({ feature, onClick }: FeatureListRowProps) {
 
   return (
     <div
+      data-feature-card-status={feature.featureStatus}
       role="button"
       tabIndex={0}
       onClick={onClick}
       onKeyDown={handleKeyDown}
       aria-label={`Open feature detail for ${feature.title || feature.id}`}
-      className="flex min-h-12 w-full cursor-pointer items-center gap-3 border-b border-border bg-surface px-5 py-2 transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      className="flex h-full min-h-[82px] w-full cursor-pointer flex-col gap-2 border border-border bg-surface px-3 py-3 text-left transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Layers3 className="h-4 w-4 shrink-0 text-success" aria-hidden="true" />
-        <div className="min-w-0">
-          <p
-            className="truncate text-sm font-semibold uppercase text-text-primary"
-            title={feature.id}
-          >
-            {feature.id}
-          </p>
-          {feature.title && feature.title !== feature.id && (
-            <p className="truncate text-xs text-text-secondary" title={feature.title}>
-              {feature.title}
-            </p>
-          )}
-        </div>
-      </div>
-      <div className="flex shrink-0 items-center gap-3">
+      <div className="flex min-w-0 items-center justify-between gap-2">
         <FeatureStatusPill status={feature.featureStatus} />
+      </div>
+
+      <div className="min-w-0">
+        <p
+          className="truncate text-sm font-semibold uppercase text-text-primary"
+          title={feature.id}
+        >
+          {feature.id}
+        </p>
+        {feature.title && feature.title !== feature.id && (
+          <p
+            className="truncate text-xs text-text-secondary"
+            title={feature.title}
+          >
+            {feature.title}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-auto flex min-w-0 items-center gap-3 text-xs text-text-muted">
+        <span className="shrink-0">{taskCountLabel}</span>
         {lastModifiedAt && (
           <span
             data-feature-modified-at={lastModifiedAt}
             data-modified-today={modifiedToday ? "true" : "false"}
             className={
-              "flex min-w-0 shrink-0 items-center gap-1.5 rounded px-2 py-1 text-xs " +
+              "flex min-w-0 shrink-0 items-center gap-1.5 rounded px-1.5 py-0.5 text-xs " +
               (modifiedToday
                 ? "bg-success-bg font-semibold text-success"
                 : "text-text-muted")
@@ -87,7 +98,7 @@ export function FeatureListRow({ feature, onClick }: FeatureListRowProps) {
             title={`Modified ${lastModifiedAt}`}
           >
             <Clock3 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span className="truncate">Modified {formatTimestamp(lastModifiedAt)}</span>
+            <span className="truncate">{formatTimestamp(lastModifiedAt)}</span>
           </span>
         )}
       </div>

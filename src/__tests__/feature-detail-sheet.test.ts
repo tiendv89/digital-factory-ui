@@ -10,6 +10,10 @@ import {
 const mockBoardContext = vi.hoisted(() => ({
   selectedFeature: null as ParsedFeature | null,
   setSelectedFeature: vi.fn(),
+  workspace: {
+    owner: "tiendv89",
+    repo: "digital-factory-ui",
+  },
 }));
 
 vi.mock("@/features/board/components/KanbanBoard", () => ({
@@ -26,17 +30,39 @@ const feature: ParsedFeature = {
       title: "Mode, status, and filter foundation",
       status: "done",
       dependsOn: [],
-      execution: { actor_type: "agent", last_updated_at: "2026-05-10T10:00:00Z" },
-      log: [{ action: "done", by: "norepy@tiendv.dev", at: "2026-05-10T10:00:00Z" }],
+      description: "Create Google and GitHub OAuth app credentials",
+      execution: {
+        actor_type: "agent",
+        last_updated_at: "2026-05-10T10:00:00Z",
+      },
+      pr: {
+        status: "open",
+        url: "https://example.com/repo/pr/1",
+      },
+      log: [
+        { action: "done", by: "norepy@tiendv.dev", at: "2026-05-10T10:00:00Z" },
+      ],
     },
     {
       id: "T3",
       title: "Feature detail sheet",
       status: "in_progress",
       dependsOn: ["T1"],
-      execution: { actor_type: "agent", last_updated_at: "2026-05-10T14:00:00Z" },
+      description: "Add middleware to verify JWT in protected routes",
+      execution: {
+        actor_type: "agent",
+        last_updated_at: "2026-05-10T14:00:00Z",
+      },
+      workspace_pr: {
+        status: "open",
+        url: "https://example.com/workspace/pr/3",
+      },
       log: [
-        { action: "started", by: "norepy@tiendv.dev", at: "2026-05-10T14:00:00Z" },
+        {
+          action: "started",
+          by: "norepy@tiendv.dev",
+          at: "2026-05-10T14:00:00Z",
+        },
       ],
     },
   ],
@@ -168,18 +194,67 @@ describe("FeatureDetailSheet — open state", () => {
     expect(html).toContain("Close feature detail");
   });
 
-  it("does not render task cards or task detail content", () => {
+  it("renders the task section with stacked task cards", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureDetailSheet, {
         feature,
         onClose: () => undefined,
       }),
     );
-    // Should not contain task-specific content like task status columns or task IDs in task rows
-    expect(html).not.toContain("IN REVIEW");
-    expect(html).not.toContain("IN PROGRESS");
-    // feature id and title should be present but task statuses as column headers should not
-    expect(html).not.toContain("task-card");
+    expect(html).toContain("Tasks");
+    expect(html.match(/data-feature-task-card/g) ?? []).toHaveLength(2);
+    expect(html).toContain("T1");
+    expect(html).toContain("Mode, status, and filter foundation");
+    expect(html).toContain("Feature detail sheet");
+  });
+
+  it("renders task metadata and action text like the reference detail panel", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureDetailSheet, {
+        feature,
+        onClose: () => undefined,
+      }),
+    );
+    expect(html).toContain("No branch");
+    expect(html).toContain("Repository PR");
+    expect(html).toContain("https://example.com/repo/pr/1");
+    expect(html).toContain("https://example.com/workspace/pr/3");
+    expect(html).toContain("Create Google and GitHub OAuth app credentials");
+    expect(html).toContain("Add middleware to verify JWT in protected routes");
+    expect(html).toContain("bg-warning-bg");
+    expect(html).toContain("bg-success-bg");
+  });
+
+  it("renders the activity timeline sorted by newest log first", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureDetailSheet, {
+        feature,
+        onClose: () => undefined,
+      }),
+    );
+    expect(html).toContain("Activity Timeline");
+    expect(html.match(/data-feature-timeline-entry/g) ?? []).toHaveLength(2);
+
+    const newerTaskIndex = html.indexOf('data-feature-timeline-task="T3"');
+    const olderTaskIndex = html.indexOf('data-feature-timeline-task="T1"');
+    expect(newerTaskIndex).toBeGreaterThan(-1);
+    expect(olderTaskIndex).toBeGreaterThan(-1);
+    expect(newerTaskIndex).toBeLessThan(olderTaskIndex);
+    expect(html).toContain("started");
+    expect(html).toContain("by norepy@tiendv.dev");
+    expect(html).toContain("border border-border");
+    expect(html).toContain("bg-warning-bg");
+  });
+
+  it("renders the activity timeline empty state when no task logs exist", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureDetailSheet, {
+        feature: featureWithNoTasks,
+        onClose: () => undefined,
+      }),
+    );
+    expect(html).toContain("Activity Timeline");
+    expect(html).toContain("No activity logs available.");
   });
 });
 

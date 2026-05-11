@@ -30,13 +30,13 @@ export type FeatureStatusOption = {
 };
 
 export const STATUS_COLUMNS: StatusColumn[] = [
-  { key: "todo", label: "TODO", color: "#3274b4" },
-  { key: "ready", label: "READY", color: "#6e6de7" },
-  { key: "in_progress", label: "IN PROGRESS", color: "#e08500" },
-  { key: "blocked", label: "BLOCKED", color: "#e62a34" },
-  { key: "in_review", label: "IN REVIEW", color: "#8e67cb" },
-  { key: "done", label: "DONE", color: "#009252" },
-  { key: "cancelled", label: "CANCELLED", color: "#5c636e" },
+  { key: "todo", label: "Todo", color: "#3274b4" },
+  { key: "ready", label: "Ready", color: "#6e6de7" },
+  { key: "in_progress", label: "In Progress", color: "#e08500" },
+  { key: "blocked", label: "Blocked", color: "#e62a34" },
+  { key: "in_review", label: "In Review", color: "#8e67cb" },
+  { key: "done", label: "Done", color: "#009252" },
+  { key: "cancelled", label: "Cancelled", color: "#5c636e" },
 ];
 
 export const STATUS_COLOR: Record<string, string> = Object.fromEntries(
@@ -59,10 +59,6 @@ export function getStatusColor(status: string): string {
 
 export function getNextAction(status: string): string {
   return NEXT_ACTIONS[status] ?? "";
-}
-
-export function getStatusLabel(status: string): string {
-  return STATUS_COLUMNS.find((c) => c.key === status)?.label ?? status.toUpperCase().replace(/_/g, " ");
 }
 
 const FEATURE_STATUS_LABELS: Record<string, string> = {
@@ -114,7 +110,9 @@ const FEATURE_NEXT_ACTION_PRIORITY: TaskStatus[] = [
   "todo",
 ];
 
-export function getFeatureNextAction(tasks: Array<{ status: string }>): string | null {
+export function getFeatureNextAction(
+  tasks: Array<{ status: string }>,
+): string | null {
   for (const status of FEATURE_NEXT_ACTION_PRIORITY) {
     if (tasks.some((t) => t.status === status)) {
       return NEXT_ACTIONS[status] ?? null;

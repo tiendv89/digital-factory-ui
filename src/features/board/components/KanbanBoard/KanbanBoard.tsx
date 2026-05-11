@@ -1,6 +1,12 @@
 "use client";
 
-import { Funnel, RefreshCw, Search } from "lucide-react";
+import {
+  Funnel,
+  LayoutGrid,
+  ListChecks,
+  RefreshCw,
+  Search,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useBoardContext } from "./KanbanBoard.context";
 import { TaskBoardView } from "../TaskBoardView";
@@ -26,7 +32,7 @@ function ModeSegmentedControl() {
 
   return (
     <div
-      className="flex h-7 items-center rounded border border-border bg-surface-subtle p-0.5"
+      className="inline-flex items-stretch rounded-md border border-border bg-surface p-0.5 shadow-sm"
       role="tablist"
       aria-label="Board mode"
     >
@@ -36,12 +42,13 @@ function ModeSegmentedControl() {
         aria-selected={boardMode === "task"}
         onClick={() => handleModeClick("task")}
         className={
-          "h-6 rounded-sm px-2.5 text-xs font-medium transition-colors " +
+          "flex h-7 items-center gap-1.5 rounded-sm px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface " +
           (boardMode === "task"
-            ? "bg-surface text-text-primary shadow-sm"
-            : "text-text-secondary hover:text-text-primary")
+            ? "border border-success bg-success text-white shadow-sm"
+            : "border border-transparent text-text-secondary hover:bg-surface-subtle hover:text-text-primary")
         }
       >
+        <ListChecks className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         Task
       </button>
       <button
@@ -50,23 +57,20 @@ function ModeSegmentedControl() {
         aria-selected={boardMode === "feature"}
         onClick={() => handleModeClick("feature")}
         className={
-          "h-6 rounded-sm px-2.5 text-xs font-medium transition-colors " +
+          "flex h-7 items-center gap-1.5 rounded-sm px-3 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface " +
           (boardMode === "feature"
-            ? "bg-surface text-text-primary shadow-sm"
-            : "text-text-secondary hover:text-text-primary")
+            ? "border border-success bg-success text-white shadow-sm"
+            : "border border-transparent text-text-secondary hover:bg-surface-subtle hover:text-text-primary")
         }
       >
+        <LayoutGrid className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         Feature
       </button>
     </div>
   );
 }
 
-function TaskModeFilterMenu({
-  onClose,
-}: {
-  onClose: () => void;
-}) {
+function TaskModeFilterMenu({ onClose }: { onClose: () => void }) {
   const { taskActiveFilters, setTaskActiveFilters } = useBoardContext();
   const selectedStatuses = new Set(taskActiveFilters.statuses);
   const allSelected = isAllStatusFilterSelected(taskActiveFilters.statuses);
@@ -113,18 +117,14 @@ function TaskModeFilterMenu({
             style={{ background: status.color }}
             aria-hidden="true"
           />
-          {status.label}
+          <span>{status.label}</span>
         </label>
       ))}
     </div>
   );
 }
 
-function FeatureModeFilterMenu({
-  onClose,
-}: {
-  onClose: () => void;
-}) {
+function FeatureModeFilterMenu({ onClose }: { onClose: () => void }) {
   const { featureActiveFilters, setFeatureActiveFilters } = useBoardContext();
   const selectedStatuses = new Set(featureActiveFilters.statuses);
   const allSelected = isAllFeatureStatusFilterSelected(
@@ -249,9 +249,7 @@ function BoardControls() {
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             placeholder={
-              boardMode === "task"
-                ? "Search tasks..."
-                : "Search features..."
+              boardMode === "task" ? "Search tasks..." : "Search features..."
             }
             className="min-w-0 flex-1 bg-transparent text-xs text-text-primary outline-none placeholder:text-text-muted"
           />

@@ -16,7 +16,10 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ParsedFeature } from "../services/yaml-parser";
-import type { ActiveFilters, FeatureActiveFilters } from "../features/board/types";
+import type {
+  ActiveFilters,
+  FeatureActiveFilters,
+} from "../features/board/types";
 import {
   getDefaultBoardMode,
   getDefaultFeatureStatusFilter,
@@ -27,6 +30,7 @@ import {
   matchesFeatureModeSearch,
   matchesFeatureModeStatusFilter,
 } from "../features/board/lib/filter";
+import { FEATURE_STATUS_OPTIONS } from "../features/board/lib/status";
 import { FeatureListRow } from "../features/board/components/FeatureBoardView/FeatureListRow";
 
 // ─── localStorage shim ─────────────────────────────────────────────────────
@@ -116,7 +120,10 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
   });
 
   it("renders feature title when distinct from id", () => {
-    const feature = makeFeature({ id: "auth-system", title: "Auth System Feature" });
+    const feature = makeFeature({
+      id: "auth-system",
+      title: "Auth System Feature",
+    });
     const html = renderToStaticMarkup(
       React.createElement(FeatureListRow, {
         feature,
@@ -153,8 +160,14 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
 
   it("renders without crashing for every feature lifecycle status", () => {
     const statuses = [
-      "in_design", "in_tdd", "ready_for_implementation",
-      "in_implementation", "in_handoff", "done", "blocked", "cancelled",
+      "in_design",
+      "in_tdd",
+      "ready_for_implementation",
+      "in_implementation",
+      "in_handoff",
+      "done",
+      "blocked",
+      "cancelled",
     ];
     for (const status of statuses) {
       const feature = makeFeature({ featureStatus: status });
@@ -179,12 +192,9 @@ const featureBoardContextRef = vi.hoisted(() => ({
   current: null as unknown,
 }));
 
-vi.mock(
-  "../features/board/components/KanbanBoard/KanbanBoard.context",
-  () => ({
-    useBoardContext: () => featureBoardContextRef.current,
-  }),
-);
+vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
+  useBoardContext: () => featureBoardContextRef.current,
+}));
 
 import { FeatureBoardView } from "../features/board/components/FeatureBoardView/FeatureBoardView";
 
@@ -254,9 +264,60 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     expect(html).toContain('role="listitem"');
   });
 
+  it("renders the feature lifecycle status header row with canonical columns", () => {
+    featureBoardContextRef.current = buildFeatureBoardContext({
+      features: [
+        makeFeature({ id: "active-feat", featureStatus: "in_implementation" }),
+        makeFeature({ id: "blocked-feat", featureStatus: "blocked" }),
+      ],
+      featureActiveFilters: { statuses: ["in_implementation", "blocked"] },
+    });
+
+    const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
+    expect(html.match(/data-feature-status-header/g) ?? []).toHaveLength(
+      FEATURE_STATUS_OPTIONS.length,
+    );
+    expect(html).toContain('aria-label="Feature status columns"');
+    for (const status of FEATURE_STATUS_OPTIONS) {
+      expect(html).toContain(`data-feature-status-header="${status.key}"`);
+      expect(html).toContain(status.label.toUpperCase());
+    }
+    expect(html).toMatch(
+      /data-feature-status-count="in_implementation"[^>]*>1/,
+    );
+    expect(html).toMatch(/data-feature-status-count="blocked"[^>]*>1/);
+    expect(html).toMatch(/data-feature-status-count="done"[^>]*>0/);
+  });
+
+  it("renders each visible feature as one table row with one matching status cell", () => {
+    featureBoardContextRef.current = buildFeatureBoardContext({
+      features: [
+        makeFeature({ id: "active-feat", featureStatus: "in_implementation" }),
+        makeFeature({ id: "blocked-feat", featureStatus: "blocked" }),
+        makeFeature({ id: "done-feat", featureStatus: "done" }),
+      ],
+      featureActiveFilters: { statuses: ["in_implementation", "blocked"] },
+    });
+
+    const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
+    expect(html.match(/data-feature-grid-row/g) ?? []).toHaveLength(2);
+    expect(html.match(/data-feature-status-cell/g) ?? []).toHaveLength(
+      2 * FEATURE_STATUS_OPTIONS.length,
+    );
+    expect(html).toContain('data-feature-card-status="in_implementation"');
+    expect(html).toContain('data-feature-card-status="blocked"');
+    expect(html.match(/data-feature-card-status/g) ?? []).toHaveLength(2);
+    expect(html).toContain("active-feat");
+    expect(html).toContain("blocked-feat");
+    expect(html).not.toContain("done-feat");
+    expect(html).toContain('class="grid min-h-[104px] border-b border-border"');
+  });
+
   it("renders the feature id in the list", () => {
     featureBoardContextRef.current = buildFeatureBoardContext({
-      features: [makeFeature({ id: "my-special-feature", title: "My Special Feature" })],
+      features: [
+        makeFeature({ id: "my-special-feature", title: "My Special Feature" }),
+      ],
       featureActiveFilters: { statuses: ["in_implementation"] },
     });
 
@@ -282,7 +343,9 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
 
   it("renders FeatureListRow with role=button (confirming setSelectedFeature is the click path)", () => {
     featureBoardContextRef.current = buildFeatureBoardContext({
-      features: [makeFeature({ id: "feat-clickable", title: "Clickable Feature" })],
+      features: [
+        makeFeature({ id: "feat-clickable", title: "Clickable Feature" }),
+      ],
       featureActiveFilters: { statuses: ["in_implementation"] },
     });
 
@@ -292,7 +355,9 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
   });
 
   it("renders loading state without crashing", () => {
-    featureBoardContextRef.current = buildFeatureBoardContext({ loading: true });
+    featureBoardContextRef.current = buildFeatureBoardContext({
+      loading: true,
+    });
 
     const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
     expect(html).toContain("Loading features");
@@ -391,7 +456,9 @@ describe("Feature Mode default filter hides 'done' features on first visit", () 
   it("a 'done' feature is hidden from Feature Mode on first visit", () => {
     const doneFeature = makeFeature({ featureStatus: "done" });
     const defaultFilter = getDefaultFeatureStatusFilter();
-    expect(matchesFeatureModeStatusFilter(doneFeature, defaultFilter)).toBe(false);
+    expect(matchesFeatureModeStatusFilter(doneFeature, defaultFilter)).toBe(
+      false,
+    );
   });
 
   it("an 'in_implementation' feature is visible on first visit", () => {

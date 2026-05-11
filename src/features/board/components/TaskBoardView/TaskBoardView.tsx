@@ -16,8 +16,6 @@ import {
   ParseErrorState,
 } from "../ErrorStates";
 
-const MIN_COLUMN_WIDTH = 180;
-
 function TaskColumnHeader({
   label,
   color,
@@ -28,10 +26,7 @@ function TaskColumnHeader({
   count: number;
 }) {
   return (
-    <div
-      className="flex min-w-0 flex-1 items-center justify-between border-r border-border bg-surface-secondary px-3 py-2.5 last:border-r-0"
-      style={{ minWidth: MIN_COLUMN_WIDTH }}
-    >
+    <div className="flex min-w-0 flex-1 items-center justify-between border-r border-border bg-surface-secondary px-3 py-2.5 last:border-r-0">
       <div className="flex min-w-0 items-center gap-2">
         <div
           className="h-2 w-2 rounded-sm"
@@ -120,11 +115,8 @@ export function TaskBoardView() {
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
-      <div
-        className="w-full"
-        style={{ minWidth: MIN_COLUMN_WIDTH * STATUS_COLUMNS.length }}
-      >
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="w-full">
         <div
           className="sticky top-0 z-10 flex w-full border-b border-border"
           role="row"
@@ -148,7 +140,6 @@ export function TaskBoardView() {
                 isExpanded={expandedFeatureIds.has(feature.id)}
                 onToggle={() => toggleFeature(feature.id)}
                 onSelectTask={setSelectedTask}
-                minColumnWidth={MIN_COLUMN_WIDTH}
               />
             </div>
           ))}

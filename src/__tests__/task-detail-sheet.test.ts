@@ -54,6 +54,11 @@ const task: ParsedTask = {
   ],
 };
 
+const taskWithWorkspacePrOnly: ParsedTask = {
+  ...task,
+  pr: undefined,
+};
+
 beforeEach(() => {
   mockBoardContext.selectedTask = {
     task,
@@ -80,6 +85,7 @@ describe("TaskDetailSheet", () => {
     expect(html).toContain("Inspect task details");
     expect(html).toContain("Dashboard");
     expect(html).toContain("tiendv89/digital-factory-ui");
+    expect(html).toContain("https://github.com/tiendv89/digital-factory-ui");
     expect(html).toContain("feature/dashboard-T5");
     expect(html).toContain("Human approves or rejects");
     expect(html).toContain("T1");
@@ -91,6 +97,50 @@ describe("TaskDetailSheet", () => {
     expect(html).toContain("alice");
     expect(html).toContain("bob");
     expect(html).toContain("Ready for review");
+    expect(html.match(/data-task-timeline-entry/g) ?? []).toHaveLength(2);
+    expect(html).toContain('data-task-timeline-status="in_progress"');
+    expect(html).toContain('data-task-timeline-status="in_review"');
+    expect(html).toContain("bg-warning-bg");
+    expect(html).toContain("bg-purple-bg");
+    expect(html).toContain("border border-border");
+  });
+
+  it("renders activity timeline newest first", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(TaskDetailSheet, {
+        task,
+        featureTitle: "Dashboard",
+        repository: "tiendv89/digital-factory-ui",
+        nextAction: "Human approves or rejects",
+        onClose: () => undefined,
+      }),
+    );
+
+    const newerStatusIndex = html.indexOf(
+      'data-task-timeline-status="in_review"',
+    );
+    const olderStatusIndex = html.indexOf(
+      'data-task-timeline-status="in_progress"',
+    );
+    expect(newerStatusIndex).toBeGreaterThan(-1);
+    expect(olderStatusIndex).toBeGreaterThan(-1);
+    expect(newerStatusIndex).toBeLessThan(olderStatusIndex);
+  });
+
+  it("uses the workspace PR as a clickable repository PR fallback when needed", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(TaskDetailSheet, {
+        task: taskWithWorkspacePrOnly,
+        featureTitle: "Dashboard",
+        repository: "tiendv89/digital-factory-ui",
+        nextAction: "Human approves or rejects",
+        onClose: () => undefined,
+      }),
+    );
+
+    expect(html).toContain("Repository PR");
+    expect(html).toContain("https://example.com/workspace/pr/5");
+    expect(html).not.toContain("https://example.com/repo/pr/5");
   });
 });
 
@@ -101,6 +151,7 @@ describe("TaskDetailSheetMount", () => {
     );
 
     expect(html).toContain("tiendv89/digital-factory-ui");
+    expect(html).toContain("https://github.com/tiendv89/digital-factory-ui");
     expect(html).toContain("Human approves or rejects");
     expect(html).toContain("Dashboard");
     expect(html).toContain("https://example.com/workspace/pr/5");
