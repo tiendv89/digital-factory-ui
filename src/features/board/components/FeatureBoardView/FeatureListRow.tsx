@@ -54,7 +54,7 @@ export function FeatureListRow({ feature, onClick }: FeatureListRowProps) {
       onClick={onClick}
       onKeyDown={handleKeyDown}
       aria-label={`Open feature detail for ${feature.title || feature.id}`}
-      className="flex min-h-12 w-full cursor-pointer items-center gap-3 border-b border-border bg-[#f7f8fb] px-5 py-2 transition-colors hover:bg-[#eef0f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      className="flex min-h-12 w-full cursor-pointer items-center gap-3 border-b border-border bg-surface px-5 py-2 transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
       <div className="flex min-w-0 flex-1 items-center gap-3">
         <Layers3 className="h-4 w-4 shrink-0 text-success" aria-hidden="true" />

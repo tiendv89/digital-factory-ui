@@ -4,6 +4,10 @@ import { useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureListRow } from "./FeatureListRow";
 import {
+  matchesFeatureModeSearch,
+  matchesFeatureModeStatusFilter,
+} from "../../lib/filter";
+import {
   AccessDeniedState,
   EmptyBoardState,
   NetworkErrorState,
@@ -29,20 +33,15 @@ export function FeatureBoardView() {
     setSelectedFeature,
   } = useBoardContext();
 
-  const visibleFeatures = useMemo(() => {
-    const q = featureSearchQuery.toLowerCase();
-    return features.filter((f) => {
-      if (q) {
-        const matchesId = f.id.toLowerCase().includes(q);
-        const matchesTitle = f.title.toLowerCase().includes(q);
-        if (!matchesId && !matchesTitle) return false;
-      }
-      if (featureActiveFilters.statuses.length === 0) return false;
-      return featureActiveFilters.statuses.includes(
-        f.featureStatus as (typeof featureActiveFilters.statuses)[number],
-      );
-    });
-  }, [features, featureSearchQuery, featureActiveFilters]);
+  const visibleFeatures = useMemo(
+    () =>
+      features.filter(
+        (f) =>
+          matchesFeatureModeSearch(f, featureSearchQuery) &&
+          matchesFeatureModeStatusFilter(f, featureActiveFilters.statuses),
+      ),
+    [features, featureSearchQuery, featureActiveFilters],
+  );
 
   let content;
   if (loading) {
