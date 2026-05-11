@@ -12,7 +12,12 @@ type TaskCardProps = {
   onSelect: (task: SelectedTask) => void;
 };
 
-export function TaskCard({ task, featureId, featureTitle, onSelect }: TaskCardProps) {
+export function TaskCard({
+  task,
+  featureId,
+  featureTitle,
+  onSelect,
+}: TaskCardProps) {
   const nextAction = getNextAction(task.status);
   const statusColor = getStatusColor(task.status);
 
@@ -34,11 +39,13 @@ export function TaskCard({ task, featureId, featureTitle, onSelect }: TaskCardPr
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       data-task-id={task.id}
-      className="relative min-h-[76px] cursor-pointer border border-border bg-surface p-3 transition-colors hover:border-primary hover:bg-surface-secondary focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      className="relative h-full min-h-19 cursor-pointer border border-border bg-surface p-3 transition-colors hover:border-primary hover:bg-surface-secondary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       aria-label={`Task ${task.id}: ${task.title}`}
     >
       <div className="mb-1 flex items-start gap-1">
-        <span className="shrink-0 text-xs font-medium text-text-muted">{task.id}</span>
+        <span className="shrink-0 text-xs font-medium text-text-muted">
+          {task.id}
+        </span>
       </div>
       <p className="mb-2 text-xs font-medium leading-snug text-text-primary line-clamp-2">
         {task.title}
@@ -50,7 +57,9 @@ export function TaskCard({ task, featureId, featureTitle, onSelect }: TaskCardPr
             style={{ color: "#009252" }}
             aria-hidden="true"
           />
-          <span className="truncate text-xs text-text-secondary">{nextAction}</span>
+          <span className="truncate text-xs text-text-secondary">
+            {nextAction}
+          </span>
         </div>
       )}
     </div>

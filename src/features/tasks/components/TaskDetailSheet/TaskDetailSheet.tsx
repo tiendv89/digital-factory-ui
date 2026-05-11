@@ -215,6 +215,7 @@ function MetadataSection({
 }) {
   const actorType = task.execution?.actor_type;
   const ActorIcon = actorType === "agent" ? Bot : User;
+  const repositoryUrl = repository ? `https://github.com/${repository}` : null;
 
   return (
     <section className="grid grid-cols-2 gap-x-6 gap-y-5 pb-2">
@@ -222,8 +223,17 @@ function MetadataSection({
         icon={<Layers className="h-4 w-4" aria-hidden="true" />}
         label="Repository"
       >
-        {repository ? (
-          <span className="text-text-primary">{repository}</span>
+        {repository && repositoryUrl ? (
+          <a
+            href={repositoryUrl}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex items-center gap-1.5 text-primary transition-colors hover:underline"
+            aria-label={`Open repository ${repository}`}
+          >
+            <span className="text-text-primary">{repository}</span>
+            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+          </a>
         ) : (
           <NoneValue />
         )}
@@ -291,10 +301,7 @@ function MetadataSection({
       <MetaField
         icon={
           task.blockedReason ? (
-            <AlertCircle
-              className="h-4 w-4 text-danger"
-              aria-hidden="true"
-            />
+            <AlertCircle className="h-4 w-4 text-danger" aria-hidden="true" />
           ) : null
         }
         label="Blocked Reason"
@@ -354,7 +361,7 @@ function NoneValue() {
 
 function PullRequestsSection({ task }: { task: ParsedTask }) {
   const workspacePrUrl = task.workspace_pr?.url ?? undefined;
-  const repoPrUrl = task.pr?.url ?? undefined;
+  const repoPrUrl = task.pr?.url ?? task.workspace_pr?.url ?? undefined;
 
   return (
     <section className="mt-6 border-t border-border pt-5">
@@ -394,7 +401,9 @@ function PullRequestCard({
       >
         <div className="flex items-center gap-2">
           <span className="text-text-muted">{icon}</span>
-          <span className="text-sm font-medium text-text-secondary">{label}</span>
+          <span className="text-sm font-medium text-text-secondary">
+            {label}
+          </span>
         </div>
         <span className="italic text-xs text-text-muted">None</span>
       </div>
@@ -423,18 +432,20 @@ function PullRequestCard({
 }
 
 function TimelineSection({ log }: { log: LogEntry[] | undefined }) {
+  const timelineEntries = getSortedTimelineEntries(log);
+
   return (
     <section className="mt-6 border-t border-border pt-5">
       <h3 className="mb-3 text-sm font-semibold text-text-primary">
         Activity Timeline
       </h3>
-      {log && log.length > 0 ? (
+      {timelineEntries.length > 0 ? (
         <ol className="flex flex-col gap-3">
-          {log.map((entry, index) => (
+          {timelineEntries.map((entry, index) => (
             <TimelineEntry
               key={`${entry.at}-${index}`}
               entry={entry}
-              isLast={index === log.length - 1}
+              isLast={index === timelineEntries.length - 1}
             />
           ))}
         </ol>
@@ -445,11 +456,29 @@ function TimelineSection({ log }: { log: LogEntry[] | undefined }) {
   );
 }
 
-function getTimelineDotClass(action: string): string {
-  if (action === "blocked") return "bg-danger";
-  if (action === "cancelled") return "bg-text-muted";
-  if (action === "done") return "bg-success";
-  return "bg-text-secondary";
+function getSortedTimelineEntries(log: LogEntry[] | undefined): LogEntry[] {
+  if (!log || log.length === 0) return [];
+
+  return log
+    .map((entry, sequence) => {
+      const time = new Date(entry.at).getTime();
+      return {
+        entry,
+        sequence,
+        sortTime: Number.isNaN(time) ? Number.NEGATIVE_INFINITY : time,
+      };
+    })
+    .sort((a, b) => {
+      if (a.sortTime !== b.sortTime) return b.sortTime - a.sortTime;
+      return a.sequence - b.sequence;
+    })
+    .map(({ entry }) => entry);
+}
+
+function getTimelineStatusKey(action: string): string {
+  if (action === "started" || action === "claimed") return "in_progress";
+  if (action === "moved_to_review") return "in_review";
+  return action;
 }
 
 function TimelineEntry({
@@ -459,13 +488,13 @@ function TimelineEntry({
   entry: LogEntry;
   isLast: boolean;
 }) {
-  const dotClass = getTimelineDotClass(entry.action);
+  const statusStyle = getStatusStyle(getTimelineStatusKey(entry.action));
 
   return (
-    <li className="flex gap-3">
+    <li data-task-timeline-entry className="flex gap-3">
       <div className="flex flex-col items-center pt-1">
         <span
-          className={"h-2 w-2 rounded-full " + dotClass}
+          className={"h-2 w-2 rounded-full " + statusStyle.dot}
           aria-hidden="true"
         />
         {isLast ? null : (
@@ -474,9 +503,10 @@ function TimelineEntry({
       </div>
       <div className="flex flex-1 flex-col gap-0.5 pb-3">
         <div className="flex items-center justify-between gap-2">
-          <span className="text-sm font-medium capitalize text-text-primary">
-            {formatStatusLabel(entry.action)}
-          </span>
+          <TimelineStatusBadge
+            action={entry.action}
+            statusStyle={statusStyle}
+          />
           <span className="text-xs text-text-muted">
             {formatTimestamp(entry.at)}
           </span>
@@ -487,5 +517,27 @@ function TimelineEntry({
         ) : null}
       </div>
     </li>
+  );
+}
+
+function TimelineStatusBadge({
+  action,
+  statusStyle,
+}: {
+  action: string;
+  statusStyle: StatusBadgeStyle;
+}) {
+  return (
+    <span
+      data-task-timeline-status={action}
+      className={
+        "border border-border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide " +
+        statusStyle.bg +
+        " " +
+        statusStyle.text
+      }
+    >
+      {formatStatusLabel(action)}
+    </span>
   );
 }

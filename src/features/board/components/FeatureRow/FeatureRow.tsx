@@ -20,7 +20,6 @@ type FeatureRowProps = {
   isExpanded: boolean;
   onToggle: () => void;
   onSelectTask: (task: SelectedTask) => void;
-  minColumnWidth: number;
 };
 
 function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
@@ -101,7 +100,6 @@ export function FeatureRow({
   isExpanded,
   onToggle,
   onSelectTask,
-  minColumnWidth,
 }: FeatureRowProps) {
   const totalTasks = feature.tasks.length;
   const doneTasks = feature.tasks.filter((t) => t.status === "done").length;
@@ -109,7 +107,7 @@ export function FeatureRow({
   const modifiedToday = lastModifiedAt
     ? isTodayTimestamp(lastModifiedAt)
     : false;
-  const gridTemplateColumns = `repeat(${STATUS_COLUMNS.length}, minmax(${minColumnWidth}px, 1fr))`;
+  const gridTemplateColumns = `repeat(${STATUS_COLUMNS.length}, minmax(0, 1fr))`;
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
@@ -119,7 +117,7 @@ export function FeatureRow({
   }
 
   return (
-    <div className="w-full border-b border-border bg-[#f7f8fb]">
+    <div className="w-full border-b border-border bg-bg">
       {/* Feature header — spans full width */}
       <div
         role="button"
@@ -128,7 +126,7 @@ export function FeatureRow({
         onKeyDown={handleKeyDown}
         aria-expanded={isExpanded}
         aria-controls={`feature-tasks-${feature.id}`}
-        className="flex min-h-11 w-full cursor-pointer items-center gap-3 px-5 py-0 transition-colors hover:bg-[#eef0f6] focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+        className="flex min-h-11 w-full flex-wrap items-center gap-x-3 gap-y-2 px-5 py-2 transition-colors hover:bg-surface-subtle focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <ChevronRight
@@ -149,7 +147,7 @@ export function FeatureRow({
             {feature.id}
           </span>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
           <FeatureStatusPill status={feature.featureStatus} />
           <span className="shrink-0 text-xs font-medium text-text-secondary">
             {doneTasks}/{totalTasks}
@@ -193,7 +191,7 @@ export function FeatureRow({
               <div
                 key={task.id}
                 data-task-grid-row
-                className="grid min-h-[94px] border-b border-border last:border-b-0"
+                className="grid min-h-23.5 border-b border-border last:border-b-0"
                 style={{ gridTemplateColumns }}
                 role="row"
                 aria-label={`${task.id} ${task.title}`}

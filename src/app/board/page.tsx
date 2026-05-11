@@ -11,6 +11,7 @@ import {
   KanbanBoard,
 } from "@/features/board/components/KanbanBoard";
 import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
+import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet";
 import { TaskDetailSheetMount } from "@/features/tasks";
 
 export default function BoardPage() {
@@ -49,6 +50,7 @@ export default function BoardPage() {
           </section>
         </div>
         <TaskDetailSheetMount />
+        <FeatureDetailSheetMount />
       </BoardProvider>
     </main>
   );
