@@ -37,8 +37,8 @@ export function matchesFeatureModeSearch(
   feature: ParsedFeature,
   query: string,
 ): boolean {
-  if (!query) return true;
-  const q = query.toLowerCase();
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
   return (
     feature.title.toLowerCase().includes(q) ||
     feature.id.toLowerCase().includes(q)

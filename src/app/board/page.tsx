@@ -11,8 +11,8 @@ import {
   KanbanBoard,
 } from "@/features/board/components/KanbanBoard";
 import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
-import { TaskDetailSheetMount } from "@/features/tasks";
 import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet";
+import { TaskDetailSheetMount } from "@/features/tasks";
 
 export default function BoardPage() {
   const router = useRouter();

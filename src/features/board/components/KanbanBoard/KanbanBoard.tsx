@@ -4,6 +4,7 @@ import { Funnel, RefreshCw, Search } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useBoardContext } from "./KanbanBoard.context";
 import { TaskBoardView } from "../TaskBoardView";
+import { FeatureBoardView } from "../FeatureBoardView";
 import { FEATURE_STATUS_OPTIONS, STATUS_COLUMNS } from "../../lib/status";
 import {
   isAllFeatureStatusFilterSelected,
@@ -283,24 +284,13 @@ function BoardControls() {
   );
 }
 
-function FeatureModeComingSoon() {
-  return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-20">
-      <p className="text-sm font-medium text-text-secondary">Feature Mode</p>
-      <p className="text-xs text-text-muted">
-        Feature list view coming in the next task.
-      </p>
-    </div>
-  );
-}
-
 export function KanbanBoard() {
   const { boardMode } = useBoardContext();
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border border-border bg-surface">
       <BoardControls />
-      {boardMode === "task" ? <TaskBoardView /> : <FeatureModeComingSoon />}
+      {boardMode === "task" ? <TaskBoardView /> : <FeatureBoardView />}
     </div>
   );
 }
