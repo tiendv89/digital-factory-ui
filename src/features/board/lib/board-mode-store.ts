@@ -1,4 +1,4 @@
-import type { BoardMode } from "./status";
+export type BoardMode = "task" | "feature";
 
 const STORAGE_KEY = "dashboard:board-mode";
 
