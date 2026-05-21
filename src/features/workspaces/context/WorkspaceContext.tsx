@@ -213,9 +213,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     });
     setActiveSurface((prev) => {
       if (prev !== "task-tab") return prev;
+      if (activeTaskTabId !== taskId) return prev;
       return "board";
     });
-  }, []);
+  }, [activeTaskTabId]);
 
   const activateTaskTab = useCallback((taskId: string) => {
     setActiveTaskTabId(taskId);
