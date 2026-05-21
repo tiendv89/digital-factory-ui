@@ -33,16 +33,18 @@ import {
   getSelectedWorkspaceId,
   setSelectedWorkspaceId,
   clearSelectedWorkspaceId,
+  resolveBootstrapWorkspaceId,
 } from "../services/local-workspace-store";
 
 import {
   adaptWorkspaceDetail,
   adaptFeatureSummary,
   adaptTaskSummary,
+  buildImportLocalSummary,
 } from "../features/workspaces/lib/workspaceAdapter";
 
 import type { LocalWorkspaceSummary } from "../services/workflow-backend/types";
-import type { WorkspaceDetail, FeatureSummary, TaskSummary } from "../services/workflow-backend/types";
+import type { WorkspaceDetail, FeatureSummary, TaskSummary, ImportWorkspaceRequest } from "../services/workflow-backend/types";
 
 // ─── fixtures ────────────────────────────────────────────────────────────────
 
@@ -92,6 +94,7 @@ function makeFeatureSummary(partial: Partial<FeatureSummary> = {}): FeatureSumma
 function makeWorkspaceDetail(
   features: FeatureSummary[] = [],
   tasks: TaskSummary[] = [],
+  partial: Partial<WorkspaceDetail> = {},
 ): WorkspaceDetail {
   return {
     id: "ws-uuid-1",
@@ -102,6 +105,7 @@ function makeWorkspaceDetail(
     updated_at: "2026-01-01T00:00:00Z",
     features,
     tasks,
+    ...partial,
   };
 }
 
@@ -302,5 +306,174 @@ describe("adaptWorkspaceDetail", () => {
     const featB = result.find((f) => f.id === "feat-b")!;
     expect(featA.tasks).toHaveLength(2);
     expect(featB.tasks).toHaveLength(1);
+  });
+});
+
+// ─── First load — bootstrap workspace ID selection ───────────────────────────
+
+describe("resolveBootstrapWorkspaceId", () => {
+  it("returns null when no summaries and no stored ID", () => {
+    expect(resolveBootstrapWorkspaceId([], null)).toBeNull();
+  });
+
+  it("returns storedId when present, regardless of summaries", () => {
+    const summaries = [
+      makeSummary({ workspaceId: "ws-a", last_opened_at: "2026-01-02T00:00:00Z" }),
+    ];
+    expect(resolveBootstrapWorkspaceId(summaries, "ws-stored")).toBe("ws-stored");
+  });
+
+  it("returns null when storedId is null but no summaries exist", () => {
+    expect(resolveBootstrapWorkspaceId([], null)).toBeNull();
+  });
+
+  it("returns the only summary workspaceId when storedId is null", () => {
+    const summaries = [makeSummary({ workspaceId: "ws-only" })];
+    expect(resolveBootstrapWorkspaceId(summaries, null)).toBe("ws-only");
+  });
+
+  it("returns the most recently opened workspace when storedId is null", () => {
+    const summaries = [
+      makeSummary({ workspaceId: "ws-old", last_opened_at: "2026-01-01T00:00:00Z" }),
+      makeSummary({ workspaceId: "ws-recent", last_opened_at: "2026-06-01T00:00:00Z" }),
+      makeSummary({ workspaceId: "ws-mid", last_opened_at: "2026-03-01T00:00:00Z" }),
+    ];
+    expect(resolveBootstrapWorkspaceId(summaries, null)).toBe("ws-recent");
+  });
+
+  it("does not mutate the input summaries array", () => {
+    const summaries = [
+      makeSummary({ workspaceId: "ws-a", last_opened_at: "2026-01-01T00:00:00Z" }),
+      makeSummary({ workspaceId: "ws-b", last_opened_at: "2026-06-01T00:00:00Z" }),
+    ];
+    const original = summaries.map((s) => s.workspaceId);
+    resolveBootstrapWorkspaceId(summaries, null);
+    expect(summaries.map((s) => s.workspaceId)).toEqual(original);
+  });
+});
+
+// ─── Workspace switching — local state update ─────────────────────────────────
+
+describe("workspace switching — localStorage side effects", () => {
+  beforeEach(() => mockLS.clear());
+
+  it("updates last_opened_at for the selected workspace", () => {
+    const before = "2026-01-01T00:00:00Z";
+    saveLocalWorkspaceSummary(makeSummary({ workspaceId: "ws-a", last_opened_at: before }));
+
+    const after = "2026-06-01T00:00:00Z";
+    saveLocalWorkspaceSummary(makeSummary({ workspaceId: "ws-a", last_opened_at: after }));
+
+    const summaries = getLocalWorkspaceSummaries();
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0].last_opened_at).toBe(after);
+  });
+
+  it("sets the selected workspace ID in localStorage after switching", () => {
+    setSelectedWorkspaceId("ws-b");
+    expect(getSelectedWorkspaceId()).toBe("ws-b");
+  });
+
+  it("replaces a previous selected workspace ID when switching", () => {
+    setSelectedWorkspaceId("ws-a");
+    setSelectedWorkspaceId("ws-b");
+    expect(getSelectedWorkspaceId()).toBe("ws-b");
+  });
+
+  it("resolveBootstrapWorkspaceId picks newly switched workspace by storedId", () => {
+    saveLocalWorkspaceSummary(makeSummary({ workspaceId: "ws-a", last_opened_at: "2026-01-01T00:00:00Z" }));
+    saveLocalWorkspaceSummary(makeSummary({ workspaceId: "ws-b", last_opened_at: "2026-06-01T00:00:00Z" }));
+    setSelectedWorkspaceId("ws-a");
+
+    const summaries = getLocalWorkspaceSummaries();
+    const storedId = getSelectedWorkspaceId();
+    expect(resolveBootstrapWorkspaceId(summaries, storedId)).toBe("ws-a");
+  });
+});
+
+// ─── Import workspace — local summary persistence ────────────────────────────
+
+describe("buildImportLocalSummary", () => {
+  const now = "2026-05-21T12:00:00.000Z";
+
+  function makeDetail(partial: Partial<WorkspaceDetail> = {}): WorkspaceDetail {
+    return makeWorkspaceDetail([], [], partial);
+  }
+
+  it("sets workspaceId from detail.id", () => {
+    const detail = makeDetail({ id: "ws-uuid-99" });
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/repo" };
+    const s = buildImportLocalSummary(detail, body, now);
+    expect(s.workspaceId).toBe("ws-uuid-99");
+  });
+
+  it("uses detail.name when available", () => {
+    const detail = makeDetail({ name: "My Detail Name" });
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/repo" };
+    const s = buildImportLocalSummary(detail, body, now);
+    expect(s.name).toBe("My Detail Name");
+  });
+
+  it("falls back to body.name when detail.name is empty", () => {
+    const detail = makeDetail({ name: "" });
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/repo", name: "Body Name" };
+    const s = buildImportLocalSummary(detail, body, now);
+    expect(s.name).toBe("Body Name");
+  });
+
+  it("falls back to repo basename when neither detail.name nor body.name", () => {
+    const detail = makeDetail({ name: "" });
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/my-project" };
+    const s = buildImportLocalSummary(detail, body, now);
+    expect(s.name).toBe("my-project");
+  });
+
+  it("strips .git suffix when computing repo basename", () => {
+    const detail = makeDetail({ name: "" });
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/my-project.git" };
+    const s = buildImportLocalSummary(detail, body, now);
+    expect(s.name).toBe("my-project");
+  });
+
+  it("stores repo_url from body", () => {
+    const detail = makeDetail();
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/repo" };
+    const s = buildImportLocalSummary(detail, body, now);
+    expect(s.repo_url).toBe("https://github.com/org/repo");
+  });
+
+  it("defaults default_branch to main when not provided", () => {
+    const detail = makeDetail();
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/repo" };
+    const s = buildImportLocalSummary(detail, body, now);
+    expect(s.default_branch).toBe("main");
+  });
+
+  it("uses body.default_branch when provided", () => {
+    const detail = makeDetail();
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/repo", default_branch: "develop" };
+    const s = buildImportLocalSummary(detail, body, now);
+    expect(s.default_branch).toBe("develop");
+  });
+
+  it("sets last_opened_at from the now parameter", () => {
+    const detail = makeDetail();
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/repo" };
+    const s = buildImportLocalSummary(detail, body, now);
+    expect(s.last_opened_at).toBe(now);
+  });
+
+  it("import summary can be persisted and retrieved from local store", () => {
+    const detail = makeDetail({ id: "ws-import-1", name: "Imported WS" });
+    const body: ImportWorkspaceRequest = { repo_url: "https://github.com/org/repo" };
+    const summary = buildImportLocalSummary(detail, body, now);
+
+    saveLocalWorkspaceSummary(summary);
+    setSelectedWorkspaceId(summary.workspaceId);
+
+    const stored = getLocalWorkspaceSummaries();
+    expect(stored).toHaveLength(1);
+    expect(stored[0].workspaceId).toBe("ws-import-1");
+    expect(getSelectedWorkspaceId()).toBe("ws-import-1");
   });
 });

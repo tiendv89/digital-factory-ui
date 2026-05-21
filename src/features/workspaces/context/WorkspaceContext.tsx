@@ -16,9 +16,11 @@ import {
   type LocalWorkspaceSummary,
   type WorkspaceDetail,
 } from "@/services/workflow-backend";
+import { buildImportLocalSummary } from "@/features/workspaces/lib/workspaceAdapter";
 import {
   getLocalWorkspaceSummaries,
   getSelectedWorkspaceId,
+  resolveBootstrapWorkspaceId,
   saveLocalWorkspaceSummary,
   removeLocalWorkspaceSummary,
   setSelectedWorkspaceId,
@@ -55,14 +57,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const storedId = getSelectedWorkspaceId();
     setSummaries(storedSummaries);
 
-    const workspaceId =
-      storedId ??
-      storedSummaries.sort(
-        (a, b) =>
-          new Date(b.last_opened_at).getTime() -
-          new Date(a.last_opened_at).getTime(),
-      )[0]?.workspaceId ??
-      null;
+    const workspaceId = resolveBootstrapWorkspaceId(storedSummaries, storedId);
 
     if (workspaceId) {
       setSelectedWorkspaceIdState(workspaceId);
@@ -112,17 +107,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       try {
         const detail = await apiImportWorkspace(body);
 
-        const repoUrl = body.repo_url;
-        const urlParts = repoUrl.replace(/\.git$/, "").split("/");
-        const repoName = urlParts[urlParts.length - 1] ?? repoUrl;
-
-        const summary: LocalWorkspaceSummary = {
-          workspaceId: detail.id,
-          name: detail.name || body.name || repoName,
-          repo_url: body.repo_url,
-          default_branch: body.default_branch ?? "main",
-          last_opened_at: new Date().toISOString(),
-        };
+        const summary = buildImportLocalSummary(detail, body, new Date().toISOString());
         saveLocalWorkspaceSummary(summary);
         setSelectedWorkspaceId(detail.id);
         setSummaries(getLocalWorkspaceSummaries());

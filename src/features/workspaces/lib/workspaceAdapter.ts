@@ -1,4 +1,10 @@
-import type { WorkspaceDetail, FeatureSummary, TaskSummary } from "@/services/workflow-backend";
+import type {
+  WorkspaceDetail,
+  FeatureSummary,
+  TaskSummary,
+  ImportWorkspaceRequest,
+  LocalWorkspaceSummary,
+} from "@/services/workflow-backend";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 
 export function adaptTaskSummary(task: TaskSummary): ParsedTask {
@@ -34,4 +40,20 @@ export function adaptFeatureSummary(
 
 export function adaptWorkspaceDetail(detail: WorkspaceDetail): ParsedFeature[] {
   return detail.features.map((f) => adaptFeatureSummary(f, detail.tasks));
+}
+
+export function buildImportLocalSummary(
+  detail: WorkspaceDetail,
+  body: ImportWorkspaceRequest,
+  now: string,
+): LocalWorkspaceSummary {
+  const urlParts = body.repo_url.replace(/\.git$/, "").split("/");
+  const repoName = urlParts[urlParts.length - 1] ?? body.repo_url;
+  return {
+    workspaceId: detail.id,
+    name: detail.name || body.name || repoName,
+    repo_url: body.repo_url,
+    default_branch: body.default_branch ?? "main",
+    last_opened_at: now,
+  };
 }

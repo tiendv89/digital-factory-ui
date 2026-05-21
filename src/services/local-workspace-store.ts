@@ -49,3 +49,18 @@ export function clearSelectedWorkspaceId(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(SELECTED_ID_KEY);
 }
+
+export function resolveBootstrapWorkspaceId(
+  summaries: LocalWorkspaceSummary[],
+  storedId: string | null,
+): string | null {
+  if (storedId) return storedId;
+  if (summaries.length === 0) return null;
+  return (
+    [...summaries].sort(
+      (a, b) =>
+        new Date(b.last_opened_at).getTime() -
+        new Date(a.last_opened_at).getTime(),
+    )[0]?.workspaceId ?? null
+  );
+}
