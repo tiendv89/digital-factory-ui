@@ -7,6 +7,7 @@ import type { ParsedFeature } from "@/services/yaml-parser";
 import { adaptWorkspaceDetail } from "@/features/workspaces/lib/workspaceAdapter";
 import type { BoardLoadError } from "../types";
 
+
 export type UseBoardDataResult = {
   features: ParsedFeature[];
   loading: boolean;
@@ -20,14 +21,15 @@ export type UseBoardDataOptions = {
 
 function mapApiError(err: unknown): BoardLoadError {
   if (err && typeof err === "object" && "code" in err) {
-    const e = err as { code: string; message: string };
+    const e = err as { code: string; message: string; retryable?: boolean };
+    const retryable = e.retryable;
     if (e.code === "DATABASE_NOT_FOUND" || e.code === "GITHUB_NOT_FOUND") {
-      return { kind: "not_found", message: e.message };
+      return { kind: "not_found", message: e.message, retryable };
     }
     if (e.code === "GITHUB_UNAUTHORIZED") {
-      return { kind: "access_denied", message: e.message };
+      return { kind: "access_denied", message: e.message, retryable };
     }
-    return { kind: "network_error", message: e.message };
+    return { kind: "network_error", message: e.message, retryable };
   }
   if (err instanceof Error) {
     return { kind: "network_error", message: err.message };
@@ -52,6 +54,21 @@ export function useBoardData(
   const reload = useCallback(() => {
     setTick((t) => t + 1);
   }, []);
+
+  // When initialData changes (e.g. workspace synced), update features immediately
+  const prevInitialDataRef = useRef<WorkspaceDetail | undefined>(options.initialData);
+  useEffect(() => {
+    const prev = prevInitialDataRef.current;
+    const next = options.initialData;
+    if (!next) return;
+    if (next === prev) return;
+    prevInitialDataRef.current = next;
+    if (tick === 0) {
+      setFeatures(adaptWorkspaceDetail(next));
+      setLoading(false);
+      setError(null);
+    }
+  });
 
   useEffect(() => {
     if (!workspaceId) {

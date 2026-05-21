@@ -42,6 +42,40 @@ export function adaptWorkspaceDetail(detail: WorkspaceDetail): ParsedFeature[] {
   return detail.features.map((f) => adaptFeatureSummary(f, detail.tasks));
 }
 
+export function adaptTaskSummariesToFeatures(tasks: TaskSummary[]): ParsedFeature[] {
+  const featureMap = new Map<string, { feature: ParsedFeature; order: number }>();
+  let order = 0;
+
+  for (const task of tasks) {
+    const featureKey = task.feature_id || task.feature_name || "unknown";
+    if (!featureMap.has(featureKey)) {
+      featureMap.set(featureKey, {
+        feature: {
+          id: task.feature_name || featureKey,
+          title: task.feature_name || featureKey,
+          featureStatus: "unknown",
+          tasks: [],
+        },
+        order: order++,
+      });
+    }
+    featureMap.get(featureKey)!.feature.tasks.push(adaptTaskSummary(task));
+  }
+
+  return [...featureMap.values()]
+    .sort((a, b) => a.order - b.order)
+    .map((entry) => entry.feature);
+}
+
+export function adaptFeatureSummaries(features: FeatureSummary[]): ParsedFeature[] {
+  return features.map((f) => ({
+    id: f.feature_name,
+    title: f.title,
+    featureStatus: f.status,
+    tasks: [],
+  }));
+}
+
 export function buildImportLocalSummary(
   detail: WorkspaceDetail,
   body: ImportWorkspaceRequest,

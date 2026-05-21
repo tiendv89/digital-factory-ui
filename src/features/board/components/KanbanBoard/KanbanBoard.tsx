@@ -1,11 +1,13 @@
 "use client";
 
 import {
+  AlertTriangle,
   Funnel,
   LayoutGrid,
   ListChecks,
   RefreshCw,
   Search,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useBoardContext } from "./KanbanBoard.context";
@@ -20,6 +22,39 @@ import {
   toggleStatusFilter,
 } from "../../lib/status-filter";
 import type { BoardMode } from "../../lib/status-filter-store";
+
+function StaleBanner() {
+  const { workspaceDetail, syncBoard, syncing } = useBoardContext();
+  const { source_state } = workspaceDetail;
+  if (!source_state?.stale) return null;
+
+  return (
+    <div
+      role="alert"
+      aria-live="polite"
+      className="flex items-center gap-3 border-b border-warning/30 bg-warning/10 px-4 py-2"
+    >
+      <AlertTriangle className="h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
+      <p className="flex-1 text-xs text-warning">
+        <span className="font-semibold">Stale data</span>
+        {source_state.error_code ? ` — ${source_state.error_code}` : " — workspace data may be out of date."}
+      </p>
+      <button
+        type="button"
+        onClick={syncBoard}
+        disabled={syncing}
+        aria-label="Sync workspace to refresh data"
+        className="flex items-center gap-1.5 rounded border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning transition-colors hover:bg-warning/20 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        <RefreshCw
+          className={"h-3 w-3 " + (syncing ? "animate-spin" : "")}
+          aria-hidden="true"
+        />
+        {syncing ? "Syncing…" : "Sync now"}
+      </button>
+    </div>
+  );
+}
 
 function ModeSegmentedControl() {
   const { boardMode, setBoardMode } = useBoardContext();
@@ -186,7 +221,8 @@ function FeatureModeFilterMenu({ onClose }: { onClose: () => void }) {
 function BoardControls() {
   const {
     loading,
-    reload,
+    syncing,
+    syncBoard,
     boardMode,
     taskSearchQuery,
     setTaskSearchQuery,
@@ -230,16 +266,16 @@ function BoardControls() {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={reload}
-          disabled={loading}
-          aria-label="Sync board"
+          onClick={syncBoard}
+          disabled={loading || syncing}
+          aria-label="Sync workspace data"
           className="flex h-8 items-center gap-2 border border-border bg-surface px-3 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
         >
           <RefreshCw
-            className={"h-3.5 w-3.5 " + (loading ? "animate-spin" : "")}
+            className={"h-3.5 w-3.5 " + (syncing ? "animate-spin" : "")}
             aria-hidden="true"
           />
-          {loading ? "Syncing..." : "Sync"}
+          {syncing ? "Syncing..." : "Sync"}
         </button>
         <label className="flex h-8 w-64 items-center gap-2 border border-border bg-surface px-3 text-xs text-text-secondary focus-within:border-primary">
           <Search className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -253,6 +289,16 @@ function BoardControls() {
             }
             className="min-w-0 flex-1 bg-transparent text-xs text-text-primary outline-none placeholder:text-text-muted"
           />
+          {searchValue && (
+            <button
+              type="button"
+              onClick={() => setSearchValue("")}
+              aria-label="Clear search"
+              className="shrink-0 text-text-muted hover:text-text-primary"
+            >
+              <X className="h-3 w-3" aria-hidden="true" />
+            </button>
+          )}
         </label>
         <div ref={filterRef} className="relative">
           <button
@@ -287,6 +333,7 @@ export function KanbanBoard() {
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border border-border bg-surface">
+      <StaleBanner />
       <BoardControls />
       {boardMode === "task" ? <TaskBoardView /> : <FeatureBoardView />}
     </div>

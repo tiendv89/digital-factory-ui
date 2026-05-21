@@ -2,10 +2,10 @@ import type { ParsedTask } from "@/services/yaml-parser";
 import type { FeatureStatus } from "./lib/status";
 
 export type BoardLoadError =
-  | { kind: "access_denied"; message: string }
-  | { kind: "not_found"; message: string }
-  | { kind: "parse_error"; message: string }
-  | { kind: "network_error"; message: string };
+  | { kind: "access_denied"; message: string; retryable?: boolean }
+  | { kind: "not_found"; message: string; retryable?: boolean }
+  | { kind: "parse_error"; message: string; retryable?: boolean }
+  | { kind: "network_error"; message: string; retryable?: boolean };
 
 export type ActiveFilters = {
   statuses: ParsedTask["status"][];

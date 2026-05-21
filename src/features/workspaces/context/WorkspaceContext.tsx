@@ -11,6 +11,7 @@ import {
 import {
   getWorkspace,
   importWorkspace as apiImportWorkspace,
+  syncWorkspace as apiSyncWorkspace,
   type ApiError,
   type ImportWorkspaceRequest,
   type LocalWorkspaceSummary,
@@ -34,11 +35,15 @@ export type WorkspaceContextValue = {
   workspaceError: ApiError | null;
   importingWorkspace: boolean;
   importError: ApiError | null;
+  syncingWorkspace: boolean;
+  syncError: ApiError | null;
 
   selectWorkspace: (workspaceId: string) => void;
   importWorkspace: (body: ImportWorkspaceRequest) => Promise<void>;
   clearImportError: () => void;
   removeLocalSummary: (workspaceId: string) => void;
+  syncCurrentWorkspace: () => Promise<void>;
+  clearSyncError: () => void;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -51,6 +56,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspaceError, setWorkspaceError] = useState<ApiError | null>(null);
   const [importingWorkspace, setImportingWorkspace] = useState(false);
   const [importError, setImportError] = useState<ApiError | null>(null);
+  const [syncingWorkspace, setSyncingWorkspace] = useState(false);
+  const [syncError, setSyncError] = useState<ApiError | null>(null);
 
   useEffect(() => {
     const storedSummaries = getLocalWorkspaceSummaries();
@@ -127,6 +134,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setImportError(null);
   }, []);
 
+  const syncCurrentWorkspace = useCallback(async () => {
+    if (!selectedWorkspaceId) return;
+    setSyncingWorkspace(true);
+    setSyncError(null);
+    try {
+      const detail = await apiSyncWorkspace(selectedWorkspaceId);
+      setActiveWorkspace(detail);
+    } catch (err) {
+      setSyncError(err as ApiError);
+      throw err;
+    } finally {
+      setSyncingWorkspace(false);
+    }
+  }, [selectedWorkspaceId]);
+
+  const clearSyncError = useCallback(() => {
+    setSyncError(null);
+  }, []);
+
   const removeLocalSummary = useCallback((workspaceId: string) => {
     removeLocalWorkspaceSummary(workspaceId);
     setSummaries(getLocalWorkspaceSummaries());
@@ -154,10 +180,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         workspaceError,
         importingWorkspace,
         importError,
+        syncingWorkspace,
+        syncError,
         selectWorkspace,
         importWorkspace: importWorkspaceFn,
         clearImportError,
         removeLocalSummary,
+        syncCurrentWorkspace,
+        clearSyncError,
       }}
     >
       {children}

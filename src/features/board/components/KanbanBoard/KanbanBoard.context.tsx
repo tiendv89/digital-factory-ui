@@ -14,6 +14,9 @@ import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import type { WorkspaceDetail } from "@/services/workflow-backend";
 import { useBoardData } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
+import { useBackendFeatureSearch } from "../../hooks/useBackendFeatureSearch";
+import { useBackendTaskSearch } from "../../hooks/useBackendTaskSearch";
+import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 import type { ActiveFilters, BoardLoadError, FeatureActiveFilters } from "../../types";
 import {
   type BoardMode,
@@ -41,6 +44,9 @@ export type BoardContextValue = {
   loading: boolean;
   error: BoardLoadError | null;
   reload: () => void;
+  syncing: boolean;
+  syncError: BoardLoadError | null;
+  syncBoard: () => void;
 
   boardMode: BoardMode;
   setBoardMode: (mode: BoardMode) => void;
@@ -69,6 +75,14 @@ export type BoardContextValue = {
   setSelectedTask: (task: SelectedTask) => void;
   selectedFeature: ParsedFeature | null;
   setSelectedFeature: (feature: ParsedFeature | null) => void;
+
+  // Backend search results (null = use workspace detail)
+  backendTaskResults: ParsedFeature[] | null;
+  backendFeatureResults: ParsedFeature[] | null;
+  taskSearching: boolean;
+  featureSearching: boolean;
+  taskSearchError: BoardLoadError | null;
+  featureSearchError: BoardLoadError | null;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);
@@ -82,7 +96,15 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
   const { features, loading, error, reload } = useBoardData(workspaceDetail.id, {
     initialData: workspaceDetail,
   });
-  const { trackedFeatures, reload: reloadTracking } = usePullRequestTaskData();
+  const { trackedFeatures, reload: reloadTracking } = usePullRequestTaskData(
+    workspaceDetail.id,
+  );
+
+  const {
+    syncCurrentWorkspace,
+    syncingWorkspace: syncing,
+    syncError: wsyncError,
+  } = useWorkspaceContext();
 
   const [boardMode, setBoardModeState] = useState<BoardMode>(
     () => getStoredBoardMode() ?? getDefaultBoardMode(),
@@ -101,6 +123,24 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
   );
   const [selectedTask, setSelectedTask] = useState<SelectedTask>(null);
   const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(null);
+
+  // Backend search hooks
+  const { results: backendTaskResults, searching: taskSearching, searchError: taskSearchError } =
+    useBackendTaskSearch(workspaceDetail.id, {
+      task_id: boardMode === "task" ? taskSearchQuery : undefined,
+      title: boardMode === "task" ? taskSearchQuery : undefined,
+      status: boardMode === "task" && taskActiveFilters.statuses.length > 0
+        ? taskActiveFilters.statuses.join(",")
+        : undefined,
+    });
+
+  const { results: backendFeatureResults, searching: featureSearching, searchError: featureSearchError } =
+    useBackendFeatureSearch(workspaceDetail.id, {
+      title: boardMode === "feature" ? featureSearchQuery : undefined,
+      status: boardMode === "feature" && featureActiveFilters.statuses.length > 0
+        ? featureActiveFilters.statuses.join(",")
+        : undefined,
+    });
 
   const toggleFeature = useCallback((featureId: string) => {
     setExpandedFeatureIds((prev) => {
@@ -149,6 +189,21 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
     [],
   );
 
+  const syncBoard = useCallback(() => {
+    syncCurrentWorkspace().catch(() => {
+      // error captured in syncError
+    });
+  }, [syncCurrentWorkspace]);
+
+  // Map workspace sync error to BoardLoadError shape
+  const syncError: BoardLoadError | null = wsyncError
+    ? {
+        kind: "network_error",
+        message: wsyncError.message ?? "Sync failed",
+        retryable: wsyncError.retryable,
+      }
+    : null;
+
   const value = useMemo<BoardContextValue>(
     () => ({
       workspaceDetail,
@@ -157,6 +212,9 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       loading,
       error,
       reload: reloadAll,
+      syncing,
+      syncError,
+      syncBoard,
 
       boardMode,
       setBoardMode: handleSetBoardMode,
@@ -183,6 +241,13 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       setSelectedTask,
       selectedFeature,
       setSelectedFeature,
+
+      backendTaskResults,
+      backendFeatureResults,
+      taskSearching,
+      featureSearching,
+      taskSearchError,
+      featureSearchError,
     }),
     [
       workspaceDetail,
@@ -191,6 +256,9 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       loading,
       error,
       reloadAll,
+      syncing,
+      syncError,
+      syncBoard,
       boardMode,
       handleSetBoardMode,
       taskSearchQuery,
@@ -203,6 +271,12 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       toggleFeature,
       selectedTask,
       selectedFeature,
+      backendTaskResults,
+      backendFeatureResults,
+      taskSearching,
+      featureSearching,
+      taskSearchError,
+      featureSearchError,
     ],
   );
 

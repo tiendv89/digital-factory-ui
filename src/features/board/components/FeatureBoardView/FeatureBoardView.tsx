@@ -102,16 +102,22 @@ export function FeatureBoardView() {
     featureSearchQuery,
     featureActiveFilters,
     setSelectedFeature,
+    backendFeatureResults,
+    featureSearching,
+    featureSearchError,
   } = useBoardContext();
 
+  // Use backend search results when a search is active; otherwise filter client-side
   const visibleFeatures = useMemo(
-    () =>
-      features.filter(
+    () => {
+      if (backendFeatureResults != null) return backendFeatureResults;
+      return features.filter(
         (f) =>
           matchesFeatureModeSearch(f, featureSearchQuery) &&
           matchesFeatureModeStatusFilter(f, featureActiveFilters.statuses),
-      ),
-    [features, featureSearchQuery, featureActiveFilters],
+      );
+    },
+    [features, backendFeatureResults, featureSearchQuery, featureActiveFilters],
   );
 
   const featureStatusColumns = useMemo(
@@ -133,24 +139,33 @@ export function FeatureBoardView() {
     return counts;
   }, [featureStatusColumns, visibleFeatures]);
 
+  const activeError = featureSearchError ?? error;
+
   let content;
-  if (loading) {
+  if (loading || featureSearching) {
     content = (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-text-muted">Loading features...</p>
+        <p className="text-sm text-text-muted">
+          {featureSearching ? "Searching..." : "Loading features..."}
+        </p>
       </div>
     );
-  } else if (error) {
-    if (error.kind === "access_denied") {
-      content = <AccessDeniedState message={error.message} />;
-    } else if (error.kind === "not_found") {
-      content = <NoWorkflowDataState message={error.message} />;
-    } else if (error.kind === "parse_error") {
-      content = <ParseErrorState message={error.message} />;
+  } else if (activeError) {
+    if (activeError.kind === "access_denied") {
+      content = <AccessDeniedState message={activeError.message} />;
+    } else if (activeError.kind === "not_found") {
+      content = <NoWorkflowDataState message={activeError.message} />;
+    } else if (activeError.kind === "parse_error") {
+      content = <ParseErrorState message={activeError.message} />;
     } else {
-      content = <NetworkErrorState message={error.message} />;
+      content = (
+        <NetworkErrorState
+          message={activeError.message}
+          retryable={activeError.retryable}
+        />
+      );
     }
-  } else if (features.length === 0) {
+  } else if (features.length === 0 && backendFeatureResults == null) {
     content = <EmptyBoardState />;
   } else if (visibleFeatures.length === 0) {
     content = (
