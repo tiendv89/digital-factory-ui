@@ -7,9 +7,15 @@ import { TaskDetailSheet, TaskDetailSheetMount } from "../features/tasks";
 const mockBoardContext = vi.hoisted(() => ({
   selectedTask: null as unknown,
   setSelectedTask: vi.fn(),
-  workspace: {
-    owner: "tiendv89",
-    repo: "digital-factory-ui",
+  workspaceDetail: {
+    id: "ws-1",
+    name: "digital-factory-ui",
+    slug: "digital-factory-ui",
+    repo_url: "https://github.com/tiendv89/digital-factory-ui",
+    source_state: { stale: false },
+    updated_at: "2026-01-01T00:00:00Z",
+    features: [],
+    tasks: [],
   },
 }));
 
