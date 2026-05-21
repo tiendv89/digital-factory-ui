@@ -20,6 +20,8 @@ export function BoardHeader() {
     .map((part) => part[0]?.toUpperCase())
     .join("");
 
+  const { source_state } = workspaceDetail;
+
   return (
     <header className="flex h-14 shrink-0 items-center border-b border-border bg-surface px-6">
       <div className="flex min-w-0 flex-1 items-center gap-4">
@@ -35,9 +37,22 @@ export function BoardHeader() {
           <span className="shrink-0 text-xs text-text-primary">
             {totalTasks} task{totalTasks === 1 ? "" : "s"}
           </span>
-          {workspaceDetail.source_state?.stale && (
-            <span className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[11px] text-warning">
-              stale
+          {source_state?.stale && (
+            <span
+              aria-label={
+                source_state.error_code
+                  ? `Stale data: ${source_state.error_code}`
+                  : "Stale data"
+              }
+              title={source_state.error_code ?? "Workspace data may be out of date"}
+              className="rounded border border-warning/40 bg-warning/10 px-1.5 py-0.5 text-[11px] text-warning"
+            >
+              {source_state.error_code ? `stale: ${source_state.error_code}` : "stale"}
+            </span>
+          )}
+          {source_state?.last_synced_at && (
+            <span className="hidden shrink-0 text-[11px] text-text-muted sm:inline">
+              synced {new Date(source_state.last_synced_at).toLocaleTimeString()}
             </span>
           )}
         </div>

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import type { ParsedFeature } from "@/services/yaml-parser";
+import { useSidebarTasks } from "./useSidebarTasks";
+import { adaptTaskSummariesToFeatures } from "@/features/workspaces/lib/workspaceAdapter";
+import { mapApiBoardError } from "../lib/error-utils";
 import type { BoardLoadError } from "../types";
 
 export type UsePullRequestTaskDataResult = {
@@ -11,15 +13,17 @@ export type UsePullRequestTaskDataResult = {
   reload: () => void;
 };
 
-// Sidebar active-task data is owned by T3 (independent backend query).
-// For now, return empty data so the sidebar renders without GitHub API calls.
-export function usePullRequestTaskData(): UsePullRequestTaskDataResult {
-  const [trackedFeatures] = useState<ParsedFeature[]>([]);
+export function usePullRequestTaskData(
+  workspaceId: string | null,
+): UsePullRequestTaskDataResult {
+  const { tasks, loading, error, reload } = useSidebarTasks(workspaceId);
+
+  const trackedFeatures = adaptTaskSummariesToFeatures(tasks);
 
   return {
     trackedFeatures,
-    loading: false,
-    error: null,
-    reload: () => {},
+    loading,
+    error: error ? mapApiBoardError(error) : null,
+    reload,
   };
 }

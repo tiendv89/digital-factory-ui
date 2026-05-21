@@ -6,6 +6,7 @@ import type { WorkspaceDetail } from "@/services/workflow-backend";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import { adaptWorkspaceDetail } from "@/features/workspaces/lib/workspaceAdapter";
 import type { BoardLoadError } from "../types";
+import { mapApiBoardError } from "../lib/error-utils";
 
 export type UseBoardDataResult = {
   features: ParsedFeature[];
@@ -17,23 +18,6 @@ export type UseBoardDataResult = {
 export type UseBoardDataOptions = {
   initialData?: WorkspaceDetail;
 };
-
-function mapApiError(err: unknown): BoardLoadError {
-  if (err && typeof err === "object" && "code" in err) {
-    const e = err as { code: string; message: string };
-    if (e.code === "DATABASE_NOT_FOUND" || e.code === "GITHUB_NOT_FOUND") {
-      return { kind: "not_found", message: e.message };
-    }
-    if (e.code === "GITHUB_UNAUTHORIZED") {
-      return { kind: "access_denied", message: e.message };
-    }
-    return { kind: "network_error", message: e.message };
-  }
-  if (err instanceof Error) {
-    return { kind: "network_error", message: err.message };
-  }
-  return { kind: "network_error", message: "Unknown error" };
-}
 
 export function useBoardData(
   workspaceId: string | null,
@@ -52,6 +36,18 @@ export function useBoardData(
   const reload = useCallback(() => {
     setTick((t) => t + 1);
   }, []);
+
+  // When initialData changes (e.g. workspace synced), update features immediately
+  const prevInitialDataRef = useRef<WorkspaceDetail | undefined>(options.initialData);
+  useEffect(() => {
+    const next = options.initialData;
+    if (!next) return;
+    if (next === prevInitialDataRef.current) return;
+    prevInitialDataRef.current = next;
+    setFeatures(adaptWorkspaceDetail(next));
+    setLoading(false);
+    setError(null);
+  }, [options.initialData]);
 
   useEffect(() => {
     if (!workspaceId) {
@@ -81,7 +77,7 @@ export function useBoardData(
       })
       .catch((err: unknown) => {
         if (cancelled || requestId.current !== id) return;
-        setError(mapApiError(err));
+        setError(mapApiBoardError(err));
         setLoading(false);
       });
 
