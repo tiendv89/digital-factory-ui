@@ -1,1 +1,6 @@
-export { FeatureTabView, type FeatureTabViewProps } from "./FeatureTabView";
+export {
+  FeatureTabView,
+  type FeatureTabViewProps,
+  FeatureTaskDrilldown,
+  DrilldownTaskContent,
+} from "./FeatureTabView";

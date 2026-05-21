@@ -459,7 +459,7 @@ function FeatureDocumentPanel({
   );
 }
 
-function FeatureTaskDrilldown({
+export function FeatureTaskDrilldown({
   workspaceId,
   featureId,
   taskId,
@@ -522,7 +522,7 @@ function FeatureTaskDrilldown({
   return <DrilldownTaskContent task={task} onBack={onBack} onReload={reload} />;
 }
 
-function DrilldownTaskContent({
+export function DrilldownTaskContent({
   task,
   onBack,
   onReload,

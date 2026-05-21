@@ -70,6 +70,7 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
 }));
 
 import { FeatureTabView } from "../features/board/components/FeatureTabView/FeatureTabView";
+import { FeatureTaskDrilldown, DrilldownTaskContent } from "../features/board/components/FeatureTabView/FeatureTabView";
 import { WorkspaceTabBar } from "../features/workspaces/components/WorkspaceTabBar/WorkspaceTabBar";
 import { FeatureBoardView } from "../features/board/components/FeatureBoardView/FeatureBoardView";
 import { FeatureListRow } from "../features/board/components/FeatureBoardView/FeatureListRow";
@@ -636,7 +637,7 @@ describe("FeatureTabView — tasks panel", () => {
 // ─── FeatureTabView — feature-scoped task drilldown ──────────────────────────
 
 describe("FeatureTabView — task drilldown (feature-scoped)", () => {
-  it("renders data-feature-task-drilldown-loading during drilldown load", () => {
+  it("shows tasks panel by default before any drilldown is triggered", () => {
     mockUseFeatureDetail.mockReturnValue({
       feature: makeFeatureDetail({
         tasks: [makeTaskSummary({ task_name: "T3" })],
@@ -647,58 +648,215 @@ describe("FeatureTabView — task drilldown (feature-scoped)", () => {
     });
     mockUseFeatureTask.mockReturnValue({
       task: null,
-      loading: true,
+      loading: false,
       error: null,
       reload: vi.fn(),
     });
 
-    // Simulate drilldown: FeatureTabView needs to be in drilldown state.
-    // We can't click in SSR, but we can test FeatureTaskDrilldown directly.
-    // Instead, validate that the drilldown loading state markers exist via
-    // the hook behavior: when drilldownTaskId is set, it renders FeatureTaskDrilldown.
-    // We test FeatureTabView initial state (no drilldown active) renders tasks panel.
     const html = renderToStaticMarkup(
       React.createElement(FeatureTabView, {
         workspaceId: "ws-1",
         featureId: "feat-uuid-1",
       }),
     );
-    // Tasks panel is shown by default (no drilldown yet)
+    // Tasks panel is shown by default (no drilldown active)
     expect(html).toContain("data-feature-tasks-list");
     expect(html).not.toContain("data-feature-task-drilldown-content");
   });
 
-  it("renders data-feature-task-drilldown-content when drilldown task is loaded", () => {
-    // In SSR we can't simulate clicks, so we test the drilldown rendering path
-    // by mocking useFeatureTask to return a task and importing a helper component.
-    // The drilldown content is rendered by FeatureTaskDrilldown inside FeatureTabContent,
-    // but it's only activated via state (drilldownTaskId set by click).
-    // We verify the markup attributes are present in the static output by checking
-    // the task row button structure, confirming the click wiring exists.
+});
+
+// ─── FeatureTaskDrilldown — direct unit tests ─────────────────────────────────
+
+describe("FeatureTaskDrilldown — loading state", () => {
+  beforeEach(() => {
+    mockUseFeatureTask.mockReturnValue({
+      task: null,
+      loading: true,
+      error: null,
+      reload: vi.fn(),
+    });
+  });
+
+  it("renders data-feature-task-drilldown-loading indicator", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTaskDrilldown, {
+        workspaceId: "ws-uuid-1",
+        featureId: "feat-uuid-1",
+        taskId: "task-uuid-1",
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).toContain("data-feature-task-drilldown-loading");
+    expect(html).toContain("Loading task");
+  });
+
+  it("does not render drilldown content while loading", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTaskDrilldown, {
+        workspaceId: "ws-uuid-1",
+        featureId: "feat-uuid-1",
+        taskId: "task-uuid-1",
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).not.toContain("data-feature-task-drilldown-content");
+    expect(html).not.toContain("data-feature-task-drilldown-error");
+  });
+});
+
+describe("FeatureTaskDrilldown — error state", () => {
+  it("renders data-feature-task-drilldown-error with error message", () => {
+    mockUseFeatureTask.mockReturnValue({
+      task: null,
+      loading: false,
+      error: { code: "NOT_FOUND", message: "Task not found.", retryable: false },
+      reload: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTaskDrilldown, {
+        workspaceId: "ws-uuid-1",
+        featureId: "feat-uuid-1",
+        taskId: "task-uuid-1",
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).toContain("data-feature-task-drilldown-error");
+    expect(html).toContain("Task not found.");
+  });
+
+  it("renders back-to-feature button in error state", () => {
+    mockUseFeatureTask.mockReturnValue({
+      task: null,
+      loading: false,
+      error: { code: "NOT_FOUND", message: "Task not found.", retryable: false },
+      reload: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTaskDrilldown, {
+        workspaceId: "ws-uuid-1",
+        featureId: "feat-uuid-1",
+        taskId: "task-uuid-1",
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).toContain("Back to feature");
+  });
+
+  it("renders retry button when error is retryable", () => {
+    mockUseFeatureTask.mockReturnValue({
+      task: null,
+      loading: false,
+      error: { code: "TIMEOUT", message: "Timed out.", retryable: true },
+      reload: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTaskDrilldown, {
+        workspaceId: "ws-uuid-1",
+        featureId: "feat-uuid-1",
+        taskId: "task-uuid-1",
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).toContain("Retry");
+  });
+
+  it("does not render retry button when error is not retryable", () => {
+    mockUseFeatureTask.mockReturnValue({
+      task: null,
+      loading: false,
+      error: { code: "NOT_FOUND", message: "Not found.", retryable: false },
+      reload: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTaskDrilldown, {
+        workspaceId: "ws-uuid-1",
+        featureId: "feat-uuid-1",
+        taskId: "task-uuid-1",
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).not.toContain("Retry");
+  });
+});
+
+describe("FeatureTaskDrilldown — content rendering", () => {
+  beforeEach(() => {
     mockUseFeatureTask.mockReturnValue({
       task: makeTaskDetail(),
       loading: false,
       error: null,
       reload: vi.fn(),
     });
-    mockUseFeatureDetail.mockReturnValue({
-      feature: makeFeatureDetail({
-        tasks: [makeTaskSummary({ task_name: "T3", id: "task-uuid-1", task_id: "task-uuid-1" })],
-      }),
-      loading: false,
-      error: null,
-      reload: vi.fn(),
-    });
+  });
 
+  it("renders data-feature-task-drilldown-content when task is loaded", () => {
     const html = renderToStaticMarkup(
-      React.createElement(FeatureTabView, {
-        workspaceId: "ws-1",
+      React.createElement(FeatureTaskDrilldown, {
+        workspaceId: "ws-uuid-1",
         featureId: "feat-uuid-1",
+        taskId: "task-uuid-1",
+        onBack: vi.fn(),
       }),
     );
-    // The task row button is the click target for drilldown
-    expect(html).toContain('data-feature-task-row="T3"');
-    expect(html).toContain('aria-label="Open task T3"');
+    expect(html).toContain("data-feature-task-drilldown-content");
+  });
+
+  it("renders data-back-to-feature navigation affordance", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTaskDrilldown, {
+        workspaceId: "ws-uuid-1",
+        featureId: "feat-uuid-1",
+        taskId: "task-uuid-1",
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).toContain("data-back-to-feature");
+    expect(html).toContain("Feature");
+  });
+
+  it("renders task name and title in drilldown header", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTaskDrilldown, {
+        workspaceId: "ws-uuid-1",
+        featureId: "feat-uuid-1",
+        taskId: "task-uuid-1",
+        onBack: vi.fn(),
+      }),
+    );
+    expect(html).toContain("T3");
+    expect(html).toContain("Implement kanban board");
+  });
+});
+
+// ─── DrilldownTaskContent — back-to-feature affordance ───────────────────────
+
+describe("DrilldownTaskContent — back-to-feature affordance", () => {
+  it("renders data-back-to-feature button with aria-label", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(DrilldownTaskContent, {
+        task: makeTaskDetail(),
+        onBack: vi.fn(),
+        onReload: vi.fn(),
+      }),
+    );
+    expect(html).toContain("data-back-to-feature");
+    expect(html).toContain('aria-label="Back to feature"');
+  });
+
+  it("renders data-feature-task-drilldown-content wrapper", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(DrilldownTaskContent, {
+        task: makeTaskDetail(),
+        onBack: vi.fn(),
+        onReload: vi.fn(),
+      }),
+    );
+    expect(html).toContain("data-feature-task-drilldown-content");
   });
 });
 
