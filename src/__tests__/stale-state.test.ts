@@ -89,6 +89,7 @@ function buildTaskContext(opts: {
     taskSearchError: null,
     featureSearchError: null,
     workspaceDetail: makeWorkspaceDetail(),
+    openTaskTab: vi.fn(),
   };
 }
 

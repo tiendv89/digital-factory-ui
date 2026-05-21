@@ -21,6 +21,9 @@ export type ParsedTask = {
   blockedReason?: string;
   blockedContext?: Record<string, unknown>;
   log?: LogEntry[];
+  backendId?: string;
+  featureBackendId?: string;
+  repo?: string;
 };
 
 export type ParsedFeature = {

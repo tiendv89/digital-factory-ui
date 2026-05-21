@@ -74,6 +74,26 @@ function buildContext(opts: {
     setSelectedTask: mockSetSelectedTask,
     selectedFeature: null,
     setSelectedFeature: vi.fn(),
+    syncing: false,
+    syncError: null,
+    syncBoard: vi.fn(),
+    backendTaskResults: null as import("../services/yaml-parser").ParsedFeature[] | null,
+    backendFeatureResults: null as import("../services/yaml-parser").ParsedFeature[] | null,
+    taskSearching: false,
+    featureSearching: false,
+    taskSearchError: null,
+    featureSearchError: null,
+    workspaceDetail: {
+      id: "test-ws",
+      name: "Test Workspace",
+      slug: "test-ws",
+      repo_url: "https://github.com/test/repo",
+      source_state: { stale: false },
+      updated_at: "2026-01-01T00:00:00Z",
+      features: [],
+      tasks: [],
+    },
+    openTaskTab: vi.fn(),
   };
 }
 

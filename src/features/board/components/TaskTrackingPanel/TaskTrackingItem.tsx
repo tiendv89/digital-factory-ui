@@ -8,6 +8,7 @@ export type TaskTrackingItemProps = {
   task: ParsedTask;
   feature: ParsedFeature;
   onSelect: (task: ParsedTask, feature: ParsedFeature) => void;
+  onOpenTab?: (task: ParsedTask) => void;
 };
 
 const ACTOR_TYPE_LABEL: Record<string, string> = {
@@ -20,6 +21,7 @@ export function TaskTrackingItem({
   task,
   feature,
   onSelect,
+  onOpenTab,
 }: TaskTrackingItemProps) {
   const actorLabel = task.execution?.actor_type
     ? ACTOR_TYPE_LABEL[task.execution.actor_type] ?? task.execution.actor_type
@@ -35,10 +37,18 @@ export function TaskTrackingItem({
     ? task.blockedReason
     : getNextAction(task.status);
 
+  function handleDoubleClick(e: React.MouseEvent) {
+    e.preventDefault();
+    if (onOpenTab) {
+      onOpenTab(task);
+    }
+  }
+
   return (
     <button
       type="button"
       onClick={() => onSelect(task, feature)}
+      onDoubleClick={handleDoubleClick}
       className="group flex w-full flex-col gap-2 border border-border bg-surface px-3 py-3 text-left transition-colors hover:border-primary-light hover:bg-surface-subtle focus:outline-none focus-visible:border-primary focus-visible:bg-primary-light/30"
     >
       <div className="flex min-w-0 items-start gap-2">

@@ -19,6 +19,9 @@ export function adaptTaskSummary(task: TaskSummary): ParsedTask {
       ? { url: task.workspace_pr.url, status: task.workspace_pr.status }
       : undefined,
     blockedReason: task.is_blocked ? "blocked" : undefined,
+    backendId: task.id,
+    featureBackendId: task.feature_id || undefined,
+    repo: task.repo || undefined,
   };
 }
 

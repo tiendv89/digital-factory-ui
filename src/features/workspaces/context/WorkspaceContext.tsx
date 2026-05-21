@@ -27,6 +27,16 @@ import {
   setSelectedWorkspaceId,
 } from "@/services/local-workspace-store";
 
+export type TaskTabEntry = {
+  taskId: string;
+  taskName: string;
+  title: string;
+  featureId?: string;
+  featureName?: string;
+};
+
+export type WorkspaceSurface = "board" | "task-tab";
+
 export type WorkspaceContextValue = {
   summaries: LocalWorkspaceSummary[];
   selectedWorkspaceId: string | null;
@@ -44,6 +54,14 @@ export type WorkspaceContextValue = {
   removeLocalSummary: (workspaceId: string) => void;
   syncCurrentWorkspace: () => Promise<void>;
   clearSyncError: () => void;
+
+  activeSurface: WorkspaceSurface;
+  openTaskTabs: TaskTabEntry[];
+  activeTaskTabId: string | null;
+  openTaskTab: (entry: TaskTabEntry) => void;
+  closeTaskTab: (taskId: string) => void;
+  activateTaskTab: (taskId: string) => void;
+  goToBoard: () => void;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
@@ -58,6 +76,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [importError, setImportError] = useState<ApiError | null>(null);
   const [syncingWorkspace, setSyncingWorkspace] = useState(false);
   const [syncError, setSyncError] = useState<ApiError | null>(null);
+
+  const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("board");
+  const [openTaskTabs, setOpenTaskTabs] = useState<TaskTabEntry[]>([]);
+  const [activeTaskTabId, setActiveTaskTabId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedSummaries = getLocalWorkspaceSummaries();
@@ -170,6 +192,41 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     }
   }, [selectedWorkspaceId, loadWorkspace]);
 
+  const openTaskTab = useCallback((entry: TaskTabEntry) => {
+    setOpenTaskTabs((prev) => {
+      const exists = prev.find((t) => t.taskId === entry.taskId);
+      if (exists) return prev;
+      return [...prev, entry];
+    });
+    setActiveTaskTabId(entry.taskId);
+    setActiveSurface("task-tab");
+  }, []);
+
+  const closeTaskTab = useCallback((taskId: string) => {
+    setOpenTaskTabs((prev) => {
+      const next = prev.filter((t) => t.taskId !== taskId);
+      return next;
+    });
+    setActiveTaskTabId((prev) => {
+      if (prev !== taskId) return prev;
+      return null;
+    });
+    setActiveSurface((prev) => {
+      if (prev !== "task-tab") return prev;
+      return "board";
+    });
+  }, []);
+
+  const activateTaskTab = useCallback((taskId: string) => {
+    setActiveTaskTabId(taskId);
+    setActiveSurface("task-tab");
+  }, []);
+
+  const goToBoard = useCallback(() => {
+    setActiveSurface("board");
+    setActiveTaskTabId(null);
+  }, []);
+
   return (
     <WorkspaceContext.Provider
       value={{
@@ -188,6 +245,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         removeLocalSummary,
         syncCurrentWorkspace,
         clearSyncError,
+        activeSurface,
+        openTaskTabs,
+        activeTaskTabId,
+        openTaskTab,
+        closeTaskTab,
+        activateTaskTab,
+        goToBoard,
       }}
     >
       {children}

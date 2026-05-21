@@ -3,13 +3,14 @@
 import { ArrowRight } from "lucide-react";
 import type { ParsedTask } from "@/services/yaml-parser";
 import type { SelectedTask } from "../KanbanBoard/KanbanBoard.context";
-import { getNextAction, getStatusColor } from "../../lib/status";
+import { getNextAction } from "../../lib/status";
 
 type TaskCardProps = {
   task: ParsedTask;
   featureId: string;
   featureTitle: string;
   onSelect: (task: SelectedTask) => void;
+  onOpenTab?: (task: ParsedTask) => void;
 };
 
 export function TaskCard({
@@ -17,12 +18,19 @@ export function TaskCard({
   featureId,
   featureTitle,
   onSelect,
+  onOpenTab,
 }: TaskCardProps) {
   const nextAction = getNextAction(task.status);
-  const statusColor = getStatusColor(task.status);
 
   function handleClick() {
     onSelect({ task, featureId, featureTitle });
+  }
+
+  function handleDoubleClick(e: React.MouseEvent) {
+    e.preventDefault();
+    if (onOpenTab) {
+      onOpenTab(task);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -37,6 +45,7 @@ export function TaskCard({
       role="button"
       tabIndex={0}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       onKeyDown={handleKeyDown}
       data-task-id={task.id}
       className="relative h-full min-h-19 cursor-pointer border border-border bg-surface p-3 transition-colors hover:border-primary hover:bg-surface-secondary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface"

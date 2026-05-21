@@ -15,7 +15,7 @@ const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
 };
 
 export function TaskTrackingPanel() {
-  const { trackedFeatures, setSelectedTask } = useBoardContext();
+  const { trackedFeatures, setSelectedTask, openTaskTab } = useBoardContext();
 
   const sections = useMemo(
     () => groupTrackedTasks(trackedFeatures),
@@ -38,6 +38,13 @@ export function TaskTrackingPanel() {
       });
     },
     [setSelectedTask],
+  );
+
+  const handleOpenTaskTab = useCallback(
+    (task: ParsedTask) => {
+      openTaskTab(task);
+    },
+    [openTaskTab],
   );
 
   return (
@@ -66,6 +73,7 @@ export function TaskTrackingPanel() {
             isExpanded={expanded[section.status]}
             onToggle={() => toggleSection(section.status)}
             onSelectTask={handleSelectTask}
+            onOpenTaskTab={handleOpenTaskTab}
           />
         ))}
       </div>
