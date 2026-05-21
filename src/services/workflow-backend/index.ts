@@ -2,6 +2,8 @@ export type {
   ApiError,
   FeatureDetail,
   FeatureDocument,
+  FeatureId,
+  FeatureName,
   FeatureSummary,
   ImportWorkspaceRequest,
   LocalWorkspaceSummary,
@@ -10,8 +12,11 @@ export type {
   TaskCounts,
   TaskDetail,
   TaskExecution,
+  TaskId,
+  TaskName,
   TaskSummary,
   WorkspaceDetail,
+  WorkspaceId,
   WorkspaceSummary,
 } from "./types";
 

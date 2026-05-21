@@ -1,3 +1,9 @@
+export type WorkspaceId = string;
+export type FeatureId = string;
+export type TaskId = string;
+export type FeatureName = string;
+export type TaskName = string;
+
 export type SourceState = {
   stale: boolean;
   last_synced_at?: string;
