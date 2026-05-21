@@ -15,6 +15,7 @@ import {
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 import { useFeatureDetail, useFeatureTask } from "../../hooks/useFeatureDetail";
 import { formatTimestamp } from "@/lib/time";
+import { MarkdownContent } from "@/lib/markdown";
 import {
   getFeatureStatusColor,
   getFeatureStatusLabel,
@@ -431,30 +432,65 @@ function FeatureDocumentPanel({
     );
   }
 
+  const docTitle =
+    documentType === "product_spec" ? "Product Spec" : "Technical Design";
+
   return (
     <div
       data-feature-doc={documentType}
       className="mx-auto max-w-3xl px-6 py-6"
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-text-primary">
-          {documentType === "product_spec" ? "Product Spec" : "Technical Design"}
-        </h2>
-        {doc.url && (
-          <a
-            href={doc.url}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="flex items-center gap-1.5 text-xs text-primary transition-colors hover:underline"
-          >
-            View source
-            <ExternalLink className="h-3 w-3" aria-hidden="true" />
-          </a>
-        )}
+        <h2 className="text-sm font-semibold text-text-primary">{docTitle}</h2>
+        <div className="flex items-center gap-3">
+          {doc.source_path && (
+            <span
+              data-feature-doc-source-path
+              className="font-mono text-xs text-text-muted"
+            >
+              {doc.source_path}
+            </span>
+          )}
+          {doc.url && (
+            <a
+              href={doc.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="flex items-center gap-1.5 text-xs text-primary transition-colors hover:underline"
+              aria-label={`View source for ${docTitle}`}
+            >
+              View source
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
+          )}
+        </div>
       </div>
-      <div className="border border-border bg-surface px-4 py-3 text-sm text-text-secondary">
-        <p className="font-mono text-xs text-text-muted">{doc.source_path}</p>
-      </div>
+
+      {doc.content ? (
+        <div className="border border-border bg-surface px-6 py-5">
+          <MarkdownContent content={doc.content} />
+        </div>
+      ) : (
+        <div
+          data-feature-doc-no-content
+          className="flex flex-col items-center justify-center gap-2 border border-border bg-surface px-4 py-8"
+        >
+          <p className="text-sm text-text-muted">
+            Document content not available from backend.
+          </p>
+          {doc.url && (
+            <a
+              href={doc.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="flex items-center gap-1.5 text-xs text-primary transition-colors hover:underline"
+            >
+              Open in GitHub
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </a>
+          )}
+        </div>
+      )}
     </div>
   );
 }
