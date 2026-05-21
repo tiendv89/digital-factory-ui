@@ -6,7 +6,7 @@ import type { WorkspaceDetail } from "@/services/workflow-backend";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import { adaptWorkspaceDetail } from "@/features/workspaces/lib/workspaceAdapter";
 import type { BoardLoadError } from "../types";
-
+import { mapApiBoardError } from "../lib/error-utils";
 
 export type UseBoardDataResult = {
   features: ParsedFeature[];
@@ -18,24 +18,6 @@ export type UseBoardDataResult = {
 export type UseBoardDataOptions = {
   initialData?: WorkspaceDetail;
 };
-
-function mapApiError(err: unknown): BoardLoadError {
-  if (err && typeof err === "object" && "code" in err) {
-    const e = err as { code: string; message: string; retryable?: boolean };
-    const retryable = e.retryable;
-    if (e.code === "DATABASE_NOT_FOUND" || e.code === "GITHUB_NOT_FOUND") {
-      return { kind: "not_found", message: e.message, retryable };
-    }
-    if (e.code === "GITHUB_UNAUTHORIZED") {
-      return { kind: "access_denied", message: e.message, retryable };
-    }
-    return { kind: "network_error", message: e.message, retryable };
-  }
-  if (err instanceof Error) {
-    return { kind: "network_error", message: err.message };
-  }
-  return { kind: "network_error", message: "Unknown error" };
-}
 
 export function useBoardData(
   workspaceId: string | null,
@@ -95,7 +77,7 @@ export function useBoardData(
       })
       .catch((err: unknown) => {
         if (cancelled || requestId.current !== id) return;
-        setError(mapApiError(err));
+        setError(mapApiBoardError(err));
         setLoading(false);
       });
 
