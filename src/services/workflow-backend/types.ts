@@ -59,6 +59,7 @@ export type FeatureDocument = {
   document_type: string;
   source_path: string;
   url: string;
+  content?: string;
 };
 
 export type TaskSummary = {
