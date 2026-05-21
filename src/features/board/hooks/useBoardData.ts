@@ -58,17 +58,14 @@ export function useBoardData(
   // When initialData changes (e.g. workspace synced), update features immediately
   const prevInitialDataRef = useRef<WorkspaceDetail | undefined>(options.initialData);
   useEffect(() => {
-    const prev = prevInitialDataRef.current;
     const next = options.initialData;
     if (!next) return;
-    if (next === prev) return;
+    if (next === prevInitialDataRef.current) return;
     prevInitialDataRef.current = next;
-    if (tick === 0) {
-      setFeatures(adaptWorkspaceDetail(next));
-      setLoading(false);
-      setError(null);
-    }
-  });
+    setFeatures(adaptWorkspaceDetail(next));
+    setLoading(false);
+    setError(null);
+  }, [options.initialData]);
 
   useEffect(() => {
     if (!workspaceId) {
