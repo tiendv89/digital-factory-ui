@@ -3,31 +3,12 @@
 import { useCallback, useState } from "react";
 import { AlertCircle, Link2, X } from "lucide-react";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
-import type { ApiError } from "@/services/workflow-backend";
+import { getImportErrorMessage } from "@/features/workspaces/lib/importError";
 
 type ImportModalProps = {
   onClose: () => void;
   onSuccess?: () => void;
 };
-
-function getErrorMessage(err: ApiError): { field?: "repo_url" | "name"; message: string } {
-  switch (err.code) {
-    case "VALIDATION_INVALID_URL":
-      return { field: "repo_url", message: "Invalid repository URL." };
-    case "VALIDATION_MISSING_INPUT":
-      return { field: "repo_url", message: err.message || "Repository URL is required." };
-    case "GITHUB_NOT_FOUND":
-      return { message: "Repository not found. Check the URL and try again." };
-    case "GITHUB_UNAUTHORIZED":
-      return { message: "GitHub access denied. Check repository permissions." };
-    case "GITHUB_RATE_LIMIT":
-      return { message: "GitHub rate limit reached. Please wait and try again." };
-    case "ADAPTER_TIMEOUT":
-      return { message: "Request timed out. Please try again." };
-    default:
-      return { message: err.message || "Import failed. Please try again." };
-  }
-}
 
 export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   const { importWorkspace, importingWorkspace, importError, clearImportError } =
@@ -37,7 +18,7 @@ export function ImportModal({ onClose, onSuccess }: ImportModalProps) {
   const [defaultBranch, setDefaultBranch] = useState("");
   const [name, setName] = useState("");
 
-  const parsedError = importError ? getErrorMessage(importError) : null;
+  const parsedError = importError ? getImportErrorMessage(importError) : null;
 
   const handleRepoUrlChange = useCallback(
     (v: string) => {
