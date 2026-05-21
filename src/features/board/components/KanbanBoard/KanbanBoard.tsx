@@ -24,8 +24,40 @@ import {
 import type { BoardMode } from "../../lib/status-filter-store";
 
 function StaleBanner() {
-  const { workspaceDetail, syncBoard, syncing } = useBoardContext();
+  const { workspaceDetail, syncBoard, syncing, syncError } = useBoardContext();
   const { source_state } = workspaceDetail;
+
+  if (syncError) {
+    return (
+      <div
+        role="alert"
+        aria-live="assertive"
+        className="flex items-center gap-3 border-b border-danger bg-danger-bg px-4 py-2"
+      >
+        <AlertTriangle className="h-4 w-4 shrink-0 text-danger" aria-hidden="true" />
+        <p className="flex-1 text-xs text-danger">
+          <span className="font-semibold">Sync failed</span>
+          {` — ${syncError.message}`}
+        </p>
+        {syncError.retryable && (
+          <button
+            type="button"
+            onClick={syncBoard}
+            disabled={syncing}
+            aria-label="Retry workspace sync"
+            className="flex items-center gap-1.5 rounded border border-danger bg-danger-bg px-2 py-0.5 text-[11px] font-medium text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RefreshCw
+              className={"h-3 w-3 " + (syncing ? "animate-spin" : "")}
+              aria-hidden="true"
+            />
+            {syncing ? "Retrying…" : "Retry"}
+          </button>
+        )}
+      </div>
+    );
+  }
+
   if (!source_state?.stale) return null;
 
   return (

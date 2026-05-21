@@ -128,6 +128,7 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
   const { results: backendTaskResults, searching: taskSearching, searchError: taskSearchError } =
     useBackendTaskSearch(workspaceDetail.id, {
       title: boardMode === "task" ? taskSearchQuery : undefined,
+      task_id: boardMode === "task" ? taskSearchQuery : undefined,
       status: boardMode === "task" && taskActiveFilters.statuses.length > 0
         ? taskActiveFilters.statuses.join(",")
         : undefined,
