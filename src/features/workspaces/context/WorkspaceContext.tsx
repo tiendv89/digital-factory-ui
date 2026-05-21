@@ -26,6 +26,7 @@ import {
   removeLocalWorkspaceSummary,
   setSelectedWorkspaceId,
 } from "@/services/local-workspace-store";
+import { addTaskTab, removeTaskTab, addFeatureTab, removeFeatureTab } from "@/features/workspaces/lib/tabState";
 
 export type TaskTabEntry = {
   taskId: string;
@@ -206,20 +207,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, [selectedWorkspaceId, loadWorkspace]);
 
   const openTaskTab = useCallback((entry: TaskTabEntry) => {
-    setOpenTaskTabs((prev) => {
-      const exists = prev.find((t) => t.taskId === entry.taskId);
-      if (exists) return prev;
-      return [...prev, entry];
-    });
+    setOpenTaskTabs((prev) => addTaskTab(prev, entry));
     setActiveTaskTabId(entry.taskId);
     setActiveSurface("task-tab");
   }, []);
 
   const closeTaskTab = useCallback((taskId: string) => {
-    setOpenTaskTabs((prev) => {
-      const next = prev.filter((t) => t.taskId !== taskId);
-      return next;
-    });
+    setOpenTaskTabs((prev) => removeTaskTab(prev, taskId));
     setActiveTaskTabId((prev) => {
       if (prev !== taskId) return prev;
       return null;
@@ -237,17 +231,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openFeatureTab = useCallback((entry: FeatureTabEntry) => {
-    setOpenFeatureTabs((prev) => {
-      const exists = prev.find((f) => f.featureId === entry.featureId);
-      if (exists) return prev;
-      return [...prev, entry];
-    });
+    setOpenFeatureTabs((prev) => addFeatureTab(prev, entry));
     setActiveFeatureTabId(entry.featureId);
     setActiveSurface("feature-tab");
   }, []);
 
   const closeFeatureTab = useCallback((featureId: string) => {
-    setOpenFeatureTabs((prev) => prev.filter((f) => f.featureId !== featureId));
+    setOpenFeatureTabs((prev) => removeFeatureTab(prev, featureId));
     setActiveFeatureTabId((prev) => {
       if (prev !== featureId) return prev;
       return null;

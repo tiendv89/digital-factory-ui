@@ -57,6 +57,15 @@ import {
   buildImportLocalSummary,
 } from "../features/workspaces/lib/workspaceAdapter";
 
+import { getImportErrorMessage } from "../features/workspaces/lib/importError";
+
+import {
+  addTaskTab,
+  removeTaskTab,
+  addFeatureTab,
+  removeFeatureTab,
+} from "../features/workspaces/lib/tabState";
+
 import type {
   LocalWorkspaceSummary,
   WorkspaceDetail,
@@ -65,6 +74,8 @@ import type {
   ApiError,
   ImportWorkspaceRequest,
 } from "../services/workflow-backend/types";
+
+import type { TaskTabEntry, FeatureTabEntry } from "../features/workspaces/context/WorkspaceContext";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -526,70 +537,48 @@ describe("query param contracts — feature search vs task search vs sidebar", (
 
 // ─── Section 9: Import modal — error code to UI mapping ───────────────────────
 
-describe("Import modal — structured error code mapping", () => {
-  // Verify the error-mapping logic matches expected behavior from the spec
-  type FieldError = { field?: "repo_url" | "name"; message: string };
-
-  function getErrorMessage(err: ApiError): FieldError {
-    switch (err.code) {
-      case "VALIDATION_INVALID_URL":
-        return { field: "repo_url", message: "Invalid repository URL." };
-      case "VALIDATION_MISSING_INPUT":
-        return { field: "repo_url", message: err.message || "Repository URL is required." };
-      case "GITHUB_NOT_FOUND":
-        return { message: "Repository not found. Check the URL and try again." };
-      case "GITHUB_UNAUTHORIZED":
-        return { message: "GitHub access denied. Check repository permissions." };
-      case "GITHUB_RATE_LIMIT":
-        return { message: "GitHub rate limit reached. Please wait and try again." };
-      case "ADAPTER_TIMEOUT":
-        return { message: "Request timed out. Please try again." };
-      default:
-        return { message: err.message || "Import failed. Please try again." };
-    }
-  }
-
+describe("Import modal — structured error code mapping (getImportErrorMessage from importError.ts)", () => {
   it("VALIDATION_INVALID_URL marks the repo_url field", () => {
-    const result = getErrorMessage({ code: "VALIDATION_INVALID_URL", message: "bad url", retryable: false });
+    const result = getImportErrorMessage({ code: "VALIDATION_INVALID_URL", message: "bad url", retryable: false });
     expect(result.field).toBe("repo_url");
   });
 
   it("VALIDATION_MISSING_INPUT marks the repo_url field", () => {
-    const result = getErrorMessage({ code: "VALIDATION_MISSING_INPUT", message: "missing", retryable: false });
+    const result = getImportErrorMessage({ code: "VALIDATION_MISSING_INPUT", message: "missing", retryable: false });
     expect(result.field).toBe("repo_url");
   });
 
   it("GITHUB_NOT_FOUND has no field marker", () => {
-    const result = getErrorMessage({ code: "GITHUB_NOT_FOUND", message: "not found", retryable: false });
+    const result = getImportErrorMessage({ code: "GITHUB_NOT_FOUND", message: "not found", retryable: false });
     expect(result.field).toBeUndefined();
     expect(result.message).toContain("Repository not found");
   });
 
   it("GITHUB_UNAUTHORIZED has no field marker", () => {
-    const result = getErrorMessage({ code: "GITHUB_UNAUTHORIZED", message: "denied", retryable: false });
+    const result = getImportErrorMessage({ code: "GITHUB_UNAUTHORIZED", message: "denied", retryable: false });
     expect(result.field).toBeUndefined();
     expect(result.message).toContain("access denied");
   });
 
   it("GITHUB_RATE_LIMIT has no field marker", () => {
-    const result = getErrorMessage({ code: "GITHUB_RATE_LIMIT", message: "rate limited", retryable: true });
+    const result = getImportErrorMessage({ code: "GITHUB_RATE_LIMIT", message: "rate limited", retryable: true });
     expect(result.field).toBeUndefined();
     expect(result.message).toContain("rate limit");
   });
 
   it("ADAPTER_TIMEOUT has no field marker", () => {
-    const result = getErrorMessage({ code: "ADAPTER_TIMEOUT", message: "timeout", retryable: true });
+    const result = getImportErrorMessage({ code: "ADAPTER_TIMEOUT", message: "timeout", retryable: true });
     expect(result.field).toBeUndefined();
     expect(result.message).toContain("timed out");
   });
 
   it("unknown error code returns a fallback message", () => {
-    const result = getErrorMessage({ code: "UNKNOWN_ERROR", message: "unknown", retryable: false });
+    const result = getImportErrorMessage({ code: "UNKNOWN_ERROR", message: "unknown", retryable: false });
     expect(result.message).toBeTruthy();
   });
 
   it("VALIDATION_MISSING_INPUT uses the backend message when present", () => {
-    const result = getErrorMessage({
+    const result = getImportErrorMessage({
       code: "VALIDATION_MISSING_INPUT",
       message: "repo_url is required",
       retryable: false,
@@ -711,70 +700,69 @@ describe("regression: no GitHub direct reads in workspace flow components", () =
   });
 });
 
-// ─── Section 12: Tab management behavior ─────────────────────────────────────
+// ─── Section 12: Tab management behavior (addTaskTab/removeTaskTab/addFeatureTab/removeFeatureTab from tabState.ts) ──
 
-describe("tab management — task and feature tab state logic", () => {
-  it("opening a new task tab adds it to the list", () => {
-    const tabs: Array<{ taskId: string; taskName: string; title: string }> = [];
-    const entry = { taskId: "task-uuid-1", taskName: "T1", title: "Setup API" };
-    const exists = tabs.find((t) => t.taskId === entry.taskId);
-    if (!exists) tabs.push(entry);
-    expect(tabs).toHaveLength(1);
-    expect(tabs[0].taskId).toBe("task-uuid-1");
+describe("tab management — production addTaskTab / removeTaskTab / addFeatureTab / removeFeatureTab", () => {
+  it("addTaskTab: opening a new task tab adds it to the list", () => {
+    const tabs: TaskTabEntry[] = [];
+    const entry: TaskTabEntry = { taskId: "task-uuid-1", taskName: "T1", title: "Setup API" };
+    const result = addTaskTab(tabs, entry);
+    expect(result).toHaveLength(1);
+    expect(result[0].taskId).toBe("task-uuid-1");
   });
 
-  it("opening a tab for an already-open task does not create a duplicate", () => {
-    const tabs = [{ taskId: "task-uuid-1", taskName: "T1", title: "Setup API" }];
-    const entry = { taskId: "task-uuid-1", taskName: "T1", title: "Setup API" };
-    const exists = tabs.find((t) => t.taskId === entry.taskId);
-    if (!exists) tabs.push(entry);
-    expect(tabs).toHaveLength(1);
+  it("addTaskTab: opening a tab for an already-open task returns the same list (no duplicate)", () => {
+    const tabs: TaskTabEntry[] = [{ taskId: "task-uuid-1", taskName: "T1", title: "Setup API" }];
+    const entry: TaskTabEntry = { taskId: "task-uuid-1", taskName: "T1", title: "Setup API" };
+    const result = addTaskTab(tabs, entry);
+    expect(result).toHaveLength(1);
+    expect(result).toBe(tabs); // same reference — no allocation
   });
 
-  it("closing a task tab removes it from the list", () => {
-    const tabs = [
+  it("removeTaskTab: closing a task tab removes it from the list", () => {
+    const tabs: TaskTabEntry[] = [
       { taskId: "task-uuid-1", taskName: "T1", title: "Task 1" },
       { taskId: "task-uuid-2", taskName: "T2", title: "Task 2" },
     ];
-    const next = tabs.filter((t) => t.taskId !== "task-uuid-1");
-    expect(next).toHaveLength(1);
-    expect(next[0].taskId).toBe("task-uuid-2");
+    const result = removeTaskTab(tabs, "task-uuid-1");
+    expect(result).toHaveLength(1);
+    expect(result[0].taskId).toBe("task-uuid-2");
   });
 
-  it("opening a feature tab adds it to the feature tab list", () => {
-    const featureTabs: Array<{ featureId: string; featureName: string; title: string }> = [];
-    const entry = { featureId: "feat-uuid-1", featureName: "my-feature", title: "My Feature" };
-    const exists = featureTabs.find((f) => f.featureId === entry.featureId);
-    if (!exists) featureTabs.push(entry);
-    expect(featureTabs).toHaveLength(1);
+  it("addFeatureTab: opening a feature tab adds it to the feature tab list", () => {
+    const featureTabs: FeatureTabEntry[] = [];
+    const entry: FeatureTabEntry = { featureId: "feat-uuid-1", featureName: "my-feature", title: "My Feature" };
+    const result = addFeatureTab(featureTabs, entry);
+    expect(result).toHaveLength(1);
+    expect(result[0].featureId).toBe("feat-uuid-1");
   });
 
-  it("opening duplicate feature tab does not create second entry", () => {
-    const featureTabs = [{ featureId: "feat-uuid-1", featureName: "my-feature", title: "My Feature" }];
-    const entry = { featureId: "feat-uuid-1", featureName: "my-feature", title: "My Feature" };
-    const exists = featureTabs.find((f) => f.featureId === entry.featureId);
-    if (!exists) featureTabs.push(entry);
-    expect(featureTabs).toHaveLength(1);
+  it("addFeatureTab: opening duplicate feature tab returns the same list (no duplicate)", () => {
+    const featureTabs: FeatureTabEntry[] = [{ featureId: "feat-uuid-1", featureName: "my-feature", title: "My Feature" }];
+    const entry: FeatureTabEntry = { featureId: "feat-uuid-1", featureName: "my-feature", title: "My Feature" };
+    const result = addFeatureTab(featureTabs, entry);
+    expect(result).toHaveLength(1);
+    expect(result).toBe(featureTabs); // same reference — no allocation
   });
 
-  it("closing a feature tab removes it from the list", () => {
-    const featureTabs = [
+  it("removeFeatureTab: closing a feature tab removes it from the list", () => {
+    const featureTabs: FeatureTabEntry[] = [
       { featureId: "feat-uuid-1", featureName: "alpha", title: "Alpha" },
       { featureId: "feat-uuid-2", featureName: "beta", title: "Beta" },
     ];
-    const next = featureTabs.filter((f) => f.featureId !== "feat-uuid-1");
-    expect(next).toHaveLength(1);
-    expect(next[0].featureId).toBe("feat-uuid-2");
+    const result = removeFeatureTab(featureTabs, "feat-uuid-1");
+    expect(result).toHaveLength(1);
+    expect(result[0].featureId).toBe("feat-uuid-2");
   });
 
   it("task tabs are keyed by taskId (UUID), not task_name", () => {
-    const tabs = [{ taskId: "task-uuid-abc", taskName: "T1", title: "Some Task" }];
+    const tabs: TaskTabEntry[] = [{ taskId: "task-uuid-abc", taskName: "T1", title: "Some Task" }];
     expect(tabs.find((t) => t.taskId === "task-uuid-abc")).toBeDefined();
     expect(tabs.find((t) => t.taskId === "T1")).toBeUndefined();
   });
 
   it("feature tabs are keyed by featureId (UUID), not feature_name", () => {
-    const featureTabs = [{ featureId: "feat-uuid-xyz", featureName: "auth", title: "Auth Feature" }];
+    const featureTabs: FeatureTabEntry[] = [{ featureId: "feat-uuid-xyz", featureName: "auth", title: "Auth Feature" }];
     expect(featureTabs.find((f) => f.featureId === "feat-uuid-xyz")).toBeDefined();
     expect(featureTabs.find((f) => f.featureId === "auth")).toBeUndefined();
   });
