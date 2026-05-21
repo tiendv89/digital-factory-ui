@@ -16,7 +16,7 @@ import { useBoardData } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
 import { useBackendFeatureSearch } from "../../hooks/useBackendFeatureSearch";
 import { useBackendTaskSearch } from "../../hooks/useBackendTaskSearch";
-import { useWorkspaceContext, type TaskTabEntry } from "@/features/workspaces/context/WorkspaceContext";
+import { useWorkspaceContext, type TaskTabEntry, type FeatureTabEntry } from "@/features/workspaces/context/WorkspaceContext";
 import type { ActiveFilters, BoardLoadError, FeatureActiveFilters } from "../../types";
 import {
   type BoardMode,
@@ -48,6 +48,7 @@ export type BoardContextValue = {
   syncError: BoardLoadError | null;
   syncBoard: () => void;
   openTaskTab: (task: ParsedTask) => void;
+  openFeatureTab: (feature: ParsedFeature) => void;
 
   boardMode: BoardMode;
   setBoardMode: (mode: BoardMode) => void;
@@ -195,7 +196,7 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
     });
   }, [syncCurrentWorkspace]);
 
-  const { openTaskTab: wsOpenTaskTab } = useWorkspaceContext();
+  const { openTaskTab: wsOpenTaskTab, openFeatureTab: wsOpenFeatureTab } = useWorkspaceContext();
 
   const openTaskTab = useCallback(
     (task: ParsedTask) => {
@@ -208,6 +209,18 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       } as TaskTabEntry);
     },
     [wsOpenTaskTab],
+  );
+
+  const openFeatureTab = useCallback(
+    (feature: ParsedFeature) => {
+      if (!feature.backendId) return;
+      wsOpenFeatureTab({
+        featureId: feature.backendId,
+        featureName: feature.id,
+        title: feature.title || feature.id,
+      } as FeatureTabEntry);
+    },
+    [wsOpenFeatureTab],
   );
 
   // Map workspace sync error to BoardLoadError shape
@@ -264,6 +277,7 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       taskSearchError,
       featureSearchError,
       openTaskTab,
+      openFeatureTab,
     }),
     [
       workspaceDetail,
@@ -294,6 +308,7 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       taskSearchError,
       featureSearchError,
       openTaskTab,
+      openFeatureTab,
     ],
   );
 

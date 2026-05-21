@@ -10,6 +10,7 @@ import { BoardProvider, KanbanBoard } from "@/features/board/components/KanbanBo
 import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
 import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet";
 import { TaskDetailSheetMount, TaskTabView } from "@/features/tasks";
+import { FeatureTabView } from "@/features/board/components/FeatureTabView";
 
 function LoadingState() {
   return (
@@ -68,6 +69,23 @@ function ActiveTaskTabSurface({
   );
 }
 
+function ActiveFeatureTabSurface({
+  workspaceId,
+  featureId,
+}: {
+  workspaceId: string;
+  featureId: string;
+}) {
+  return (
+    <main className="flex h-screen flex-col bg-bg">
+      <WorkspaceTabBar />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <FeatureTabView workspaceId={workspaceId} featureId={featureId} />
+      </div>
+    </main>
+  );
+}
+
 export default function BoardPage() {
   const {
     activeWorkspace,
@@ -76,6 +94,7 @@ export default function BoardPage() {
     summaries,
     activeSurface,
     activeTaskTabId,
+    activeFeatureTabId,
   } = useWorkspaceContext();
   const [showImport, setShowImport] = useState(false);
 
@@ -113,6 +132,15 @@ export default function BoardPage() {
       <ActiveTaskTabSurface
         workspaceId={activeWorkspace.id}
         taskId={activeTaskTabId}
+      />
+    );
+  }
+
+  if (activeSurface === "feature-tab" && activeFeatureTabId) {
+    return (
+      <ActiveFeatureTabSurface
+        workspaceId={activeWorkspace.id}
+        featureId={activeFeatureTabId}
       />
     );
   }

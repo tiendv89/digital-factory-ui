@@ -102,6 +102,7 @@ export function FeatureBoardView() {
     featureSearchQuery,
     featureActiveFilters,
     setSelectedFeature,
+    openFeatureTab,
     backendFeatureResults,
     featureSearching,
     featureSearchError,
@@ -221,6 +222,7 @@ export function FeatureBoardView() {
                       <FeatureListRow
                         feature={feature}
                         onClick={() => setSelectedFeature(feature)}
+                        onDoubleClick={() => openFeatureTab(feature)}
                       />
                     )}
                   </div>

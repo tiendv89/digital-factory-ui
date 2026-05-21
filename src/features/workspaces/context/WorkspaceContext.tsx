@@ -35,7 +35,13 @@ export type TaskTabEntry = {
   featureName?: string;
 };
 
-export type WorkspaceSurface = "board" | "task-tab";
+export type FeatureTabEntry = {
+  featureId: string;
+  featureName: string;
+  title: string;
+};
+
+export type WorkspaceSurface = "board" | "task-tab" | "feature-tab";
 
 export type WorkspaceContextValue = {
   summaries: LocalWorkspaceSummary[];
@@ -61,6 +67,11 @@ export type WorkspaceContextValue = {
   openTaskTab: (entry: TaskTabEntry) => void;
   closeTaskTab: (taskId: string) => void;
   activateTaskTab: (taskId: string) => void;
+  openFeatureTabs: FeatureTabEntry[];
+  activeFeatureTabId: string | null;
+  openFeatureTab: (entry: FeatureTabEntry) => void;
+  closeFeatureTab: (featureId: string) => void;
+  activateFeatureTab: (featureId: string) => void;
   goToBoard: () => void;
 };
 
@@ -80,6 +91,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("board");
   const [openTaskTabs, setOpenTaskTabs] = useState<TaskTabEntry[]>([]);
   const [activeTaskTabId, setActiveTaskTabId] = useState<string | null>(null);
+  const [openFeatureTabs, setOpenFeatureTabs] = useState<FeatureTabEntry[]>([]);
+  const [activeFeatureTabId, setActiveFeatureTabId] = useState<string | null>(null);
 
   useEffect(() => {
     const storedSummaries = getLocalWorkspaceSummaries();
@@ -223,9 +236,38 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setActiveSurface("task-tab");
   }, []);
 
+  const openFeatureTab = useCallback((entry: FeatureTabEntry) => {
+    setOpenFeatureTabs((prev) => {
+      const exists = prev.find((f) => f.featureId === entry.featureId);
+      if (exists) return prev;
+      return [...prev, entry];
+    });
+    setActiveFeatureTabId(entry.featureId);
+    setActiveSurface("feature-tab");
+  }, []);
+
+  const closeFeatureTab = useCallback((featureId: string) => {
+    setOpenFeatureTabs((prev) => prev.filter((f) => f.featureId !== featureId));
+    setActiveFeatureTabId((prev) => {
+      if (prev !== featureId) return prev;
+      return null;
+    });
+    setActiveSurface((prev) => {
+      if (prev !== "feature-tab") return prev;
+      if (activeFeatureTabId !== featureId) return prev;
+      return "board";
+    });
+  }, [activeFeatureTabId]);
+
+  const activateFeatureTab = useCallback((featureId: string) => {
+    setActiveFeatureTabId(featureId);
+    setActiveSurface("feature-tab");
+  }, []);
+
   const goToBoard = useCallback(() => {
     setActiveSurface("board");
     setActiveTaskTabId(null);
+    setActiveFeatureTabId(null);
   }, []);
 
   return (
@@ -252,6 +294,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         openTaskTab,
         closeTaskTab,
         activateTaskTab,
+        openFeatureTabs,
+        activeFeatureTabId,
+        openFeatureTab,
+        closeFeatureTab,
+        activateFeatureTab,
         goToBoard,
       }}
     >

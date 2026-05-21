@@ -31,6 +31,17 @@ export type ParsedFeature = {
   title: string;
   featureStatus: string;
   tasks: ParsedTask[];
+  backendId?: string;
+  currentStage?: string;
+  taskCounts?: {
+    total: number;
+    done: number;
+    in_progress: number;
+    blocked: number;
+    ready: number;
+    todo: number;
+  };
+  updatedAt?: string;
 };
 
 type RawFeatureStatus = {

@@ -12,6 +12,7 @@ import { getFeatureStatusColor, getFeatureStatusLabel } from "../../lib/status";
 type FeatureListRowProps = {
   feature: ParsedFeature;
   onClick: () => void;
+  onDoubleClick?: () => void;
 };
 
 function FeatureStatusPill({ status }: { status: string }) {
@@ -36,7 +37,7 @@ function FeatureStatusPill({ status }: { status: string }) {
   );
 }
 
-export function FeatureListRow({ feature, onClick }: FeatureListRowProps) {
+export function FeatureListRow({ feature, onClick, onDoubleClick }: FeatureListRowProps) {
   const lastModifiedAt = getFeatureLastModifiedAt(feature);
   const modifiedToday = lastModifiedAt
     ? isTodayTimestamp(lastModifiedAt)
@@ -44,6 +45,11 @@ export function FeatureListRow({ feature, onClick }: FeatureListRowProps) {
   const taskCountLabel = `${feature.tasks.length} ${
     feature.tasks.length === 1 ? "task" : "tasks"
   }`;
+
+  function handleDoubleClick(e: React.MouseEvent) {
+    e.preventDefault();
+    if (onDoubleClick) onDoubleClick();
+  }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
@@ -58,6 +64,7 @@ export function FeatureListRow({ feature, onClick }: FeatureListRowProps) {
       role="button"
       tabIndex={0}
       onClick={onClick}
+      onDoubleClick={handleDoubleClick}
       onKeyDown={handleKeyDown}
       aria-label={`Open feature detail for ${feature.title || feature.id}`}
       className="flex h-full min-h-[82px] w-full cursor-pointer flex-col gap-2 border border-border bg-surface px-3 py-3 text-left transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
