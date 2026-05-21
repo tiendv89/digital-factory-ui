@@ -25,11 +25,16 @@ vi.mock("../features/tasks/hooks/useWorkspaceTask", () => ({
 const mockWorkspaceContext = vi.hoisted(() => ({
   activeSurface: "board" as string,
   activeTaskTabId: null as string | null,
+  activeFeatureTabId: null as string | null,
   openTaskTabs: [] as Array<{ taskId: string; taskName: string; title: string }>,
+  openFeatureTabs: [] as Array<{ featureId: string; featureName: string; title: string }>,
   activeWorkspace: null as { name?: string; slug?: string } | null,
   openTaskTab: vi.fn(),
   closeTaskTab: vi.fn(),
   activateTaskTab: vi.fn(),
+  openFeatureTab: vi.fn(),
+  closeFeatureTab: vi.fn(),
+  activateFeatureTab: vi.fn(),
   goToBoard: vi.fn(),
 }));
 

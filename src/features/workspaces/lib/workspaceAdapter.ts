@@ -38,6 +38,10 @@ export function adaptFeatureSummary(
     title: feature.title,
     featureStatus: feature.status,
     tasks: featureTasks,
+    backendId: feature.id,
+    currentStage: feature.current_stage,
+    taskCounts: feature.task_counts,
+    updatedAt: feature.updated_at,
   };
 }
 
@@ -76,6 +80,10 @@ export function adaptFeatureSummaries(features: FeatureSummary[]): ParsedFeature
     title: f.title,
     featureStatus: f.status,
     tasks: [],
+    backendId: f.id,
+    currentStage: f.current_stage,
+    taskCounts: f.task_counts,
+    updatedAt: f.updated_at,
   }));
 }
 

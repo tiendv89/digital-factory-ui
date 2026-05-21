@@ -1,8 +1,8 @@
 "use client";
 
-import { LayoutGrid, X } from "lucide-react";
+import { LayoutGrid, Layers, X } from "lucide-react";
 import { useWorkspaceContext } from "../../context/WorkspaceContext";
-import type { TaskTabEntry } from "../../context/WorkspaceContext";
+import type { TaskTabEntry, FeatureTabEntry } from "../../context/WorkspaceContext";
 
 function WorkspaceTab() {
   const { activeSurface, goToBoard, activeWorkspace } = useWorkspaceContext();
@@ -90,8 +90,65 @@ function TaskTab({ entry }: { entry: TaskTabEntry }) {
   );
 }
 
+function FeatureTab({ entry }: { entry: FeatureTabEntry }) {
+  const { activeSurface, activeFeatureTabId, activateFeatureTab, closeFeatureTab } =
+    useWorkspaceContext();
+  const isActive =
+    activeSurface === "feature-tab" && activeFeatureTabId === entry.featureId;
+
+  function handleClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    activateFeatureTab(entry.featureId);
+  }
+
+  function handleClose(e: React.MouseEvent) {
+    e.stopPropagation();
+    closeFeatureTab(entry.featureId);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      activateFeatureTab(entry.featureId);
+    }
+  }
+
+  return (
+    <div
+      role="tab"
+      tabIndex={0}
+      aria-selected={isActive}
+      data-feature-tab={entry.featureId}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      className={
+        "group flex h-9 cursor-pointer items-center gap-2 border-r border-border px-3 text-xs transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary " +
+        (isActive
+          ? "border-b-2 border-b-primary bg-surface text-text-primary"
+          : "bg-surface-secondary text-text-secondary hover:bg-surface hover:text-text-primary")
+      }
+    >
+      <Layers className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+      <span
+        className="max-w-[140px] truncate"
+        title={entry.title}
+      >
+        {entry.title}
+      </span>
+      <button
+        type="button"
+        onClick={handleClose}
+        aria-label={`Close ${entry.featureName} tab`}
+        className="ml-1 shrink-0 rounded p-0.5 text-text-muted opacity-0 transition-opacity hover:bg-surface-subtle hover:text-text-primary group-hover:opacity-100"
+      >
+        <X className="h-3 w-3" aria-hidden="true" />
+      </button>
+    </div>
+  );
+}
+
 export function WorkspaceTabBar() {
-  const { openTaskTabs } = useWorkspaceContext();
+  const { openTaskTabs, openFeatureTabs } = useWorkspaceContext();
 
   return (
     <div
@@ -103,6 +160,9 @@ export function WorkspaceTabBar() {
       <WorkspaceTab />
       {openTaskTabs.map((entry) => (
         <TaskTab key={entry.taskId} entry={entry} />
+      ))}
+      {openFeatureTabs.map((entry) => (
+        <FeatureTab key={entry.featureId} entry={entry} />
       ))}
     </div>
   );
