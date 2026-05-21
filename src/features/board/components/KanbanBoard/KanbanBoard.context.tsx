@@ -11,8 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
-import type { StoredWorkspace } from "@/types/workspace";
-import { useBoardData, type UseBoardDataOptions } from "../../hooks/useBoardData";
+import type { WorkspaceDetail } from "@/services/workflow-backend";
+import { useBoardData } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
 import type { ActiveFilters, BoardLoadError, FeatureActiveFilters } from "../../types";
 import {
@@ -35,7 +35,7 @@ export type SelectedTask = {
 } | null;
 
 export type BoardContextValue = {
-  workspace: StoredWorkspace;
+  workspaceDetail: WorkspaceDetail;
   features: ParsedFeature[];
   trackedFeatures: ParsedFeature[];
   loading: boolean;
@@ -74,24 +74,15 @@ export type BoardContextValue = {
 const BoardContext = createContext<BoardContextValue | null>(null);
 
 export type BoardProviderProps = {
-  workspace: StoredWorkspace;
+  workspaceDetail: WorkspaceDetail;
   children: ReactNode;
-} & UseBoardDataOptions;
+};
 
-export function BoardProvider({
-  workspace,
-  children,
-  clientFactory,
-}: BoardProviderProps) {
-  const { features, loading, error, reload } = useBoardData(workspace, {
-    clientFactory,
+export function BoardProvider({ workspaceDetail, children }: BoardProviderProps) {
+  const { features, loading, error, reload } = useBoardData(workspaceDetail.id, {
+    initialData: workspaceDetail,
   });
-  const {
-    trackedFeatures,
-    reload: reloadTracking,
-  } = usePullRequestTaskData(workspace, {
-    clientFactory,
-  });
+  const { trackedFeatures, reload: reloadTracking } = usePullRequestTaskData();
 
   const [boardMode, setBoardModeState] = useState<BoardMode>(
     () => getStoredBoardMode() ?? getDefaultBoardMode(),
@@ -109,9 +100,7 @@ export function BoardProvider({
     () => new Set(),
   );
   const [selectedTask, setSelectedTask] = useState<SelectedTask>(null);
-  const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(
-    null,
-  );
+  const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(null);
 
   const toggleFeature = useCallback((featureId: string) => {
     setExpandedFeatureIds((prev) => {
@@ -162,7 +151,7 @@ export function BoardProvider({
 
   const value = useMemo<BoardContextValue>(
     () => ({
-      workspace,
+      workspaceDetail,
       features,
       trackedFeatures,
       loading,
@@ -196,7 +185,7 @@ export function BoardProvider({
       setSelectedFeature,
     }),
     [
-      workspace,
+      workspaceDetail,
       features,
       trackedFeatures,
       loading,
