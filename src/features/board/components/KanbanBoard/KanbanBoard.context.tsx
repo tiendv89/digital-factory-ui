@@ -16,7 +16,7 @@ import { useBoardData } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
 import { useBackendFeatureSearch } from "../../hooks/useBackendFeatureSearch";
 import { useBackendTaskSearch } from "../../hooks/useBackendTaskSearch";
-import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
+import { useWorkspaceContext, type TaskTabEntry } from "@/features/workspaces/context/WorkspaceContext";
 import type { ActiveFilters, BoardLoadError, FeatureActiveFilters } from "../../types";
 import {
   type BoardMode,
@@ -47,6 +47,7 @@ export type BoardContextValue = {
   syncing: boolean;
   syncError: BoardLoadError | null;
   syncBoard: () => void;
+  openTaskTab: (task: ParsedTask) => void;
 
   boardMode: BoardMode;
   setBoardMode: (mode: BoardMode) => void;
@@ -194,6 +195,21 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
     });
   }, [syncCurrentWorkspace]);
 
+  const { openTaskTab: wsOpenTaskTab } = useWorkspaceContext();
+
+  const openTaskTab = useCallback(
+    (task: ParsedTask) => {
+      if (!task.backendId) return;
+      wsOpenTaskTab({
+        taskId: task.backendId,
+        taskName: task.id,
+        title: task.title,
+        featureId: task.featureBackendId,
+      } as TaskTabEntry);
+    },
+    [wsOpenTaskTab],
+  );
+
   // Map workspace sync error to BoardLoadError shape
   const syncError: BoardLoadError | null = wsyncError
     ? {
@@ -247,6 +263,7 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       featureSearching,
       taskSearchError,
       featureSearchError,
+      openTaskTab,
     }),
     [
       workspaceDetail,
@@ -276,6 +293,7 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       featureSearching,
       taskSearchError,
       featureSearchError,
+      openTaskTab,
     ],
   );
 

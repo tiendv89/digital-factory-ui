@@ -38,6 +38,7 @@ export type TaskTrackingSectionProps = {
   isExpanded: boolean;
   onToggle: () => void;
   onSelectTask: (task: ParsedTask, feature: ParsedFeature) => void;
+  onOpenTaskTab?: (task: ParsedTask) => void;
 };
 
 export function TaskTrackingSection({
@@ -45,6 +46,7 @@ export function TaskTrackingSection({
   isExpanded,
   onToggle,
   onSelectTask,
+  onOpenTaskTab,
 }: TaskTrackingSectionProps) {
   const { label, status, items } = section;
   const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
@@ -102,6 +104,7 @@ export function TaskTrackingSection({
                 task={task}
                 feature={feature}
                 onSelect={onSelectTask}
+                onOpenTab={onOpenTaskTab}
               />
             ))
           )}

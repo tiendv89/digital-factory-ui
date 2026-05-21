@@ -4,11 +4,12 @@ import { AlertCircle, Plus } from "lucide-react";
 import { useState } from "react";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 import { ImportModal } from "@/features/workspaces/components/ImportModal";
+import { WorkspaceTabBar } from "@/features/workspaces/components/WorkspaceTabBar";
 import { BoardHeader } from "@/features/board/components/BoardHeader";
 import { BoardProvider, KanbanBoard } from "@/features/board/components/KanbanBoard";
 import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
 import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet";
-import { TaskDetailSheetMount } from "@/features/tasks";
+import { TaskDetailSheetMount, TaskTabView } from "@/features/tasks";
 
 function LoadingState() {
   return (
@@ -50,9 +51,32 @@ function EmptyState({ onImport }: { onImport: () => void }) {
   );
 }
 
+function ActiveTaskTabSurface({
+  workspaceId,
+  taskId,
+}: {
+  workspaceId: string;
+  taskId: string;
+}) {
+  return (
+    <main className="flex h-screen flex-col bg-bg">
+      <WorkspaceTabBar />
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <TaskTabView workspaceId={workspaceId} taskId={taskId} />
+      </div>
+    </main>
+  );
+}
+
 export default function BoardPage() {
-  const { activeWorkspace, loadingWorkspace, workspaceError, summaries } =
-    useWorkspaceContext();
+  const {
+    activeWorkspace,
+    loadingWorkspace,
+    workspaceError,
+    summaries,
+    activeSurface,
+    activeTaskTabId,
+  } = useWorkspaceContext();
   const [showImport, setShowImport] = useState(false);
 
   if (loadingWorkspace) {
@@ -84,9 +108,19 @@ export default function BoardPage() {
     return <LoadingState />;
   }
 
+  if (activeSurface === "task-tab" && activeTaskTabId) {
+    return (
+      <ActiveTaskTabSurface
+        workspaceId={activeWorkspace.id}
+        taskId={activeTaskTabId}
+      />
+    );
+  }
+
   return (
     <main className="flex h-screen flex-col bg-bg">
       <BoardProvider workspaceDetail={activeWorkspace}>
+        <WorkspaceTabBar />
         <BoardHeader />
         <div className="flex flex-1 overflow-hidden">
           <TaskTrackingPanel />

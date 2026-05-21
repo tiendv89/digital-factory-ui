@@ -69,6 +69,7 @@ export function TaskBoardView() {
     backendTaskResults,
     taskSearching,
     taskSearchError,
+    openTaskTab,
   } = useBoardContext();
 
   // Use backend search results when a search is active; otherwise filter client-side
@@ -152,6 +153,7 @@ export function TaskBoardView() {
                 isExpanded={expandedFeatureIds.has(feature.id)}
                 onToggle={() => toggleFeature(feature.id)}
                 onSelectTask={setSelectedTask}
+                onOpenTaskTab={openTaskTab}
               />
             </div>
           ))}
