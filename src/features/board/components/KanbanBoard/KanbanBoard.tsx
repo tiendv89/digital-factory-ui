@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { useBoardContext } from "./KanbanBoard.context";
 import { TaskBoardView } from "../TaskBoardView";
 import { FeatureBoardView } from "../FeatureBoardView";
+import { BoardTableTitle } from "../BoardTableTitle";
 import { FEATURE_STATUS_OPTIONS, STATUS_COLUMNS } from "../../lib/status";
 import {
   isAllFeatureStatusFilterSelected,
@@ -34,7 +35,10 @@ function StaleBanner() {
         aria-live="assertive"
         className="flex items-center gap-3 border-b border-danger bg-danger-bg px-4 py-2"
       >
-        <AlertTriangle className="h-4 w-4 shrink-0 text-danger" aria-hidden="true" />
+        <AlertTriangle
+          className="h-4 w-4 shrink-0 text-danger"
+          aria-hidden="true"
+        />
         <p className="flex-1 text-xs text-danger">
           <span className="font-semibold">Sync failed</span>
           {` — ${syncError.message}`}
@@ -60,17 +64,21 @@ function StaleBanner() {
 
   if (!source_state?.stale) return null;
 
+  const staleMessage = source_state.error_code
+    ? `Data is out of date (Error: ${source_state.error_code}).`
+    : "Sync connection is unavailable.";
+
   return (
     <div
       role="alert"
       aria-live="polite"
       className="flex items-center gap-3 border-b border-warning/30 bg-warning/10 px-4 py-2"
     >
-      <AlertTriangle className="h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
-      <p className="flex-1 text-xs text-warning">
-        <span className="font-semibold">Stale data</span>
-        {source_state.error_code ? ` — ${source_state.error_code}` : " — workspace data may be out of date."}
-      </p>
+      <AlertTriangle
+        className="h-4 w-4 shrink-0 text-warning"
+        aria-hidden="true"
+      />
+      <p className="flex-1 text-xs text-warning">{staleMessage}</p>
       <button
         type="button"
         onClick={syncBoard}
@@ -255,6 +263,8 @@ function BoardControls() {
     loading,
     syncing,
     syncBoard,
+    syncError,
+    workspaceDetail,
     boardMode,
     taskSearchQuery,
     setTaskSearchQuery,
@@ -275,6 +285,7 @@ function BoardControls() {
     boardMode === "task" ? taskSearchQuery : featureSearchQuery;
   const setSearchValue =
     boardMode === "task" ? setTaskSearchQuery : setFeatureSearchQuery;
+  const showSyncButton = !syncError && !workspaceDetail.source_state?.stale;
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -296,19 +307,21 @@ function BoardControls() {
       <ModeSegmentedControl />
 
       <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={syncBoard}
-          disabled={loading || syncing}
-          aria-label="Sync workspace data"
-          className="flex h-8 items-center gap-2 border border-border bg-surface px-3 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          <RefreshCw
-            className={"h-3.5 w-3.5 " + (syncing ? "animate-spin" : "")}
-            aria-hidden="true"
-          />
-          {syncing ? "Syncing..." : "Sync"}
-        </button>
+        {showSyncButton && (
+          <button
+            type="button"
+            onClick={syncBoard}
+            disabled={loading || syncing}
+            aria-label="Sync workspace data"
+            className="flex h-8 items-center gap-2 border border-border bg-surface px-3 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <RefreshCw
+              className={"h-3.5 w-3.5 " + (syncing ? "animate-spin" : "")}
+              aria-hidden="true"
+            />
+            {syncing ? "Syncing..." : "Sync"}
+          </button>
+        )}
         <label className="flex h-8 w-64 items-center gap-2 border border-border bg-surface px-3 text-xs text-text-secondary focus-within:border-primary">
           <Search className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span className="sr-only">Search board</span>
@@ -366,6 +379,7 @@ export function KanbanBoard() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border border-border bg-surface">
       <StaleBanner />
+      <BoardTableTitle />
       <BoardControls />
       {boardMode === "task" ? <TaskBoardView /> : <FeatureBoardView />}
     </div>

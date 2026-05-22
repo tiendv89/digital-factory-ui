@@ -26,8 +26,20 @@ const mockWorkspaceContext = vi.hoisted(() => ({
   activeSurface: "board" as string,
   activeTaskTabId: null as string | null,
   activeFeatureTabId: null as string | null,
-  openTaskTabs: [] as Array<{ taskId: string; taskName: string; title: string }>,
-  openFeatureTabs: [] as Array<{ featureId: string; featureName: string; title: string }>,
+  openTaskTabs: [] as Array<{
+    sessionId: string;
+    workspaceId: string;
+    taskId: string;
+    taskName: string;
+    title: string;
+  }>,
+  openFeatureTabs: [] as Array<{
+    sessionId: string;
+    workspaceId: string;
+    featureId: string;
+    featureName: string;
+    title: string;
+  }>,
   activeWorkspace: null as { name?: string; slug?: string } | null,
   openTaskTab: vi.fn(),
   closeTaskTab: vi.fn(),
@@ -203,6 +215,17 @@ describe("TaskTabView — content rendering", () => {
     expect(html).toContain("T5");
   });
 
+  it("renders task detail without an agent chat placeholder", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(TaskTabView, { workspaceId: "ws-1", taskId: "task-uuid-1" }),
+    );
+
+    expect(html).toContain("data-task-tab-content");
+    expect(html).not.toContain("data-detail-split-layout");
+    expect(html).not.toContain("data-detail-section-one");
+    expect(html).not.toContain("data-agent-chat-placeholder");
+  });
+
   it("renders task title in header", () => {
     const html = renderToStaticMarkup(
       React.createElement(TaskTabView, { workspaceId: "ws-1", taskId: "task-uuid-1" }),
@@ -215,7 +238,7 @@ describe("TaskTabView — content rendering", () => {
       React.createElement(TaskTabView, { workspaceId: "ws-1", taskId: "task-uuid-1" }),
     );
     expect(html).toContain("data-back-to-board");
-    expect(html).toContain("Board");
+    expect(html).toContain("Back");
   });
 
   it("renders copy-id button with data-copy-task-id", () => {
@@ -229,7 +252,8 @@ describe("TaskTabView — content rendering", () => {
     const html = renderToStaticMarkup(
       React.createElement(TaskTabView, { workspaceId: "ws-1", taskId: "task-uuid-1" }),
     );
-    expect(html).toContain("in review");
+    expect(html).toContain("IN REVIEW");
+    expect(html).toContain("#8e67cb");
   });
 
   it("renders repo link in metadata", () => {
@@ -414,15 +438,27 @@ describe("WorkspaceTabBar", () => {
 
   it("renders task tabs for each open task tab", () => {
     mockWorkspaceContext.openTaskTabs = [
-      { taskId: "uuid-t5", taskName: "T5", title: "Inspect task details" },
-      { taskId: "uuid-t6", taskName: "T6", title: "Document rendering" },
+      {
+        sessionId: "task-session-t5",
+        workspaceId: "ws-1",
+        taskId: "uuid-t5",
+        taskName: "T5",
+        title: "Inspect task details",
+      },
+      {
+        sessionId: "task-session-t6",
+        workspaceId: "ws-1",
+        taskId: "uuid-t6",
+        taskName: "T6",
+        title: "Document rendering",
+      },
     ];
     mockWorkspaceContext.activeSurface = "task-tab";
-    mockWorkspaceContext.activeTaskTabId = "uuid-t5";
+    mockWorkspaceContext.activeTaskTabId = "task-session-t5";
 
     const html = renderToStaticMarkup(React.createElement(WorkspaceTabBar));
-    expect(html).toContain('data-task-tab="uuid-t5"');
-    expect(html).toContain('data-task-tab="uuid-t6"');
+    expect(html).toContain('data-task-tab="task-session-t5"');
+    expect(html).toContain('data-task-tab="task-session-t6"');
     expect(html).toContain("T5");
     expect(html).toContain("T6");
     expect(html).toContain("Inspect task details");
@@ -431,10 +467,16 @@ describe("WorkspaceTabBar", () => {
 
   it("marks active task tab with aria-selected=true", () => {
     mockWorkspaceContext.openTaskTabs = [
-      { taskId: "uuid-t5", taskName: "T5", title: "Some task" },
+      {
+        sessionId: "task-session-t5",
+        workspaceId: "ws-1",
+        taskId: "uuid-t5",
+        taskName: "T5",
+        title: "Some task",
+      },
     ];
     mockWorkspaceContext.activeSurface = "task-tab";
-    mockWorkspaceContext.activeTaskTabId = "uuid-t5";
+    mockWorkspaceContext.activeTaskTabId = "task-session-t5";
 
     const html = renderToStaticMarkup(React.createElement(WorkspaceTabBar));
     expect(html).toContain('aria-selected="true"');
@@ -442,7 +484,13 @@ describe("WorkspaceTabBar", () => {
 
   it("marks inactive task tab with aria-selected=false", () => {
     mockWorkspaceContext.openTaskTabs = [
-      { taskId: "uuid-t5", taskName: "T5", title: "Some task" },
+      {
+        sessionId: "task-session-t5",
+        workspaceId: "ws-1",
+        taskId: "uuid-t5",
+        taskName: "T5",
+        title: "Some task",
+      },
     ];
     mockWorkspaceContext.activeSurface = "board";
     mockWorkspaceContext.activeTaskTabId = null;
@@ -453,7 +501,13 @@ describe("WorkspaceTabBar", () => {
 
   it("renders close button for each task tab", () => {
     mockWorkspaceContext.openTaskTabs = [
-      { taskId: "uuid-t5", taskName: "T5", title: "Some task" },
+      {
+        sessionId: "task-session-t5",
+        workspaceId: "ws-1",
+        taskId: "uuid-t5",
+        taskName: "T5",
+        title: "Some task",
+      },
     ];
 
     const html = renderToStaticMarkup(React.createElement(WorkspaceTabBar));

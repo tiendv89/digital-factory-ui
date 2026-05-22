@@ -20,10 +20,27 @@ export type TaskCounts = {
 };
 
 export type PullRequestRef = {
-  label: string;
-  status: string;
-  repo: string;
-  url: string;
+  label?: string | null;
+  status?: string | null;
+  repo?: string | null;
+  url?: string | null;
+};
+
+export type TaskLogEntry = {
+  action: string;
+  by: string;
+  at: string;
+  note?: string;
+};
+
+export type ActivityEvent = {
+  action: string;
+  scope: string;
+  actor: string;
+  occurred_at: string;
+  note?: string;
+  feature_id?: string;
+  task_id?: string;
 };
 
 export type WorkspaceSummary = {
@@ -43,6 +60,19 @@ export type LocalWorkspaceSummary = {
   last_opened_at: string;
 };
 
+export type StageReview = {
+  reviewed_at?: string | null;
+  reviewed_by?: string | null;
+  review_status?: string | null;
+  review_comment?: string | null;
+  review_history?: Array<{
+    at: string;
+    by: string;
+    status: string;
+    comment?: string | null;
+  }>;
+};
+
 export type FeatureSummary = {
   id: string;
   feature_id: string;
@@ -50,9 +80,16 @@ export type FeatureSummary = {
   title: string;
   status: string;
   current_stage: string;
-  stages?: Array<{ id: string; status: string }>;
+  stages?: Record<string, StageReview>;
   updated_at: string;
   task_counts: TaskCounts;
+};
+
+export type PagedFeatures = {
+  items: FeatureSummary[];
+  total: number;
+  page: number;
+  limit: number;
 };
 
 export type FeatureDocument = {
@@ -60,6 +97,12 @@ export type FeatureDocument = {
   source_path: string;
   url: string;
   content?: string;
+};
+
+export type TaskExecution = {
+  actor_type: string;
+  last_updated_by?: string;
+  last_updated_at?: string;
 };
 
 export type TaskSummary = {
@@ -73,8 +116,22 @@ export type TaskSummary = {
   repo: string;
   branch: string;
   is_blocked: boolean;
-  pr: PullRequestRef | null;
-  workspace_pr: PullRequestRef | null;
+  pr?: PullRequestRef | null;
+  workspace_pr?: PullRequestRef | null;
+  description?: string;
+  priority?: string;
+  blocked_reason?: string;
+  blocked_context?: Record<string, unknown>;
+  depends_on?: string[];
+  execution?: TaskExecution;
+  log?: TaskLogEntry[];
+};
+
+export type PagedTasks = {
+  items: TaskSummary[];
+  total: number;
+  page: number;
+  limit: number;
 };
 
 export type WorkspaceDetail = WorkspaceSummary & {
@@ -86,13 +143,8 @@ export type FeatureDetail = FeatureSummary & {
   workspace_id: string;
   documents: FeatureDocument[];
   tasks: TaskSummary[];
+  activity?: ActivityEvent[];
   source_state: SourceState;
-};
-
-export type TaskExecution = {
-  actor_type: string;
-  last_updated_by?: string;
-  last_updated_at?: string;
 };
 
 export type TaskDetail = TaskSummary & {
@@ -101,7 +153,8 @@ export type TaskDetail = TaskSummary & {
   workspace_id: string;
   depends_on: string[];
   execution: TaskExecution;
-  pr_refs: PullRequestRef[];
+  pr_refs?: PullRequestRef[];
+  activity?: ActivityEvent[];
 };
 
 export type ImportWorkspaceRequest = {

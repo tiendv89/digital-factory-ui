@@ -7,6 +7,12 @@ export type LogEntry = {
   note?: string;
 };
 
+export type ParsedFeatureActivityEntry = LogEntry & {
+  targetId: string;
+  targetTitle: string;
+  scope?: string;
+};
+
 export type ParsedTask = {
   id: string;
   title: string;
@@ -31,6 +37,7 @@ export type ParsedFeature = {
   title: string;
   featureStatus: string;
   tasks: ParsedTask[];
+  activity?: ParsedFeatureActivityEntry[];
   backendId?: string;
   currentStage?: string;
   taskCounts?: {

@@ -705,66 +705,150 @@ describe("regression: no GitHub direct reads in workspace flow components", () =
 describe("tab management — production addTaskTab / removeTaskTab / addFeatureTab / removeFeatureTab", () => {
   it("addTaskTab: opening a new task tab adds it to the list", () => {
     const tabs: TaskTabEntry[] = [];
-    const entry: TaskTabEntry = { taskId: "task-uuid-1", taskName: "T1", title: "Setup API" };
+    const entry: TaskTabEntry = {
+      sessionId: "task-session-1",
+      workspaceId: "ws-1",
+      taskId: "task-uuid-1",
+      taskName: "T1",
+      title: "Setup API",
+    };
     const result = addTaskTab(tabs, entry);
     expect(result).toHaveLength(1);
     expect(result[0].taskId).toBe("task-uuid-1");
   });
 
-  it("addTaskTab: opening a tab for an already-open task returns the same list (no duplicate)", () => {
-    const tabs: TaskTabEntry[] = [{ taskId: "task-uuid-1", taskName: "T1", title: "Setup API" }];
-    const entry: TaskTabEntry = { taskId: "task-uuid-1", taskName: "T1", title: "Setup API" };
+  it("addTaskTab: opening the same task creates a separate session tab", () => {
+    const tabs: TaskTabEntry[] = [
+      {
+        sessionId: "task-session-1",
+        workspaceId: "ws-1",
+        taskId: "task-uuid-1",
+        taskName: "T1",
+        title: "Setup API",
+      },
+    ];
+    const entry: TaskTabEntry = {
+      sessionId: "task-session-2",
+      workspaceId: "ws-1",
+      taskId: "task-uuid-1",
+      taskName: "T1",
+      title: "Setup API",
+    };
     const result = addTaskTab(tabs, entry);
-    expect(result).toHaveLength(1);
-    expect(result).toBe(tabs); // same reference — no allocation
+    expect(result).toHaveLength(2);
+    expect(result[0].taskId).toBe(result[1].taskId);
+    expect(result[0].sessionId).not.toBe(result[1].sessionId);
   });
 
   it("removeTaskTab: closing a task tab removes it from the list", () => {
     const tabs: TaskTabEntry[] = [
-      { taskId: "task-uuid-1", taskName: "T1", title: "Task 1" },
-      { taskId: "task-uuid-2", taskName: "T2", title: "Task 2" },
+      {
+        sessionId: "task-session-1",
+        workspaceId: "ws-1",
+        taskId: "task-uuid-1",
+        taskName: "T1",
+        title: "Task 1",
+      },
+      {
+        sessionId: "task-session-2",
+        workspaceId: "ws-1",
+        taskId: "task-uuid-2",
+        taskName: "T2",
+        title: "Task 2",
+      },
     ];
-    const result = removeTaskTab(tabs, "task-uuid-1");
+    const result = removeTaskTab(tabs, "task-session-1");
     expect(result).toHaveLength(1);
     expect(result[0].taskId).toBe("task-uuid-2");
   });
 
   it("addFeatureTab: opening a feature tab adds it to the feature tab list", () => {
     const featureTabs: FeatureTabEntry[] = [];
-    const entry: FeatureTabEntry = { featureId: "feat-uuid-1", featureName: "my-feature", title: "My Feature" };
+    const entry: FeatureTabEntry = {
+      sessionId: "feature-session-1",
+      workspaceId: "ws-1",
+      featureId: "feat-uuid-1",
+      featureName: "my-feature",
+      title: "My Feature",
+    };
     const result = addFeatureTab(featureTabs, entry);
     expect(result).toHaveLength(1);
     expect(result[0].featureId).toBe("feat-uuid-1");
   });
 
-  it("addFeatureTab: opening duplicate feature tab returns the same list (no duplicate)", () => {
-    const featureTabs: FeatureTabEntry[] = [{ featureId: "feat-uuid-1", featureName: "my-feature", title: "My Feature" }];
-    const entry: FeatureTabEntry = { featureId: "feat-uuid-1", featureName: "my-feature", title: "My Feature" };
+  it("addFeatureTab: opening the same feature creates a separate session tab", () => {
+    const featureTabs: FeatureTabEntry[] = [
+      {
+        sessionId: "feature-session-1",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+        featureName: "my-feature",
+        title: "My Feature",
+      },
+    ];
+    const entry: FeatureTabEntry = {
+      sessionId: "feature-session-2",
+      workspaceId: "ws-1",
+      featureId: "feat-uuid-1",
+      featureName: "my-feature",
+      title: "My Feature",
+    };
     const result = addFeatureTab(featureTabs, entry);
-    expect(result).toHaveLength(1);
-    expect(result).toBe(featureTabs); // same reference — no allocation
+    expect(result).toHaveLength(2);
+    expect(result[0].featureId).toBe(result[1].featureId);
+    expect(result[0].sessionId).not.toBe(result[1].sessionId);
   });
 
   it("removeFeatureTab: closing a feature tab removes it from the list", () => {
     const featureTabs: FeatureTabEntry[] = [
-      { featureId: "feat-uuid-1", featureName: "alpha", title: "Alpha" },
-      { featureId: "feat-uuid-2", featureName: "beta", title: "Beta" },
+      {
+        sessionId: "feature-session-1",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+        featureName: "alpha",
+        title: "Alpha",
+      },
+      {
+        sessionId: "feature-session-2",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-2",
+        featureName: "beta",
+        title: "Beta",
+      },
     ];
-    const result = removeFeatureTab(featureTabs, "feat-uuid-1");
+    const result = removeFeatureTab(featureTabs, "feature-session-1");
     expect(result).toHaveLength(1);
     expect(result[0].featureId).toBe("feat-uuid-2");
   });
 
-  it("task tabs are keyed by taskId (UUID), not task_name", () => {
-    const tabs: TaskTabEntry[] = [{ taskId: "task-uuid-abc", taskName: "T1", title: "Some Task" }];
+  it("task tabs are keyed by sessionId while preserving backend taskId", () => {
+    const tabs: TaskTabEntry[] = [
+      {
+        sessionId: "task-session-abc",
+        workspaceId: "ws-1",
+        taskId: "task-uuid-abc",
+        taskName: "T1",
+        title: "Some Task",
+      },
+    ];
+    expect(tabs.find((t) => t.sessionId === "task-session-abc")).toBeDefined();
     expect(tabs.find((t) => t.taskId === "task-uuid-abc")).toBeDefined();
-    expect(tabs.find((t) => t.taskId === "T1")).toBeUndefined();
+    expect(tabs.find((t) => t.sessionId === "T1")).toBeUndefined();
   });
 
-  it("feature tabs are keyed by featureId (UUID), not feature_name", () => {
-    const featureTabs: FeatureTabEntry[] = [{ featureId: "feat-uuid-xyz", featureName: "auth", title: "Auth Feature" }];
+  it("feature tabs are keyed by sessionId while preserving backend featureId", () => {
+    const featureTabs: FeatureTabEntry[] = [
+      {
+        sessionId: "feature-session-xyz",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-xyz",
+        featureName: "auth",
+        title: "Auth Feature",
+      },
+    ];
+    expect(featureTabs.find((f) => f.sessionId === "feature-session-xyz")).toBeDefined();
     expect(featureTabs.find((f) => f.featureId === "feat-uuid-xyz")).toBeDefined();
-    expect(featureTabs.find((f) => f.featureId === "auth")).toBeUndefined();
+    expect(featureTabs.find((f) => f.sessionId === "auth")).toBeUndefined();
   });
 });
 

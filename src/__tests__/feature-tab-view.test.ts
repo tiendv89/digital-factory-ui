@@ -40,8 +40,20 @@ const mockWorkspaceContext = vi.hoisted(() => ({
   activeSurface: "board" as string,
   activeTaskTabId: null as string | null,
   activeFeatureTabId: null as string | null,
-  openTaskTabs: [] as Array<{ taskId: string; taskName: string; title: string }>,
-  openFeatureTabs: [] as Array<{ featureId: string; featureName: string; title: string }>,
+  openTaskTabs: [] as Array<{
+    sessionId: string;
+    workspaceId: string;
+    taskId: string;
+    taskName: string;
+    title: string;
+  }>,
+  openFeatureTabs: [] as Array<{
+    sessionId: string;
+    workspaceId: string;
+    featureId: string;
+    featureName: string;
+    title: string;
+  }>,
   activeWorkspace: null as { name?: string; slug?: string } | null,
   openTaskTab: vi.fn(),
   closeTaskTab: vi.fn(),
@@ -98,6 +110,15 @@ function makeFeatureDetail(overrides: Partial<FeatureDetail> = {}): FeatureDetai
     workspace_id: "ws-uuid-1",
     documents: [],
     tasks: [],
+    activity: [
+      {
+        action: "approved",
+        scope: "tasks",
+        actor: "minhkienn203@gmail.com",
+        occurred_at: "2026-05-09T13:02:00Z",
+        note: "Tasks approved. Feature advances to ready_for_implementation.",
+      },
+    ],
     source_state: { stale: false },
     ...overrides,
   };
@@ -345,6 +366,20 @@ describe("FeatureTabView — content rendering", () => {
     expect(html).toContain("data-feature-tab-content");
   });
 
+  it("renders feature detail without an agent chat placeholder", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTabView, {
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+      }),
+    );
+
+    expect(html).toContain("data-feature-tab-content");
+    expect(html).not.toContain("data-detail-split-layout");
+    expect(html).not.toContain("data-detail-section-one");
+    expect(html).not.toContain("data-agent-chat-placeholder");
+  });
+
   it("renders data-feature-tab-header", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTabView, {
@@ -425,14 +460,15 @@ describe("FeatureTabView — content rendering", () => {
     expect(html).toContain('data-feature-updated-at="2026-05-20T10:30:00Z"');
   });
 
-  it("renders data-feature-task-counts with done/total display", () => {
+  it("keeps task counts out of the compact feature header", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTabView, {
         workspaceId: "ws-1",
         featureId: "feat-uuid-1",
       }),
     );
-    expect(html).toContain("data-feature-task-counts");
+    expect(html).not.toContain("data-feature-task-counts");
+    expect(html).toContain("Logs view.");
   });
 });
 
@@ -536,11 +572,22 @@ describe("FeatureTabView — panel tab rendering", () => {
     expect(html).toContain("data-panel-technical-design");
     expect(html).toContain("Technical Design");
   });
+
+  it("renders data-panel-logs tab", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTabView, {
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+      }),
+    );
+    expect(html).toContain("data-panel-logs");
+    expect(html).toContain("Logs");
+  });
 });
 
-// ─── FeatureTabView — tasks panel ────────────────────────────────────────────
+// ─── FeatureTabView — logs panel ─────────────────────────────────────────────
 
-describe("FeatureTabView — tasks panel", () => {
+describe("FeatureTabView — logs panel", () => {
   beforeEach(() => {
     mockUseFeatureTask.mockReturnValue({
       task: null,
@@ -550,7 +597,55 @@ describe("FeatureTabView — tasks panel", () => {
     });
   });
 
-  it("renders data-feature-tasks-list when tasks exist", () => {
+  it("renders feature logs by default", () => {
+    mockUseFeatureDetail.mockReturnValue({
+      feature: makeFeatureDetail({
+        activity: [
+          {
+            action: "approved",
+            scope: "tasks",
+            actor: "minhkienn203@gmail.com",
+            occurred_at: "2026-05-09T13:02:00Z",
+            note: "Tasks approved. Feature advances to ready_for_implementation.",
+          },
+        ],
+      }),
+      loading: false,
+      error: null,
+      reload: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTabView, {
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+      }),
+    );
+    expect(html).toContain("data-feature-logs-panel");
+    expect(html).toContain("data-feature-log-entry");
+    expect(html).toContain("Feature Logs");
+    expect(html).toContain("Tasks approved. Feature advances to ready_for_implementation.");
+  });
+
+  it("renders empty feature logs state when activity is empty", () => {
+    mockUseFeatureDetail.mockReturnValue({
+      feature: makeFeatureDetail({ activity: [] }),
+      loading: false,
+      error: null,
+      reload: vi.fn(),
+    });
+
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureTabView, {
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+      }),
+    );
+    expect(html).toContain("data-feature-logs-panel");
+    expect(html).toContain("No activity logs available");
+  });
+
+  it("does not render task list while logs tab is the default panel", () => {
     mockUseFeatureDetail.mockReturnValue({
       feature: makeFeatureDetail({
         tasks: [
@@ -569,75 +664,16 @@ describe("FeatureTabView — tasks panel", () => {
         featureId: "feat-uuid-1",
       }),
     );
-    expect(html).toContain("data-feature-tasks-list");
-    expect(html).toContain('data-feature-task-row="T3"');
-    expect(html).toContain('data-feature-task-row="T4"');
-    expect(html).toContain("Implement kanban board");
-    expect(html).toContain("Add sidebar");
-  });
-
-  it("renders data-feature-tasks-empty when task list is empty", () => {
-    mockUseFeatureDetail.mockReturnValue({
-      feature: makeFeatureDetail({ tasks: [] }),
-      loading: false,
-      error: null,
-      reload: vi.fn(),
-    });
-
-    const html = renderToStaticMarkup(
-      React.createElement(FeatureTabView, {
-        workspaceId: "ws-1",
-        featureId: "feat-uuid-1",
-      }),
-    );
-    expect(html).toContain("data-feature-tasks-empty");
-    expect(html).toContain("No tasks in this feature");
-  });
-
-  it("renders task status badges", () => {
-    mockUseFeatureDetail.mockReturnValue({
-      feature: makeFeatureDetail({
-        tasks: [makeTaskSummary({ status: "in_review" })],
-      }),
-      loading: false,
-      error: null,
-      reload: vi.fn(),
-    });
-
-    const html = renderToStaticMarkup(
-      React.createElement(FeatureTabView, {
-        workspaceId: "ws-1",
-        featureId: "feat-uuid-1",
-      }),
-    );
-    expect(html).toContain("in review");
-  });
-
-  it("renders blocked indicator for blocked tasks", () => {
-    mockUseFeatureDetail.mockReturnValue({
-      feature: makeFeatureDetail({
-        tasks: [makeTaskSummary({ is_blocked: true, status: "blocked" })],
-      }),
-      loading: false,
-      error: null,
-      reload: vi.fn(),
-    });
-
-    const html = renderToStaticMarkup(
-      React.createElement(FeatureTabView, {
-        workspaceId: "ws-1",
-        featureId: "feat-uuid-1",
-      }),
-    );
-    // AlertCircle with text-danger for blocked tasks
-    expect(html).toContain("text-danger");
+    expect(html).toContain("data-feature-logs-panel");
+    expect(html).not.toContain("data-feature-tasks-list");
+    expect(html).not.toContain('data-feature-task-row="T3"');
   });
 });
 
 // ─── FeatureTabView — feature-scoped task drilldown ──────────────────────────
 
 describe("FeatureTabView — task drilldown (feature-scoped)", () => {
-  it("shows tasks panel by default before any drilldown is triggered", () => {
+  it("shows logs panel by default before any drilldown is triggered", () => {
     mockUseFeatureDetail.mockReturnValue({
       feature: makeFeatureDetail({
         tasks: [makeTaskSummary({ task_name: "T3" })],
@@ -659,8 +695,7 @@ describe("FeatureTabView — task drilldown (feature-scoped)", () => {
         featureId: "feat-uuid-1",
       }),
     );
-    // Tasks panel is shown by default (no drilldown active)
-    expect(html).toContain("data-feature-tasks-list");
+    expect(html).toContain("data-feature-logs-panel");
     expect(html).not.toContain("data-feature-task-drilldown-content");
   });
 
@@ -858,6 +893,21 @@ describe("DrilldownTaskContent — back-to-feature affordance", () => {
     );
     expect(html).toContain("data-feature-task-drilldown-content");
   });
+
+  it("renders drilldown task detail without an agent chat placeholder", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(DrilldownTaskContent, {
+        task: makeTaskDetail(),
+        onBack: vi.fn(),
+        onReload: vi.fn(),
+      }),
+    );
+
+    expect(html).toContain("data-feature-task-drilldown-content");
+    expect(html).not.toContain("data-detail-split-layout");
+    expect(html).not.toContain("data-detail-section-one");
+    expect(html).not.toContain("data-agent-chat-placeholder");
+  });
 });
 
 // ─── FeatureTabView — document panels ────────────────────────────────────────
@@ -938,25 +988,43 @@ describe("WorkspaceTabBar — feature tab rendering", () => {
 
   it("renders feature tabs for each open feature tab", () => {
     mockWorkspaceContext.openFeatureTabs = [
-      { featureId: "feat-uuid-1", featureName: "kanban-board-feature", title: "Feature Kanban Board" },
-      { featureId: "feat-uuid-2", featureName: "auth-feature", title: "Auth Feature" },
+      {
+        sessionId: "feature-session-1",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+        featureName: "kanban-board-feature",
+        title: "Feature Kanban Board",
+      },
+      {
+        sessionId: "feature-session-2",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-2",
+        featureName: "auth-feature",
+        title: "Auth Feature",
+      },
     ];
     mockWorkspaceContext.activeSurface = "feature-tab";
-    mockWorkspaceContext.activeFeatureTabId = "feat-uuid-1";
+    mockWorkspaceContext.activeFeatureTabId = "feature-session-1";
 
     const html = renderToStaticMarkup(React.createElement(WorkspaceTabBar));
-    expect(html).toContain('data-feature-tab="feat-uuid-1"');
-    expect(html).toContain('data-feature-tab="feat-uuid-2"');
+    expect(html).toContain('data-feature-tab="feature-session-1"');
+    expect(html).toContain('data-feature-tab="feature-session-2"');
     expect(html).toContain("Feature Kanban Board");
     expect(html).toContain("Auth Feature");
   });
 
   it("marks active feature tab with aria-selected=true", () => {
     mockWorkspaceContext.openFeatureTabs = [
-      { featureId: "feat-uuid-1", featureName: "kanban-board-feature", title: "Feature Kanban Board" },
+      {
+        sessionId: "feature-session-1",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+        featureName: "kanban-board-feature",
+        title: "Feature Kanban Board",
+      },
     ];
     mockWorkspaceContext.activeSurface = "feature-tab";
-    mockWorkspaceContext.activeFeatureTabId = "feat-uuid-1";
+    mockWorkspaceContext.activeFeatureTabId = "feature-session-1";
 
     const html = renderToStaticMarkup(React.createElement(WorkspaceTabBar));
     expect(html).toContain('aria-selected="true"');
@@ -964,7 +1032,13 @@ describe("WorkspaceTabBar — feature tab rendering", () => {
 
   it("marks inactive feature tab with aria-selected=false", () => {
     mockWorkspaceContext.openFeatureTabs = [
-      { featureId: "feat-uuid-1", featureName: "kanban-board-feature", title: "Feature Kanban Board" },
+      {
+        sessionId: "feature-session-1",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+        featureName: "kanban-board-feature",
+        title: "Feature Kanban Board",
+      },
     ];
     mockWorkspaceContext.activeSurface = "board";
     mockWorkspaceContext.activeFeatureTabId = null;
@@ -975,7 +1049,13 @@ describe("WorkspaceTabBar — feature tab rendering", () => {
 
   it("renders close button for each feature tab", () => {
     mockWorkspaceContext.openFeatureTabs = [
-      { featureId: "feat-uuid-1", featureName: "kanban-board-feature", title: "Feature Kanban Board" },
+      {
+        sessionId: "feature-session-1",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+        featureName: "kanban-board-feature",
+        title: "Feature Kanban Board",
+      },
     ];
 
     const html = renderToStaticMarkup(React.createElement(WorkspaceTabBar));
@@ -984,15 +1064,27 @@ describe("WorkspaceTabBar — feature tab rendering", () => {
 
   it("renders feature tabs alongside task tabs", () => {
     mockWorkspaceContext.openTaskTabs = [
-      { taskId: "task-uuid-1", taskName: "T5", title: "Some task" },
+      {
+        sessionId: "task-session-1",
+        workspaceId: "ws-1",
+        taskId: "task-uuid-1",
+        taskName: "T5",
+        title: "Some task",
+      },
     ];
     mockWorkspaceContext.openFeatureTabs = [
-      { featureId: "feat-uuid-1", featureName: "kanban-board-feature", title: "Feature Kanban Board" },
+      {
+        sessionId: "feature-session-1",
+        workspaceId: "ws-1",
+        featureId: "feat-uuid-1",
+        featureName: "kanban-board-feature",
+        title: "Feature Kanban Board",
+      },
     ];
 
     const html = renderToStaticMarkup(React.createElement(WorkspaceTabBar));
-    expect(html).toContain('data-task-tab="task-uuid-1"');
-    expect(html).toContain('data-feature-tab="feat-uuid-1"');
+    expect(html).toContain('data-task-tab="task-session-1"');
+    expect(html).toContain('data-feature-tab="feature-session-1"');
   });
 
   it("renders no feature tabs when openFeatureTabs is empty", () => {

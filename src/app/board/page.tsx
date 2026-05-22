@@ -1,16 +1,17 @@
 "use client";
 
-import { AlertCircle, Plus } from "lucide-react";
-import { useState } from "react";
+import { AlertCircle } from "lucide-react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
-import { ImportModal } from "@/features/workspaces/components/ImportModal";
-import { WorkspaceTabBar } from "@/features/workspaces/components/WorkspaceTabBar";
 import { BoardHeader } from "@/features/board/components/BoardHeader";
-import { BoardProvider, KanbanBoard } from "@/features/board/components/KanbanBoard";
+import {
+  BoardProvider,
+  KanbanBoard,
+} from "@/features/board/components/KanbanBoard";
 import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
 import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet";
-import { TaskDetailSheetMount, TaskTabView } from "@/features/tasks";
-import { FeatureTabView } from "@/features/board/components/FeatureTabView";
+import { TaskDetailSheetMount } from "@/features/tasks";
 
 function LoadingState() {
   return (
@@ -33,70 +34,27 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
-function EmptyState({ onImport }: { onImport: () => void }) {
-  return (
-    <main className="flex min-h-screen flex-col bg-bg">
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
-        <p className="text-base font-semibold text-text-primary">No workspace selected</p>
-        <p className="text-sm text-text-secondary">Import a repository to get started.</p>
-        <button
-          type="button"
-          onClick={onImport}
-          className="flex items-center gap-2 rounded-md bg-success px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-success/90"
-        >
-          <Plus className="h-4 w-4" aria-hidden="true" />
-          Import Workspace
-        </button>
-      </div>
-    </main>
-  );
-}
-
-function ActiveTaskTabSurface({
-  workspaceId,
-  taskId,
-}: {
-  workspaceId: string;
-  taskId: string;
-}) {
-  return (
-    <main className="flex h-screen flex-col bg-bg">
-      <WorkspaceTabBar />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <TaskTabView workspaceId={workspaceId} taskId={taskId} />
-      </div>
-    </main>
-  );
-}
-
-function ActiveFeatureTabSurface({
-  workspaceId,
-  featureId,
-}: {
-  workspaceId: string;
-  featureId: string;
-}) {
-  return (
-    <main className="flex h-screen flex-col bg-bg">
-      <WorkspaceTabBar />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        <FeatureTabView workspaceId={workspaceId} featureId={featureId} />
-      </div>
-    </main>
-  );
-}
-
 export default function BoardPage() {
-  const {
+  const router = useRouter();
+  const { activeWorkspace, loadingWorkspace, workspaceError, summaries } =
+    useWorkspaceContext();
+
+  useEffect(() => {
+    if (
+      !loadingWorkspace &&
+      !workspaceError &&
+      !activeWorkspace &&
+      summaries.length === 0
+    ) {
+      router.replace("/connect");
+    }
+  }, [
     activeWorkspace,
     loadingWorkspace,
+    router,
+    summaries.length,
     workspaceError,
-    summaries,
-    activeSurface,
-    activeTaskTabId,
-    activeFeatureTabId,
-  } = useWorkspaceContext();
-  const [showImport, setShowImport] = useState(false);
+  ]);
 
   if (loadingWorkspace) {
     return <LoadingState />;
@@ -111,44 +69,12 @@ export default function BoardPage() {
   }
 
   if (!activeWorkspace) {
-    if (summaries.length === 0) {
-      return (
-        <>
-          <EmptyState onImport={() => setShowImport(true)} />
-          {showImport && (
-            <ImportModal
-              onClose={() => setShowImport(false)}
-              onSuccess={() => setShowImport(false)}
-            />
-          )}
-        </>
-      );
-    }
     return <LoadingState />;
-  }
-
-  if (activeSurface === "task-tab" && activeTaskTabId) {
-    return (
-      <ActiveTaskTabSurface
-        workspaceId={activeWorkspace.id}
-        taskId={activeTaskTabId}
-      />
-    );
-  }
-
-  if (activeSurface === "feature-tab" && activeFeatureTabId) {
-    return (
-      <ActiveFeatureTabSurface
-        workspaceId={activeWorkspace.id}
-        featureId={activeFeatureTabId}
-      />
-    );
   }
 
   return (
     <main className="flex h-screen flex-col bg-bg">
       <BoardProvider workspaceDetail={activeWorkspace}>
-        <WorkspaceTabBar />
         <BoardHeader />
         <div className="flex flex-1 overflow-hidden">
           <TaskTrackingPanel />

@@ -223,6 +223,17 @@ describe("workflow-backend client", () => {
       expect(url).toContain("status=ready");
       expect(url).toContain("sort=title_asc");
     });
+
+    it("returns items from the paged backend response", async () => {
+      const feature = { id: "feat-1", feature_name: "dashboard" };
+      fetchMock.mockResolvedValueOnce(
+        successResponse({ items: [feature], total: 1, page: 1, limit: 20 }),
+      );
+
+      const result = await searchFeatures("ws-1");
+
+      expect(result).toEqual([feature]);
+    });
   });
 
   describe("getFeature", () => {
@@ -249,6 +260,17 @@ describe("workflow-backend client", () => {
       const [url] = fetchMock.mock.calls[0] as [string];
       expect(url).toContain("status=in_progress%2Cready");
     });
+
+    it("returns items from the paged backend response", async () => {
+      const task = { id: "task-1", task_name: "T1" };
+      fetchMock.mockResolvedValueOnce(
+        successResponse({ items: [task], total: 1, page: 1, limit: 50 }),
+      );
+
+      const result = await searchWorkspaceTasks("ws-1");
+
+      expect(result).toEqual([task]);
+    });
   });
 
   describe("getWorkspaceTask", () => {
@@ -274,6 +296,17 @@ describe("workflow-backend client", () => {
       await searchFeatureTasks("ws-1", "feat-1", params);
       const [url] = fetchMock.mock.calls[0] as [string];
       expect(url).toContain("status=ready");
+    });
+
+    it("returns items from the paged backend response", async () => {
+      const task = { id: "task-1", task_name: "T1" };
+      fetchMock.mockResolvedValueOnce(
+        successResponse({ items: [task], total: 1, page: 1, limit: 50 }),
+      );
+
+      const result = await searchFeatureTasks("ws-1", "feat-1");
+
+      expect(result).toEqual([task]);
     });
   });
 

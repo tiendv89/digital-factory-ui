@@ -16,8 +16,12 @@ import { useBoardData } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
 import { useBackendFeatureSearch } from "../../hooks/useBackendFeatureSearch";
 import { useBackendTaskSearch } from "../../hooks/useBackendTaskSearch";
-import { useWorkspaceContext, type TaskTabEntry, type FeatureTabEntry } from "@/features/workspaces/context/WorkspaceContext";
-import type { ActiveFilters, BoardLoadError, FeatureActiveFilters } from "../../types";
+import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
+import type {
+  ActiveFilters,
+  BoardLoadError,
+  FeatureActiveFilters,
+} from "../../types";
 import {
   type BoardMode,
   getDefaultBoardMode,
@@ -48,7 +52,9 @@ export type BoardContextValue = {
   syncError: BoardLoadError | null;
   syncBoard: () => void;
   openTaskTab: (task: ParsedTask) => void;
+  openTaskTabNewSession: (task: ParsedTask) => void;
   openFeatureTab: (feature: ParsedFeature) => void;
+  openFeatureTabNewSession: (feature: ParsedFeature) => void;
 
   boardMode: BoardMode;
   setBoardMode: (mode: BoardMode) => void;
@@ -94,10 +100,16 @@ export type BoardProviderProps = {
   children: ReactNode;
 };
 
-export function BoardProvider({ workspaceDetail, children }: BoardProviderProps) {
-  const { features, loading, error, reload } = useBoardData(workspaceDetail.id, {
-    initialData: workspaceDetail,
-  });
+export function BoardProvider({
+  workspaceDetail,
+  children,
+}: BoardProviderProps) {
+  const { features, loading, error, reload } = useBoardData(
+    workspaceDetail.id,
+    {
+      initialData: workspaceDetail,
+    },
+  );
   const { trackedFeatures, reload: reloadTracking } = usePullRequestTaskData(
     workspaceDetail.id,
   );
@@ -113,35 +125,60 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
   );
   const [taskSearchQuery, setTaskSearchQuery] = useState("");
   const [featureSearchQuery, setFeatureSearchQuery] = useState("");
-  const [taskActiveFilters, setTaskActiveFiltersState] = useState<ActiveFilters>(
-    () => ({ statuses: getStoredStatusFilter() ?? getDefaultStatusFilter() }),
-  );
+  const [taskActiveFilters, setTaskActiveFiltersState] =
+    useState<ActiveFilters>(() => ({
+      statuses: getStoredStatusFilter() ?? getDefaultStatusFilter(),
+    }));
   const [featureActiveFilters, setFeatureActiveFiltersState] =
     useState<FeatureActiveFilters>(() => ({
-      statuses: getStoredFeatureStatusFilter() ?? getDefaultFeatureStatusFilter(),
+      statuses:
+        getStoredFeatureStatusFilter() ?? getDefaultFeatureStatusFilter(),
     }));
   const [expandedFeatureIds, setExpandedFeatureIds] = useState<Set<string>>(
     () => new Set(),
   );
   const [selectedTask, setSelectedTask] = useState<SelectedTask>(null);
-  const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(null);
+  const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(
+    null,
+  );
 
   // Backend search hooks
-  const { results: backendTaskResults, searching: taskSearching, searchError: taskSearchError } =
-    useBackendTaskSearch(workspaceDetail.id, {
-      task_id: boardMode === "task" ? taskSearchQuery : undefined,
-      status: boardMode === "task" && taskActiveFilters.statuses.length > 0
-        ? taskActiveFilters.statuses.join(",")
-        : undefined,
-    });
+  const trimmedTaskQuery = taskSearchQuery.trim();
+  const taskSearchActive = boardMode === "task" && trimmedTaskQuery.length > 0;
+  const taskSearchParams = taskSearchActive
+    ? {
+        task_id: trimmedTaskQuery,
+        status:
+          taskActiveFilters.statuses.length > 0
+            ? taskActiveFilters.statuses.join(",")
+            : undefined,
+      }
+    : {};
 
-  const { results: backendFeatureResults, searching: featureSearching, searchError: featureSearchError } =
-    useBackendFeatureSearch(workspaceDetail.id, {
-      title: boardMode === "feature" ? featureSearchQuery : undefined,
-      status: boardMode === "feature" && featureActiveFilters.statuses.length > 0
-        ? featureActiveFilters.statuses.join(",")
-        : undefined,
-    });
+  const {
+    results: backendTaskResults,
+    searching: taskSearching,
+    searchError: taskSearchError,
+  } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams);
+
+  const trimmedFeatureQuery = featureSearchQuery.trim();
+  const featureSearchActive =
+    boardMode === "feature" && trimmedFeatureQuery.length > 0;
+  const featureSearchParams = featureSearchActive
+    ? {
+        title: trimmedFeatureQuery,
+        status:
+          featureActiveFilters.statuses.length > 0
+            ? featureActiveFilters.statuses.join(",")
+            : undefined,
+      }
+    : {};
+
+  const {
+    results: backendFeatureResults,
+    searching: featureSearching,
+    searchError: featureSearchError,
+  } = useBackendFeatureSearch(workspaceDetail.id, featureSearchParams);
 
   const toggleFeature = useCallback((featureId: string) => {
     setExpandedFeatureIds((prev) => {
@@ -196,7 +233,8 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
     });
   }, [syncCurrentWorkspace]);
 
-  const { openTaskTab: wsOpenTaskTab, openFeatureTab: wsOpenFeatureTab } = useWorkspaceContext();
+  const { openTaskTab: wsOpenTaskTab, openFeatureTab: wsOpenFeatureTab } =
+    useWorkspaceContext();
 
   const openTaskTab = useCallback(
     (task: ParsedTask) => {
@@ -206,7 +244,23 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
         taskName: task.id,
         title: task.title,
         featureId: task.featureBackendId,
-      } as TaskTabEntry);
+      });
+    },
+    [wsOpenTaskTab],
+  );
+
+  const openTaskTabNewSession = useCallback(
+    (task: ParsedTask) => {
+      if (!task.backendId) return;
+      wsOpenTaskTab(
+        {
+          taskId: task.backendId,
+          taskName: task.id,
+          title: task.title,
+          featureId: task.featureBackendId,
+        },
+        { forceNewSession: true },
+      );
     },
     [wsOpenTaskTab],
   );
@@ -218,7 +272,22 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
         featureId: feature.backendId,
         featureName: feature.id,
         title: feature.title || feature.id,
-      } as FeatureTabEntry);
+      });
+    },
+    [wsOpenFeatureTab],
+  );
+
+  const openFeatureTabNewSession = useCallback(
+    (feature: ParsedFeature) => {
+      if (!feature.backendId) return;
+      wsOpenFeatureTab(
+        {
+          featureId: feature.backendId,
+          featureName: feature.id,
+          title: feature.title || feature.id,
+        },
+        { forceNewSession: true },
+      );
     },
     [wsOpenFeatureTab],
   );
@@ -277,7 +346,9 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       taskSearchError,
       featureSearchError,
       openTaskTab,
+      openTaskTabNewSession,
       openFeatureTab,
+      openFeatureTabNewSession,
     }),
     [
       workspaceDetail,
@@ -308,11 +379,15 @@ export function BoardProvider({ workspaceDetail, children }: BoardProviderProps)
       taskSearchError,
       featureSearchError,
       openTaskTab,
+      openTaskTabNewSession,
       openFeatureTab,
+      openFeatureTabNewSession,
     ],
   );
 
-  return <BoardContext.Provider value={value}>{children}</BoardContext.Provider>;
+  return (
+    <BoardContext.Provider value={value}>{children}</BoardContext.Provider>
+  );
 }
 
 export function useBoardContext(): BoardContextValue {

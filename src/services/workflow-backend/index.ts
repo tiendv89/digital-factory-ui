@@ -1,4 +1,5 @@
 export type {
+  ActivityEvent,
   ApiError,
   FeatureDetail,
   FeatureDocument,
@@ -7,6 +8,8 @@ export type {
   FeatureSummary,
   ImportWorkspaceRequest,
   LocalWorkspaceSummary,
+  PagedFeatures,
+  PagedTasks,
   PullRequestRef,
   SourceState,
   TaskCounts,

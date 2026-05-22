@@ -15,7 +15,12 @@ const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
 };
 
 export function TaskTrackingPanel() {
-  const { trackedFeatures, setSelectedTask, openTaskTab } = useBoardContext();
+  const {
+    trackedFeatures,
+    setSelectedTask,
+    openTaskTab,
+    openTaskTabNewSession,
+  } = useBoardContext();
 
   const sections = useMemo(
     () => groupTrackedTasks(trackedFeatures),
@@ -47,6 +52,13 @@ export function TaskTrackingPanel() {
     [openTaskTab],
   );
 
+  const handleOpenTaskTabNewSession = useCallback(
+    (task: ParsedTask) => {
+      openTaskTabNewSession(task);
+    },
+    [openTaskTabNewSession],
+  );
+
   return (
     <aside
       className="flex shrink-0 flex-col overflow-hidden border-r border-border bg-surface-secondary"
@@ -74,6 +86,7 @@ export function TaskTrackingPanel() {
             onToggle={() => toggleSection(section.status)}
             onSelectTask={handleSelectTask}
             onOpenTaskTab={handleOpenTaskTab}
+            onOpenTaskTabNewSession={handleOpenTaskTabNewSession}
           />
         ))}
       </div>

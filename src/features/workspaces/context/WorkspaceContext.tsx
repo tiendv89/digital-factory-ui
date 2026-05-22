@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   getWorkspace,
   importWorkspace as apiImportWorkspace,
@@ -21,14 +22,25 @@ import { buildImportLocalSummary } from "@/features/workspaces/lib/workspaceAdap
 import {
   getLocalWorkspaceSummaries,
   getSelectedWorkspaceId,
+  clearSelectedWorkspaceId,
   resolveBootstrapWorkspaceId,
   saveLocalWorkspaceSummary,
   removeLocalWorkspaceSummary,
   setSelectedWorkspaceId,
 } from "@/services/local-workspace-store";
-import { addTaskTab, removeTaskTab, addFeatureTab, removeFeatureTab } from "@/features/workspaces/lib/tabState";
+import {
+  addTaskTab,
+  removeTaskTab,
+  addFeatureTab,
+  removeFeatureTab,
+  createTabSessionId,
+  getTaskTabHref,
+  getFeatureTabHref,
+} from "@/features/workspaces/lib/tabState";
 
 export type TaskTabEntry = {
+  sessionId: string;
+  workspaceId: string;
   taskId: string;
   taskName: string;
   title: string;
@@ -37,12 +49,18 @@ export type TaskTabEntry = {
 };
 
 export type FeatureTabEntry = {
+  sessionId: string;
+  workspaceId: string;
   featureId: string;
   featureName: string;
   title: string;
 };
 
 export type WorkspaceSurface = "board" | "task-tab" | "feature-tab";
+
+export type TabOpenOptions = {
+  forceNewSession?: boolean;
+};
 
 export type WorkspaceContextValue = {
   summaries: LocalWorkspaceSummary[];
@@ -65,24 +83,42 @@ export type WorkspaceContextValue = {
   activeSurface: WorkspaceSurface;
   openTaskTabs: TaskTabEntry[];
   activeTaskTabId: string | null;
-  openTaskTab: (entry: TaskTabEntry) => void;
-  closeTaskTab: (taskId: string) => void;
-  activateTaskTab: (taskId: string) => void;
+  openTaskTab: (
+    entry: Omit<TaskTabEntry, "sessionId" | "workspaceId">,
+    options?: TabOpenOptions,
+  ) => void;
+  closeTaskTab: (sessionId: string) => void;
+  activateTaskTab: (sessionId: string) => void;
+  markTaskTabActive: (sessionId: string) => void;
   openFeatureTabs: FeatureTabEntry[];
   activeFeatureTabId: string | null;
-  openFeatureTab: (entry: FeatureTabEntry) => void;
-  closeFeatureTab: (featureId: string) => void;
-  activateFeatureTab: (featureId: string) => void;
+  openFeatureTab: (
+    entry: Omit<FeatureTabEntry, "sessionId" | "workspaceId">,
+    options?: TabOpenOptions,
+  ) => void;
+  closeFeatureTab: (sessionId: string) => void;
+  activateFeatureTab: (sessionId: string) => void;
+  markFeatureTabActive: (sessionId: string) => void;
   goToBoard: () => void;
 };
 
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
-  const [summaries, setSummaries] = useState<LocalWorkspaceSummary[]>([]);
-  const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<string | null>(null);
-  const [activeWorkspace, setActiveWorkspace] = useState<WorkspaceDetail | null>(null);
-  const [loadingWorkspace, setLoadingWorkspace] = useState(false);
+  const router = useRouter();
+  const [summaries, setSummaries] = useState<LocalWorkspaceSummary[]>(() =>
+    getLocalWorkspaceSummaries(),
+  );
+  const [selectedWorkspaceId, setSelectedWorkspaceIdState] = useState<
+    string | null
+  >(() => getSelectedWorkspaceId());
+  const [activeWorkspace, setActiveWorkspace] =
+    useState<WorkspaceDetail | null>(null);
+  const [loadingWorkspace, setLoadingWorkspace] = useState(() => {
+    const storedSummaries = getLocalWorkspaceSummaries();
+    const storedId = getSelectedWorkspaceId();
+    return Boolean(resolveBootstrapWorkspaceId(storedSummaries, storedId));
+  });
   const [workspaceError, setWorkspaceError] = useState<ApiError | null>(null);
   const [importingWorkspace, setImportingWorkspace] = useState(false);
   const [importError, setImportError] = useState<ApiError | null>(null);
@@ -93,7 +129,36 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [openTaskTabs, setOpenTaskTabs] = useState<TaskTabEntry[]>([]);
   const [activeTaskTabId, setActiveTaskTabId] = useState<string | null>(null);
   const [openFeatureTabs, setOpenFeatureTabs] = useState<FeatureTabEntry[]>([]);
-  const [activeFeatureTabId, setActiveFeatureTabId] = useState<string | null>(null);
+  const [activeFeatureTabId, setActiveFeatureTabId] = useState<string | null>(
+    null,
+  );
+
+  const isWorkspaceNotFound = useCallback((err: ApiError) => {
+    return (
+      err.code === "DATABASE_NOT_FOUND" ||
+      err.code === "GITHUB_NOT_FOUND" ||
+      err.code === "WORKSPACE_NOT_FOUND"
+    );
+  }, []);
+
+  const handleMissingWorkspace = useCallback(
+    (workspaceId: string) => {
+      removeLocalWorkspaceSummary(workspaceId);
+      const updatedSummaries = getLocalWorkspaceSummaries();
+      setSummaries(updatedSummaries);
+
+      if (selectedWorkspaceId === workspaceId) {
+        clearSelectedWorkspaceId();
+        setSelectedWorkspaceIdState(null);
+      }
+
+      setActiveWorkspace(null);
+      setWorkspaceError(null);
+      setLoadingWorkspace(false);
+      router.replace("/connect");
+    },
+    [router, selectedWorkspaceId],
+  );
 
   useEffect(() => {
     const storedSummaries = getLocalWorkspaceSummaries();
@@ -105,22 +170,31 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     if (workspaceId) {
       setSelectedWorkspaceIdState(workspaceId);
       loadWorkspace(workspaceId);
+    } else {
+      setLoadingWorkspace(false);
     }
   }, []);
 
-  const loadWorkspace = useCallback((workspaceId: string) => {
-    setLoadingWorkspace(true);
-    setWorkspaceError(null);
-    getWorkspace(workspaceId)
-      .then((detail) => {
-        setActiveWorkspace(detail);
-        setLoadingWorkspace(false);
-      })
-      .catch((err: ApiError) => {
-        setWorkspaceError(err);
-        setLoadingWorkspace(false);
-      });
-  }, []);
+  const loadWorkspace = useCallback(
+    (workspaceId: string) => {
+      setLoadingWorkspace(true);
+      setWorkspaceError(null);
+      getWorkspace(workspaceId)
+        .then((detail) => {
+          setActiveWorkspace(detail);
+          setLoadingWorkspace(false);
+        })
+        .catch((err: ApiError) => {
+          if (isWorkspaceNotFound(err)) {
+            handleMissingWorkspace(workspaceId);
+            return;
+          }
+          setWorkspaceError(err);
+          setLoadingWorkspace(false);
+        });
+    },
+    [handleMissingWorkspace, isWorkspaceNotFound],
+  );
 
   const selectWorkspace = useCallback(
     (workspaceId: string) => {
@@ -150,7 +224,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       try {
         const detail = await apiImportWorkspace(body);
 
-        const summary = buildImportLocalSummary(detail, body, new Date().toISOString());
+        const summary = buildImportLocalSummary(
+          detail,
+          body,
+          new Date().toISOString(),
+        );
         saveLocalWorkspaceSummary(summary);
         setSelectedWorkspaceId(detail.id);
         setSummaries(getLocalWorkspaceSummaries());
@@ -178,79 +256,164 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const detail = await apiSyncWorkspace(selectedWorkspaceId);
       setActiveWorkspace(detail);
     } catch (err) {
-      setSyncError(err as ApiError);
+      const apiError = err as ApiError;
+      if (isWorkspaceNotFound(apiError)) {
+        handleMissingWorkspace(selectedWorkspaceId);
+        return;
+      }
+      setSyncError(apiError);
       throw err;
     } finally {
       setSyncingWorkspace(false);
     }
-  }, [selectedWorkspaceId]);
+  }, [handleMissingWorkspace, isWorkspaceNotFound, selectedWorkspaceId]);
 
   const clearSyncError = useCallback(() => {
     setSyncError(null);
   }, []);
 
-  const removeLocalSummary = useCallback((workspaceId: string) => {
-    removeLocalWorkspaceSummary(workspaceId);
-    setSummaries(getLocalWorkspaceSummaries());
-    if (selectedWorkspaceId === workspaceId) {
-      const remaining = getLocalWorkspaceSummaries();
-      const next = remaining[0] ?? null;
-      if (next) {
-        setSelectedWorkspaceIdState(next.workspaceId);
-        setSelectedWorkspaceId(next.workspaceId);
-        loadWorkspace(next.workspaceId);
-      } else {
-        setSelectedWorkspaceIdState(null);
-        setActiveWorkspace(null);
+  const removeLocalSummary = useCallback(
+    (workspaceId: string) => {
+      removeLocalWorkspaceSummary(workspaceId);
+      setSummaries(getLocalWorkspaceSummaries());
+      if (selectedWorkspaceId === workspaceId) {
+        const remaining = getLocalWorkspaceSummaries();
+        const next = remaining[0] ?? null;
+        if (next) {
+          setSelectedWorkspaceIdState(next.workspaceId);
+          setSelectedWorkspaceId(next.workspaceId);
+          loadWorkspace(next.workspaceId);
+        } else {
+          setSelectedWorkspaceIdState(null);
+          setActiveWorkspace(null);
+        }
       }
-    }
-  }, [selectedWorkspaceId, loadWorkspace]);
+    },
+    [selectedWorkspaceId, loadWorkspace],
+  );
 
-  const openTaskTab = useCallback((entry: TaskTabEntry) => {
-    setOpenTaskTabs((prev) => addTaskTab(prev, entry));
-    setActiveTaskTabId(entry.taskId);
+  const openTaskTab = useCallback(
+    (
+      entry: Omit<TaskTabEntry, "sessionId" | "workspaceId">,
+      options?: TabOpenOptions,
+    ) => {
+      const workspaceId = selectedWorkspaceId ?? activeWorkspace?.id;
+      if (!workspaceId) return;
+      if (!options?.forceNewSession) {
+        const existing = openTaskTabs.find(
+          (tab) =>
+            tab.taskId === entry.taskId && tab.workspaceId === workspaceId,
+        );
+        if (existing) {
+          setActiveTaskTabId(existing.sessionId);
+          setActiveSurface("task-tab");
+          router.push(getTaskTabHref(existing));
+          return;
+        }
+      }
+      const tab: TaskTabEntry = {
+        ...entry,
+        workspaceId,
+        sessionId: createTabSessionId("task"),
+      };
+      setOpenTaskTabs((prev) => addTaskTab(prev, tab));
+      setActiveTaskTabId(tab.sessionId);
+      setActiveSurface("task-tab");
+      router.push(getTaskTabHref(tab));
+    },
+    [activeWorkspace?.id, openTaskTabs, router, selectedWorkspaceId],
+  );
+
+  const closeTaskTab = useCallback(
+    (sessionId: string) => {
+      setOpenTaskTabs((prev) => removeTaskTab(prev, sessionId));
+      if (activeTaskTabId === sessionId) {
+        setActiveTaskTabId(null);
+        setActiveSurface("board");
+        router.push("/board");
+      }
+    },
+    [activeTaskTabId, router],
+  );
+
+  const activateTaskTab = useCallback(
+    (sessionId: string) => {
+      const tab = openTaskTabs.find((entry) => entry.sessionId === sessionId);
+      if (!tab) return;
+      setActiveTaskTabId(sessionId);
+      setActiveSurface("task-tab");
+      router.push(getTaskTabHref(tab));
+    },
+    [openTaskTabs, router],
+  );
+
+  const markTaskTabActive = useCallback((sessionId: string) => {
+    setActiveTaskTabId(sessionId);
+    setActiveFeatureTabId(null);
     setActiveSurface("task-tab");
   }, []);
 
-  const closeTaskTab = useCallback((taskId: string) => {
-    setOpenTaskTabs((prev) => removeTaskTab(prev, taskId));
-    setActiveTaskTabId((prev) => {
-      if (prev !== taskId) return prev;
-      return null;
-    });
-    setActiveSurface((prev) => {
-      if (prev !== "task-tab") return prev;
-      if (activeTaskTabId !== taskId) return prev;
-      return "board";
-    });
-  }, [activeTaskTabId]);
+  const openFeatureTab = useCallback(
+    (
+      entry: Omit<FeatureTabEntry, "sessionId" | "workspaceId">,
+      options?: TabOpenOptions,
+    ) => {
+      const workspaceId = selectedWorkspaceId ?? activeWorkspace?.id;
+      if (!workspaceId) return;
+      if (!options?.forceNewSession) {
+        const existing = openFeatureTabs.find(
+          (tab) =>
+            tab.featureId === entry.featureId &&
+            tab.workspaceId === workspaceId,
+        );
+        if (existing) {
+          setActiveFeatureTabId(existing.sessionId);
+          setActiveSurface("feature-tab");
+          router.push(getFeatureTabHref(existing));
+          return;
+        }
+      }
+      const tab: FeatureTabEntry = {
+        ...entry,
+        workspaceId,
+        sessionId: createTabSessionId("feature"),
+      };
+      setOpenFeatureTabs((prev) => addFeatureTab(prev, tab));
+      setActiveFeatureTabId(tab.sessionId);
+      setActiveSurface("feature-tab");
+      router.push(getFeatureTabHref(tab));
+    },
+    [activeWorkspace?.id, openFeatureTabs, router, selectedWorkspaceId],
+  );
 
-  const activateTaskTab = useCallback((taskId: string) => {
-    setActiveTaskTabId(taskId);
-    setActiveSurface("task-tab");
-  }, []);
+  const closeFeatureTab = useCallback(
+    (sessionId: string) => {
+      setOpenFeatureTabs((prev) => removeFeatureTab(prev, sessionId));
+      if (activeFeatureTabId === sessionId) {
+        setActiveFeatureTabId(null);
+        setActiveSurface("board");
+        router.push("/board");
+      }
+    },
+    [activeFeatureTabId, router],
+  );
 
-  const openFeatureTab = useCallback((entry: FeatureTabEntry) => {
-    setOpenFeatureTabs((prev) => addFeatureTab(prev, entry));
-    setActiveFeatureTabId(entry.featureId);
-    setActiveSurface("feature-tab");
-  }, []);
+  const activateFeatureTab = useCallback(
+    (sessionId: string) => {
+      const tab = openFeatureTabs.find(
+        (entry) => entry.sessionId === sessionId,
+      );
+      if (!tab) return;
+      setActiveFeatureTabId(sessionId);
+      setActiveSurface("feature-tab");
+      router.push(getFeatureTabHref(tab));
+    },
+    [openFeatureTabs, router],
+  );
 
-  const closeFeatureTab = useCallback((featureId: string) => {
-    setOpenFeatureTabs((prev) => removeFeatureTab(prev, featureId));
-    setActiveFeatureTabId((prev) => {
-      if (prev !== featureId) return prev;
-      return null;
-    });
-    setActiveSurface((prev) => {
-      if (prev !== "feature-tab") return prev;
-      if (activeFeatureTabId !== featureId) return prev;
-      return "board";
-    });
-  }, [activeFeatureTabId]);
-
-  const activateFeatureTab = useCallback((featureId: string) => {
-    setActiveFeatureTabId(featureId);
+  const markFeatureTabActive = useCallback((sessionId: string) => {
+    setActiveFeatureTabId(sessionId);
+    setActiveTaskTabId(null);
     setActiveSurface("feature-tab");
   }, []);
 
@@ -258,7 +421,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setActiveSurface("board");
     setActiveTaskTabId(null);
     setActiveFeatureTabId(null);
-  }, []);
+    router.push("/board");
+  }, [router]);
 
   return (
     <WorkspaceContext.Provider
@@ -284,11 +448,13 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         openTaskTab,
         closeTaskTab,
         activateTaskTab,
+        markTaskTabActive,
         openFeatureTabs,
         activeFeatureTabId,
         openFeatureTab,
         closeFeatureTab,
         activateFeatureTab,
+        markFeatureTabActive,
         goToBoard,
       }}
     >
@@ -300,7 +466,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 export function useWorkspaceContext(): WorkspaceContextValue {
   const ctx = useContext(WorkspaceContext);
   if (!ctx) {
-    throw new Error("useWorkspaceContext must be used within a WorkspaceProvider");
+    throw new Error(
+      "useWorkspaceContext must be used within a WorkspaceProvider",
+    );
   }
   return ctx;
 }

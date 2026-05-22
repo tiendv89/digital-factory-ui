@@ -70,6 +70,7 @@ export function TaskBoardView() {
     taskSearching,
     taskSearchError,
     openTaskTab,
+    openTaskTabNewSession,
   } = useBoardContext();
 
   // Use backend search results when a search is active; otherwise filter client-side
@@ -119,7 +120,8 @@ export function TaskBoardView() {
     );
   }
 
-  if (features.length === 0 && backendTaskResults == null) return <EmptyBoardState />;
+  if (features.length === 0 && backendTaskResults == null)
+    return <EmptyBoardState />;
 
   if (visibleFeatures.length === 0) {
     return (
@@ -154,6 +156,7 @@ export function TaskBoardView() {
                 onToggle={() => toggleFeature(feature.id)}
                 onSelectTask={setSelectedTask}
                 onOpenTaskTab={openTaskTab}
+                onOpenTaskTabNewSession={openTaskTabNewSession}
               />
             </div>
           ))}

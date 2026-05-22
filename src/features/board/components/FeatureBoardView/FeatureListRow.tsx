@@ -1,6 +1,8 @@
 "use client";
 
 import { Clock3 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createSingleDoubleClickController } from "@/lib/click-intent";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import {
   formatTimestamp,
@@ -13,6 +15,7 @@ type FeatureListRowProps = {
   feature: ParsedFeature;
   onClick: () => void;
   onDoubleClick?: () => void;
+  onOpenNewTab?: () => void;
 };
 
 function FeatureStatusPill({ status }: { status: string }) {
@@ -37,18 +40,66 @@ function FeatureStatusPill({ status }: { status: string }) {
   );
 }
 
-export function FeatureListRow({ feature, onClick, onDoubleClick }: FeatureListRowProps) {
+export function FeatureListRow({
+  feature,
+  onClick,
+  onDoubleClick,
+  onOpenNewTab,
+}: FeatureListRowProps) {
   const lastModifiedAt = getFeatureLastModifiedAt(feature);
   const modifiedToday = lastModifiedAt
     ? isTodayTimestamp(lastModifiedAt)
     : false;
-  const taskCountLabel = `${feature.tasks.length} ${
-    feature.tasks.length === 1 ? "task" : "tasks"
-  }`;
+  const totalTasks = feature.taskCounts?.total ?? feature.tasks.length;
+  const taskCountLabel = `${totalTasks} ${totalTasks === 1 ? "task" : "tasks"}`;
+
+  const clickController = useMemo(
+    () =>
+      createSingleDoubleClickController({
+        onSingleClick: onClick,
+        onDoubleClick: () => {
+          if (onDoubleClick) onDoubleClick();
+        },
+      }),
+    [onClick, onDoubleClick],
+  );
+
+  useEffect(() => clickController.clearPendingClick, [clickController]);
+
+  const [menuPosition, setMenuPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuOpen = Boolean(menuPosition);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    function handlePointerDown(event: PointerEvent) {
+      if (!menuRef.current?.contains(event.target as Node)) {
+        setMenuPosition(null);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuPosition(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
 
   function handleDoubleClick(e: React.MouseEvent) {
     e.preventDefault();
-    if (onDoubleClick) onDoubleClick();
+    e.stopPropagation();
+    clickController.handleDoubleClick();
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -58,14 +109,32 @@ export function FeatureListRow({ feature, onClick, onDoubleClick }: FeatureListR
     }
   }
 
+  function handleContextMenu(e: React.MouseEvent) {
+    if (!onOpenNewTab) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setMenuPosition({ x: e.clientX, y: e.clientY });
+  }
+
+  function handleNewTab(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (onOpenNewTab) {
+      onOpenNewTab();
+    }
+    setMenuPosition(null);
+  }
+
   return (
     <div
       data-feature-card-status={feature.featureStatus}
       role="button"
       tabIndex={0}
-      onClick={onClick}
+      onClick={clickController.handleClick}
       onDoubleClick={handleDoubleClick}
       onKeyDown={handleKeyDown}
+      onContextMenu={handleContextMenu}
+      aria-haspopup="menu"
+      aria-expanded={menuOpen}
       aria-label={`Open feature detail for ${feature.title || feature.id}`}
       className="flex h-full min-h-[82px] w-full cursor-pointer flex-col gap-2 border border-border bg-surface px-3 py-3 text-left transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
@@ -109,6 +178,24 @@ export function FeatureListRow({ feature, onClick, onDoubleClick }: FeatureListR
           </span>
         )}
       </div>
+
+      {menuOpen && menuPosition && (
+        <div
+          ref={menuRef}
+          role="menu"
+          className="fixed z-50 w-32 border border-border bg-surface p-1 shadow-lg"
+          style={{ top: menuPosition.y, left: menuPosition.x }}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={handleNewTab}
+            className="flex w-full items-center gap-2 px-2 py-1.5 text-xs text-text-primary transition-colors hover:bg-surface-subtle"
+          >
+            New tab
+          </button>
+        </div>
+      )}
     </div>
   );
 }

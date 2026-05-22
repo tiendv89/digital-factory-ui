@@ -1,10 +1,39 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Check, Plus } from "lucide-react";
+import { ChevronDown, Check, FolderOpen, Plus, Search } from "lucide-react";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 import { ImportModal } from "@/features/workspaces/components/ImportModal";
 import type { LocalWorkspaceSummary } from "@/services/workflow-backend";
+
+const AVATAR_CLASSES = [
+  "bg-purple",
+  "bg-success",
+  "bg-primary",
+  "bg-warning",
+  "bg-danger",
+];
+
+function getWorkspaceInitials(name: string): string {
+  return (
+    name
+      .split(/[\s-_]+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase() ?? "")
+      .join("")
+      .slice(0, 2) || "W"
+  );
+}
+
+function getWorkspaceAvatarClass(summary: LocalWorkspaceSummary): string {
+  const seed = `${summary.workspaceId}${summary.name}`;
+  const total = Array.from(seed).reduce(
+    (sum, char) => sum + char.charCodeAt(0),
+    0,
+  );
+  return AVATAR_CLASSES[total % AVATAR_CLASSES.length] ?? "bg-purple";
+}
 
 function WorkspaceItem({
   summary,
@@ -15,13 +44,7 @@ function WorkspaceItem({
   isSelected: boolean;
   onSelect: (id: string) => void;
 }) {
-  const initials = summary.name
-    .split(/[\s-_]+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("")
-    .slice(0, 2);
+  const initials = getWorkspaceInitials(summary.name);
 
   return (
     <button
@@ -30,29 +53,42 @@ function WorkspaceItem({
       aria-selected={isSelected}
       onClick={() => onSelect(summary.workspaceId)}
       className={
-        "flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-surface-subtle " +
+        "flex w-full items-center gap-2.5 px-2.5 py-2 text-left transition-colors hover:bg-surface-subtle " +
         (isSelected ? "bg-surface-subtle" : "")
       }
     >
       <div
-        className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-purple text-[10px] font-bold text-white"
+        className={
+          "flex h-5 w-5 shrink-0 items-center justify-center rounded-sm text-[9px] font-bold text-white " +
+          getWorkspaceAvatarClass(summary)
+        }
         aria-hidden="true"
       >
-        {initials || "W"}
+        {initials}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-xs font-semibold text-text-primary">{summary.name}</p>
-        <p className="truncate text-[11px] text-text-muted">{summary.repo_url}</p>
+        <p className="truncate text-[11px] font-semibold leading-4 text-text-primary">
+          {summary.name}
+        </p>
+        <p className="truncate text-[10px] leading-3 text-text-muted">
+          {summary.repo_url}
+        </p>
       </div>
       {isSelected && (
-        <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden="true" />
+        <Check className="h-3 w-3 shrink-0 text-success" aria-hidden="true" />
       )}
     </button>
   );
 }
 
 export function WorkspaceSwitcher() {
-  const { summaries, selectedWorkspaceId, selectWorkspace } = useWorkspaceContext();
+  const {
+    summaries,
+    selectedWorkspaceId,
+    selectWorkspace,
+    goToBoard,
+    activeSurface,
+  } = useWorkspaceContext();
   const [open, setOpen] = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [search, setSearch] = useState("");
@@ -82,6 +118,12 @@ export function WorkspaceSwitcher() {
     setSearch("");
   }, []);
 
+  const handleGoToBoard = useCallback(() => {
+    setOpen(false);
+    setSearch("");
+    goToBoard();
+  }, [goToBoard]);
+
   useEffect(() => {
     if (!open) return;
     function handlePointerDown(e: PointerEvent) {
@@ -94,50 +136,94 @@ export function WorkspaceSwitcher() {
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [open]);
 
-  const activeSummary = summaries.find((s) => s.workspaceId === selectedWorkspaceId);
+  const activeSummary = summaries.find(
+    (s) => s.workspaceId === selectedWorkspaceId,
+  );
+
+  const isBoardActive = activeSurface === "board";
 
   return (
     <>
       <div ref={ref} className="relative">
-        <button
-          type="button"
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-label="Switch workspace"
-          onClick={() => setOpen((v) => !v)}
-          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
+        <div
+          className={
+            "flex h-8 w-60 overflow-hidden border text-left transition-colors " +
+            (isBoardActive
+              ? "border-success/60 bg-success-bg/35 hover:border-success hover:bg-success-bg/50"
+              : "border-border bg-surface-secondary hover:bg-surface-subtle")
+          }
         >
-          <span className="max-w-[120px] truncate">
-            {activeSummary?.name ?? "Workspaces"}
-          </span>
-          <ChevronDown
-            className={"h-3.5 w-3.5 shrink-0 transition-transform " + (open ? "rotate-180" : "")}
-            aria-hidden="true"
-          />
-        </button>
+          <button
+            type="button"
+            aria-label="Back to kanban board"
+            onClick={handleGoToBoard}
+            className="flex min-w-0 flex-1 items-center gap-2 px-2.5 text-left"
+          >
+            <FolderOpen
+              className={
+                "h-4 w-4 shrink-0 " +
+                (isBoardActive ? "text-success" : "text-text-muted")
+              }
+              strokeWidth={2}
+              aria-hidden="true"
+            />
+            <span className="min-w-0 truncate text-xs font-semibold leading-none text-text-secondary">
+              {activeSummary?.name ?? "Select workspace"}
+            </span>
+          </button>
+          <button
+            type="button"
+            aria-haspopup="listbox"
+            aria-expanded={open}
+            aria-label="Switch workspace"
+            onClick={() => setOpen((v) => !v)}
+            className={
+              "ml-auto flex h-full w-8 shrink-0 items-center justify-center border-l transition-colors " +
+              (isBoardActive
+                ? "border-success/25 bg-success-bg/70 hover:bg-success-bg"
+                : "border-border bg-surface-secondary hover:bg-surface-subtle")
+            }
+          >
+            <ChevronDown
+              className={
+                "h-3.5 w-3.5 shrink-0 transition-transform " +
+                (isBoardActive ? "text-success " : "text-text-muted ") +
+                (open ? "rotate-180" : "")
+              }
+              aria-hidden="true"
+            />
+          </button>
+        </div>
 
         {open && (
           <div
             role="listbox"
             aria-label="Available workspaces"
-            className="absolute left-0 top-full z-40 mt-1 w-72 rounded-md border border-border bg-surface shadow-lg"
+            className="absolute left-0 top-full z-40 mt-2 w-72 border border-border bg-surface shadow-lg"
           >
-            {summaries.length > 3 && (
-              <div className="border-b border-border px-3 py-2">
+            <div className="border-b border-border bg-surface-secondary px-2.5 py-2">
+              <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+                Switch Workspace
+              </div>
+              <label className="flex h-8 items-center gap-2 border border-border bg-surface px-2">
+                <Search
+                  className="h-3.5 w-3.5 shrink-0 text-text-muted"
+                  aria-hidden="true"
+                />
                 <input
                   type="search"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search workspaces..."
                   autoFocus
-                  className="w-full bg-transparent text-xs text-text-primary outline-none placeholder:text-text-muted"
+                  className="min-w-0 flex-1 bg-transparent text-[11px] text-text-primary outline-none placeholder:text-text-muted"
                   aria-label="Search workspaces"
                 />
-              </div>
-            )}
+              </label>
+            </div>
 
             {filteredSummaries.length > 0 ? (
-              <div className="max-h-60 overflow-y-auto py-1">
+              <div className="max-h-60 overflow-y-auto py-1.5">
                 {filteredSummaries.map((s) => (
                   <WorkspaceItem
                     key={s.workspaceId}
@@ -148,10 +234,12 @@ export function WorkspaceSwitcher() {
                 ))}
               </div>
             ) : (
-              <p className="px-3 py-3 text-xs text-text-muted">No workspaces found.</p>
+              <p className="px-3 py-3 text-xs text-text-muted">
+                No workspaces found.
+              </p>
             )}
 
-            <div className="border-t border-border p-1">
+            <div className="border-t border-border p-1.5">
               <button
                 type="button"
                 onClick={() => {
@@ -159,10 +247,10 @@ export function WorkspaceSwitcher() {
                   setSearch("");
                   setShowImport(true);
                 }}
-                className="flex w-full items-center gap-2 rounded px-3 py-2 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
+                className="flex w-full items-center gap-2 px-2 py-1.5 text-[11px] font-semibold text-text-primary transition-colors hover:bg-surface-subtle"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-                Import workspace
+                Import Workspace
               </button>
             </div>
           </div>

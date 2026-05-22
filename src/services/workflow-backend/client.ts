@@ -3,6 +3,8 @@ import type {
   FeatureDetail,
   FeatureSummary,
   ImportWorkspaceRequest,
+  PagedFeatures,
+  PagedTasks,
   TaskDetail,
   TaskSummary,
   WorkspaceDetail,
@@ -60,7 +62,10 @@ export async function searchFeatures(
   params?: URLSearchParams,
 ): Promise<FeatureSummary[]> {
   const qs = params?.toString() ? `?${params.toString()}` : "";
-  return request<FeatureSummary[]>(`/api/workspaces/${workspaceId}/features${qs}`);
+  const result = await request<FeatureSummary[] | PagedFeatures>(
+    `/api/workspaces/${workspaceId}/features${qs}`,
+  );
+  return unwrapItems(result);
 }
 
 export async function getFeature(workspaceId: string, featureId: string): Promise<FeatureDetail> {
@@ -72,7 +77,10 @@ export async function searchWorkspaceTasks(
   params?: URLSearchParams,
 ): Promise<TaskSummary[]> {
   const qs = params?.toString() ? `?${params.toString()}` : "";
-  return request<TaskSummary[]>(`/api/workspaces/${workspaceId}/tasks${qs}`);
+  const result = await request<TaskSummary[] | PagedTasks>(
+    `/api/workspaces/${workspaceId}/tasks${qs}`,
+  );
+  return unwrapItems(result);
 }
 
 export async function getWorkspaceTask(workspaceId: string, taskId: string): Promise<TaskDetail> {
@@ -85,7 +93,10 @@ export async function searchFeatureTasks(
   params?: URLSearchParams,
 ): Promise<TaskSummary[]> {
   const qs = params?.toString() ? `?${params.toString()}` : "";
-  return request<TaskSummary[]>(`/api/workspaces/${workspaceId}/features/${featureId}/tasks${qs}`);
+  const result = await request<TaskSummary[] | PagedTasks>(
+    `/api/workspaces/${workspaceId}/features/${featureId}/tasks${qs}`,
+  );
+  return unwrapItems(result);
 }
 
 export async function getFeatureTask(
@@ -96,4 +107,12 @@ export async function getFeatureTask(
   return request<TaskDetail>(
     `/api/workspaces/${workspaceId}/features/${featureId}/tasks/${taskId}`,
   );
+}
+
+function unwrapItems<T>(result: T[] | { items: T[] }): T[] {
+  if (Array.isArray(result)) return result;
+  if (result && typeof result === "object" && Array.isArray(result.items)) {
+    return result.items;
+  }
+  throw new Error("Expected API response data to be an array or a paged { items } object");
 }

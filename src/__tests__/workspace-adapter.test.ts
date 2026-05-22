@@ -1,9 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
+  adaptTaskDetail,
   adaptTaskSummariesToFeatures,
   adaptFeatureSummaries,
 } from "../features/workspaces/lib/workspaceAdapter";
-import type { TaskSummary, FeatureSummary } from "../services/workflow-backend/types";
+import type {
+  TaskDetail,
+  TaskSummary,
+  FeatureSummary,
+} from "../services/workflow-backend/types";
 
 function makeTask(overrides: Partial<TaskSummary> = {}): TaskSummary {
   return {
@@ -125,5 +130,52 @@ describe("adaptFeatureSummaries", () => {
     const result = adaptFeatureSummaries(summaries);
     expect(result).toHaveLength(3);
     expect(result.map((f) => f.id)).toEqual(["feat-a", "feat-b", "feat-c"]);
+  });
+});
+
+describe("adaptTaskDetail", () => {
+  it("tolerates task detail payloads without pr_refs or legacy PR fields", () => {
+    const task = {
+      id: "task-uuid-1",
+      task_id: "task-uuid-1",
+      task_name: "T1",
+      feature_id: "feat-uuid-1",
+      feature_name: "auth-feature",
+      title: "Implement auth detail",
+      status: "ready",
+      repo: "my-repo",
+      branch: "feature/auth-T1",
+      is_blocked: false,
+      next_action: "Start implementation",
+      blocked_reason: "",
+      workspace_id: "ws-1",
+      depends_on: [],
+      execution: { actor_type: "agent" },
+      activity: [
+        {
+          action: "ready",
+          scope: "task",
+          actor: "alice",
+          occurred_at: "2026-05-15T07:13:22Z",
+          note: "Task activated",
+          feature_id: "feat-uuid-1",
+          task_id: "task-uuid-1",
+        },
+      ],
+    } as unknown as TaskDetail;
+
+    const parsed = adaptTaskDetail(task);
+
+    expect(parsed.id).toBe("T1");
+    expect(parsed.pr).toBeUndefined();
+    expect(parsed.workspace_pr).toBeUndefined();
+    expect(parsed.log).toEqual([
+      {
+        action: "ready",
+        by: "alice",
+        at: "2026-05-15T07:13:22Z",
+        note: "Task activated",
+      },
+    ]);
   });
 });

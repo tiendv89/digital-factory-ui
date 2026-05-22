@@ -103,23 +103,26 @@ export function FeatureBoardView() {
     featureActiveFilters,
     setSelectedFeature,
     openFeatureTab,
+    openFeatureTabNewSession,
     backendFeatureResults,
     featureSearching,
     featureSearchError,
   } = useBoardContext();
 
   // Use backend search results when a search is active; otherwise filter client-side
-  const visibleFeatures = useMemo(
-    () => {
-      if (backendFeatureResults != null) return backendFeatureResults;
-      return features.filter(
-        (f) =>
-          matchesFeatureModeSearch(f, featureSearchQuery) &&
-          matchesFeatureModeStatusFilter(f, featureActiveFilters.statuses),
-      );
-    },
-    [features, backendFeatureResults, featureSearchQuery, featureActiveFilters],
-  );
+  const visibleFeatures = useMemo(() => {
+    if (backendFeatureResults != null) return backendFeatureResults;
+    return features.filter(
+      (f) =>
+        matchesFeatureModeSearch(f, featureSearchQuery) &&
+        matchesFeatureModeStatusFilter(f, featureActiveFilters.statuses),
+    );
+  }, [
+    features,
+    backendFeatureResults,
+    featureSearchQuery,
+    featureActiveFilters,
+  ]);
 
   const featureStatusColumns = useMemo(
     () => getFeatureStatusColumns(visibleFeatures),
@@ -207,7 +210,7 @@ export function FeatureBoardView() {
                 key={feature.id}
                 data-feature-grid-row
                 role="listitem"
-                className="grid min-h-[104px] border-b border-border"
+                className="grid min-h-26 border-b border-border"
                 style={{ gridTemplateColumns }}
               >
                 {featureStatusColumns.map((column) => (
@@ -223,6 +226,7 @@ export function FeatureBoardView() {
                         feature={feature}
                         onClick={() => setSelectedFeature(feature)}
                         onDoubleClick={() => openFeatureTab(feature)}
+                        onOpenNewTab={() => openFeatureTabNewSession(feature)}
                       />
                     )}
                   </div>
