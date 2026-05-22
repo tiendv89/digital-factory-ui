@@ -135,7 +135,7 @@ function FeatureDetailContents({
       </header>
       <div className="flex-1 overflow-y-auto bg-bg px-6 py-6">
         <TasksSection tasks={feature.tasks} />
-        <ActivityTimelineSection tasks={feature.tasks} />
+        <ActivityTimelineSection feature={feature} />
       </div>
     </>
   );
@@ -331,8 +331,8 @@ type FeatureTimelineEntry = LogEntry & {
   sequence: number;
 };
 
-function ActivityTimelineSection({ tasks }: { tasks: ParsedTask[] }) {
-  const timelineEntries = getFeatureTimelineEntries(tasks);
+function ActivityTimelineSection({ feature }: { feature: ParsedFeature }) {
+  const timelineEntries = getFeatureTimelineEntries(feature);
 
   return (
     <section className="mt-8">
@@ -360,11 +360,28 @@ function ActivityTimelineSection({ tasks }: { tasks: ParsedTask[] }) {
   );
 }
 
-function getFeatureTimelineEntries(tasks: ParsedTask[]): FeatureTimelineEntry[] {
+function getFeatureTimelineEntries(feature: ParsedFeature): FeatureTimelineEntry[] {
+  if (feature.activity !== undefined) {
+    return feature.activity
+      .map((entry, sequence) => {
+        const entryTime = new Date(entry.at).getTime();
+        return {
+          ...entry,
+          taskId: entry.targetId,
+          taskTitle: entry.targetTitle,
+          sortTime: Number.isNaN(entryTime)
+            ? Number.NEGATIVE_INFINITY
+            : entryTime,
+          sequence,
+        };
+      })
+      .sort(sortTimelineEntries);
+  }
+
   let sequence = 0;
   const entries: FeatureTimelineEntry[] = [];
 
-  for (const task of tasks) {
+  for (const task of feature.tasks) {
     for (const entry of task.log ?? []) {
       const entryTime = new Date(entry.at).getTime();
       entries.push({
@@ -380,10 +397,12 @@ function getFeatureTimelineEntries(tasks: ParsedTask[]): FeatureTimelineEntry[] 
     }
   }
 
-  return entries.sort((a, b) => {
-    if (a.sortTime !== b.sortTime) return b.sortTime - a.sortTime;
-    return a.sequence - b.sequence;
-  });
+  return entries.sort(sortTimelineEntries);
+}
+
+function sortTimelineEntries(a: FeatureTimelineEntry, b: FeatureTimelineEntry): number {
+  if (a.sortTime !== b.sortTime) return b.sortTime - a.sortTime;
+  return a.sequence - b.sequence;
 }
 
 function getTimelineStatusKey(action: string): string {

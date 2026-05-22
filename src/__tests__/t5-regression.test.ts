@@ -310,7 +310,7 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     expect(html).toContain("active-feat");
     expect(html).toContain("blocked-feat");
     expect(html).not.toContain("done-feat");
-    expect(html).toContain('class="grid min-h-[104px] border-b border-border"');
+    expect(html).toContain('class="grid min-h-26 border-b border-border"');
   });
 
   it("renders the feature id in the list", () => {

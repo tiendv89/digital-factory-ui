@@ -2,9 +2,27 @@ node_modules/
 .next/
 out/
 dist/
+
+# Environment files — use .env.template as the committed reference.
+# Copy to .env.local for local development (never commit real values).
+.env
 .env.local
+.env.development
+.env.production
+.env.staging
+.env.test
 .env.*.local
+
+# Build artifacts
 *.tsbuildinfo
 coverage/
+
+# Lock files (pnpm is authoritative)
 package-lock.json
-.idea
+yarn.lock
+
+# Editor / OS
+.idea/
+.vscode/
+*.DS_Store
+Thumbs.db

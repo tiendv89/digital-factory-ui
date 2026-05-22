@@ -2,7 +2,7 @@
 
 import { Layers } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
+import { useBoardTrackingContext } from "../KanbanBoard/KanbanBoard.context";
 import { groupTrackedTasks } from "./groupTasks";
 import type { TrackedStatus } from "./TaskTrackingPanel.types";
 import { TaskTrackingSection } from "./TaskTrackingSection";
@@ -15,7 +15,12 @@ const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
 };
 
 export function TaskTrackingPanel() {
-  const { trackedFeatures, setSelectedTask } = useBoardContext();
+  const {
+    trackedFeatures,
+    setSelectedTask,
+    openTaskTab,
+    openTaskTabNewSession,
+  } = useBoardTrackingContext();
 
   const sections = useMemo(
     () => groupTrackedTasks(trackedFeatures),
@@ -38,6 +43,20 @@ export function TaskTrackingPanel() {
       });
     },
     [setSelectedTask],
+  );
+
+  const handleOpenTaskTab = useCallback(
+    (task: ParsedTask) => {
+      openTaskTab(task);
+    },
+    [openTaskTab],
+  );
+
+  const handleOpenTaskTabNewSession = useCallback(
+    (task: ParsedTask) => {
+      openTaskTabNewSession(task);
+    },
+    [openTaskTabNewSession],
   );
 
   return (
@@ -66,6 +85,8 @@ export function TaskTrackingPanel() {
             isExpanded={expanded[section.status]}
             onToggle={() => toggleSection(section.status)}
             onSelectTask={handleSelectTask}
+            onOpenTaskTab={handleOpenTaskTab}
+            onOpenTaskTabNewSession={handleOpenTaskTabNewSession}
           />
         ))}
       </div>

@@ -1,47 +1,78 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { AlertCircle } from "lucide-react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getWorkspace } from "@/services/workspace-store";
-import type { StoredWorkspace } from "@/types/workspace";
-import { BoardHeader } from "@/features/board/components/BoardHeader";
+import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
+import { BoardHeader } from "@/features/board/components/BoardHeader/BoardHeader";
+import { BoardProvider } from "@/features/board/components/KanbanBoard/KanbanBoard.context";
+import { KanbanBoard } from "@/features/board/components/KanbanBoard/KanbanBoard";
+import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel/TaskTrackingPanel";
+import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet/FeatureDetailSheetMount";
+import { TaskDetailSheetMount } from "@/features/tasks/components/TaskDetailSheet/TaskDetailSheetMount";
 
-import {
-  BoardProvider,
-  KanbanBoard,
-} from "@/features/board/components/KanbanBoard";
-import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
-import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet";
-import { TaskDetailSheetMount } from "@/features/tasks";
+function LoadingState() {
+  return (
+    <main className="flex min-h-screen flex-col bg-bg">
+      <div className="flex flex-1 items-center justify-center">
+        <p className="text-sm text-text-muted">Loading workspace…</p>
+      </div>
+    </main>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <main className="flex min-h-screen flex-col bg-bg">
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
+        <AlertCircle className="h-8 w-8 text-danger" />
+        <p className="text-sm text-text-secondary">{message}</p>
+      </div>
+    </main>
+  );
+}
 
 export default function BoardPage() {
   const router = useRouter();
-  const [workspace, setWorkspace] = useState<StoredWorkspace | null>(null);
-  const [resolved, setResolved] = useState(false);
+  const { activeWorkspace, loadingWorkspace, workspaceError, summaries } =
+    useWorkspaceContext();
 
   useEffect(() => {
-    const stored = getWorkspace();
-    if (!stored) {
+    if (
+      !loadingWorkspace &&
+      !workspaceError &&
+      !activeWorkspace &&
+      summaries.length === 0
+    ) {
       router.replace("/connect");
-      return;
     }
-    setWorkspace(stored);
-    setResolved(true);
-  }, [router]);
+  }, [
+    activeWorkspace,
+    loadingWorkspace,
+    router,
+    summaries.length,
+    workspaceError,
+  ]);
 
-  if (!resolved || !workspace) {
+  if (loadingWorkspace) {
+    return <LoadingState />;
+  }
+
+  if (workspaceError) {
     return (
-      <main className="flex min-h-screen flex-col bg-bg">
-        <div className="flex flex-1 items-center justify-center">
-          <p className="text-sm text-text-muted">Resolving workspace…</p>
-        </div>
-      </main>
+      <ErrorState
+        message={workspaceError.message || "Failed to load workspace."}
+      />
     );
+  }
+
+  if (!activeWorkspace) {
+    return <LoadingState />;
   }
 
   return (
     <main className="flex h-screen flex-col bg-bg">
-      <BoardProvider workspace={workspace}>
+      <BoardProvider workspaceDetail={activeWorkspace}>
         <BoardHeader />
         <div className="flex flex-1 overflow-hidden">
           <TaskTrackingPanel />

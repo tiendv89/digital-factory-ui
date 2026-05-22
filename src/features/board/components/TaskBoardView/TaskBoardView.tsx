@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useDeferredValue, useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureRow } from "../FeatureRow";
 import { STATUS_COLUMNS } from "../../lib/status";
@@ -15,6 +15,7 @@ import {
   NoWorkflowDataState,
   ParseErrorState,
 } from "../ErrorStates";
+import type { ParsedFeature } from "@/services/yaml-parser";
 
 function TaskColumnHeader({
   label,
@@ -65,17 +66,28 @@ export function TaskBoardView() {
     expandedFeatureIds,
     toggleFeature,
     setSelectedTask,
+    backendTaskResults,
+    taskSearching,
+    taskSearchError,
+    openTaskTab,
+    openTaskTabNewSession,
   } = useBoardContext();
+  const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
 
-  const visibleFeatures = useMemo(
-    () =>
-      features.filter(
-        (f) =>
-          matchesTaskModeSearch(f, taskSearchQuery) &&
-          matchesTaskModeStatusFilter(f, taskActiveFilters.statuses),
-      ),
-    [features, taskSearchQuery, taskActiveFilters],
-  );
+  // Use backend search results when a search is active; otherwise filter client-side
+  const visibleFeatures = useMemo<ParsedFeature[]>(() => {
+    if (backendTaskResults != null) return backendTaskResults;
+    return features.filter(
+      (f) =>
+        matchesTaskModeSearch(f, deferredTaskSearchQuery) &&
+        matchesTaskModeStatusFilter(f, taskActiveFilters.statuses),
+    );
+  }, [
+    features,
+    backendTaskResults,
+    deferredTaskSearchQuery,
+    taskActiveFilters,
+  ]);
 
   const columnCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -88,29 +100,38 @@ export function TaskBoardView() {
     return counts;
   }, [visibleFeatures]);
 
-  if (loading) {
+  if (loading || taskSearching) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-text-muted">Loading board...</p>
+        <p className="text-sm text-text-muted">
+          {taskSearching ? "Searching..." : "Loading board..."}
+        </p>
       </div>
     );
   }
 
-  if (error) {
-    if (error.kind === "access_denied")
-      return <AccessDeniedState message={error.message} />;
-    if (error.kind === "not_found")
-      return <NoWorkflowDataState message={error.message} />;
-    if (error.kind === "parse_error")
-      return <ParseErrorState message={error.message} />;
-    return <NetworkErrorState message={error.message} />;
+  const activeError = taskSearchError ?? error;
+  if (activeError) {
+    if (activeError.kind === "access_denied")
+      return <AccessDeniedState message={activeError.message} />;
+    if (activeError.kind === "not_found")
+      return <NoWorkflowDataState message={activeError.message} />;
+    if (activeError.kind === "parse_error")
+      return <ParseErrorState message={activeError.message} />;
+    return (
+      <NetworkErrorState
+        message={activeError.message}
+        retryable={activeError.retryable}
+      />
+    );
   }
 
-  if (features.length === 0) return <EmptyBoardState />;
+  if (features.length === 0 && backendTaskResults == null)
+    return <EmptyBoardState />;
 
   if (visibleFeatures.length === 0) {
     return (
-      <EmptyState message="No features match the current search or filters." />
+      <EmptyState message="No tasks match the current search or filters." />
     );
   }
 
@@ -140,6 +161,8 @@ export function TaskBoardView() {
                 isExpanded={expandedFeatureIds.has(feature.id)}
                 onToggle={() => toggleFeature(feature.id)}
                 onSelectTask={setSelectedTask}
+                onOpenTaskTab={openTaskTab}
+                onOpenTaskTabNewSession={openTaskTabNewSession}
               />
             </div>
           ))}

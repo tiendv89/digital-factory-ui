@@ -20,6 +20,8 @@ type FeatureRowProps = {
   isExpanded: boolean;
   onToggle: () => void;
   onSelectTask: (task: SelectedTask) => void;
+  onOpenTaskTab?: (task: ParsedTask) => void;
+  onOpenTaskTabNewSession?: (task: ParsedTask) => void;
 };
 
 function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
@@ -100,6 +102,8 @@ export function FeatureRow({
   isExpanded,
   onToggle,
   onSelectTask,
+  onOpenTaskTab,
+  onOpenTaskTabNewSession,
 }: FeatureRowProps) {
   const totalTasks = feature.tasks.length;
   const doneTasks = feature.tasks.filter((t) => t.status === "done").length;
@@ -210,6 +214,8 @@ export function FeatureRow({
                         featureId={feature.id}
                         featureTitle={feature.title || feature.id}
                         onSelect={onSelectTask}
+                        onOpenTab={onOpenTaskTab}
+                        onOpenNewTab={onOpenTaskTabNewSession}
                       />
                     )}
                   </div>

@@ -72,6 +72,12 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
     searchQuery: mockData.context.searchQuery,
     activeFilters: mockData.context.activeFilters,
   }),
+  useBoardTrackingContext: () => ({
+    trackedFeatures: mockData.context.trackedFeatures,
+    setSelectedTask: mockSetSelectedTask,
+    openTaskTab: vi.fn(),
+    openTaskTabNewSession: vi.fn(),
+  }),
 }));
 
 import { TaskTrackingPanel } from "../features/board/components/TaskTrackingPanel";

@@ -1,16 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { GitHubClient } from "@/services/github";
+import { getWorkspace } from "@/services/workflow-backend";
+import type { WorkspaceDetail } from "@/services/workflow-backend";
 import type { ParsedFeature } from "@/services/yaml-parser";
-import type { StoredWorkspace } from "@/types/workspace";
-import {
-  BoardLoadFailure,
-  fetchBoardData,
-  mapClientError,
-  type BoardDataClient,
-} from "../data/load-board-data";
+import { adaptWorkspaceDetail } from "@/features/workspaces/lib/workspaceAdapter";
 import type { BoardLoadError } from "../types";
+import { mapApiBoardError } from "../lib/error-utils";
 
 export type UseBoardDataResult = {
   features: ParsedFeature[];
@@ -20,37 +16,51 @@ export type UseBoardDataResult = {
 };
 
 export type UseBoardDataOptions = {
-  clientFactory?: (workspace: StoredWorkspace) => BoardDataClient;
+  initialData?: WorkspaceDetail;
 };
 
-const defaultClientFactory = (workspace: StoredWorkspace): BoardDataClient =>
-  new GitHubClient({
-    owner: workspace.owner,
-    repo: workspace.repo,
-    pat: workspace.pat,
-  });
-
 export function useBoardData(
-  workspace: StoredWorkspace | null,
+  workspaceId: string | null,
   options: UseBoardDataOptions = {},
 ): UseBoardDataResult {
-  const [features, setFeatures] = useState<ParsedFeature[]>([]);
-  const [loading, setLoading] = useState<boolean>(workspace !== null);
+  const { initialData } = options;
+  const [features, setFeatures] = useState<ParsedFeature[]>(() =>
+    initialData ? adaptWorkspaceDetail(initialData) : [],
+  );
+  const [loading, setLoading] = useState<boolean>(
+    workspaceId !== null && !initialData,
+  );
   const [error, setError] = useState<BoardLoadError | null>(null);
   const [tick, setTick] = useState(0);
   const requestId = useRef(0);
-
-  const factory = options.clientFactory ?? defaultClientFactory;
 
   const reload = useCallback(() => {
     setTick((t) => t + 1);
   }, []);
 
+  // When initialData changes (e.g. workspace synced), update features immediately
+  const prevInitialDataRef = useRef<WorkspaceDetail | undefined>(initialData);
   useEffect(() => {
-    if (!workspace) {
+    const next = initialData;
+    if (!next) return;
+    if (next === prevInitialDataRef.current) return;
+    prevInitialDataRef.current = next;
+    setFeatures(adaptWorkspaceDetail(next));
+    setLoading(false);
+    setError(null);
+  }, [initialData]);
+
+  useEffect(() => {
+    if (!workspaceId) {
       setFeatures([]);
       setLoading(false);
       setError(null);
+      return;
+    }
+
+    if (tick === 0 && initialData) {
+      setFeatures(adaptWorkspaceDetail(initialData));
+      setLoading(false);
       return;
     }
 
@@ -59,26 +69,23 @@ export function useBoardData(
     setLoading(true);
     setError(null);
 
-    const client = factory(workspace);
-    fetchBoardData(client)
-      .then((data) => {
+    getWorkspace(workspaceId)
+      .then((detail) => {
         if (cancelled || requestId.current !== id) return;
-        setFeatures(data);
+        setFeatures(adaptWorkspaceDetail(detail));
         setError(null);
         setLoading(false);
       })
       .catch((err: unknown) => {
         if (cancelled || requestId.current !== id) return;
-        const boardError =
-          err instanceof BoardLoadFailure ? err.error : mapClientError(err);
-        setError(boardError);
+        setError(mapApiBoardError(err));
         setLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [workspace, tick, factory]);
+  }, [workspaceId, tick, initialData]);
 
   return { features, loading, error, reload };
 }

@@ -7,6 +7,12 @@ export type LogEntry = {
   note?: string;
 };
 
+export type ParsedFeatureActivityEntry = LogEntry & {
+  targetId: string;
+  targetTitle: string;
+  scope?: string;
+};
+
 export type ParsedTask = {
   id: string;
   title: string;
@@ -21,6 +27,9 @@ export type ParsedTask = {
   blockedReason?: string;
   blockedContext?: Record<string, unknown>;
   log?: LogEntry[];
+  backendId?: string;
+  featureBackendId?: string;
+  repo?: string;
 };
 
 export type ParsedFeature = {
@@ -28,6 +37,18 @@ export type ParsedFeature = {
   title: string;
   featureStatus: string;
   tasks: ParsedTask[];
+  activity?: ParsedFeatureActivityEntry[];
+  backendId?: string;
+  currentStage?: string;
+  taskCounts?: {
+    total: number;
+    done: number;
+    in_progress: number;
+    blocked: number;
+    ready: number;
+    todo: number;
+  };
+  updatedAt?: string;
 };
 
 type RawFeatureStatus = {

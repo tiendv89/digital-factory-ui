@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -11,10 +12,17 @@ import {
   type ReactNode,
 } from "react";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
-import type { StoredWorkspace } from "@/types/workspace";
-import { useBoardData, type UseBoardDataOptions } from "../../hooks/useBoardData";
+import type { WorkspaceDetail } from "@/services/workflow-backend";
+import { useBoardData } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
-import type { ActiveFilters, BoardLoadError, FeatureActiveFilters } from "../../types";
+import { useBackendFeatureSearch } from "../../hooks/useBackendFeatureSearch";
+import { useBackendTaskSearch } from "../../hooks/useBackendTaskSearch";
+import { useWorkspaceActionsContext } from "@/features/workspaces/context/WorkspaceContext";
+import type {
+  ActiveFilters,
+  BoardLoadError,
+  FeatureActiveFilters,
+} from "../../types";
 import {
   type BoardMode,
   getDefaultBoardMode,
@@ -35,12 +43,19 @@ export type SelectedTask = {
 } | null;
 
 export type BoardContextValue = {
-  workspace: StoredWorkspace;
+  workspaceDetail: WorkspaceDetail;
   features: ParsedFeature[];
   trackedFeatures: ParsedFeature[];
   loading: boolean;
   error: BoardLoadError | null;
   reload: () => void;
+  syncing: boolean;
+  syncError: BoardLoadError | null;
+  syncBoard: () => void;
+  openTaskTab: (task: ParsedTask) => void;
+  openTaskTabNewSession: (task: ParsedTask) => void;
+  openFeatureTab: (feature: ParsedFeature) => void;
+  openFeatureTabNewSession: (feature: ParsedFeature) => void;
 
   boardMode: BoardMode;
   setBoardMode: (mode: BoardMode) => void;
@@ -69,41 +84,66 @@ export type BoardContextValue = {
   setSelectedTask: (task: SelectedTask) => void;
   selectedFeature: ParsedFeature | null;
   setSelectedFeature: (feature: ParsedFeature | null) => void;
+
+  // Backend search results (null = use workspace detail)
+  backendTaskResults: ParsedFeature[] | null;
+  backendFeatureResults: ParsedFeature[] | null;
+  taskSearching: boolean;
+  featureSearching: boolean;
+  taskSearchError: BoardLoadError | null;
+  featureSearchError: BoardLoadError | null;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);
+export type BoardTrackingContextValue = Pick<
+  BoardContextValue,
+  "trackedFeatures" | "setSelectedTask" | "openTaskTab" | "openTaskTabNewSession"
+>;
+
+const BoardTrackingContext = createContext<BoardTrackingContextValue | null>(
+  null,
+);
 
 export type BoardProviderProps = {
-  workspace: StoredWorkspace;
+  workspaceDetail: WorkspaceDetail;
   children: ReactNode;
-} & UseBoardDataOptions;
+};
 
 export function BoardProvider({
-  workspace,
+  workspaceDetail,
   children,
-  clientFactory,
 }: BoardProviderProps) {
-  const { features, loading, error, reload } = useBoardData(workspace, {
-    clientFactory,
-  });
+  const { features, loading, error, reload } = useBoardData(
+    workspaceDetail.id,
+    {
+      initialData: workspaceDetail,
+    },
+  );
+  const { trackedFeatures, reload: reloadTracking } = usePullRequestTaskData(
+    workspaceDetail.id,
+  );
+
   const {
-    trackedFeatures,
-    reload: reloadTracking,
-  } = usePullRequestTaskData(workspace, {
-    clientFactory,
-  });
+    syncCurrentWorkspace,
+    syncingWorkspace: syncing,
+    syncError: wsyncError,
+    openTaskTab: wsOpenTaskTab,
+    openFeatureTab: wsOpenFeatureTab,
+  } = useWorkspaceActionsContext();
 
   const [boardMode, setBoardModeState] = useState<BoardMode>(
     () => getStoredBoardMode() ?? getDefaultBoardMode(),
   );
   const [taskSearchQuery, setTaskSearchQuery] = useState("");
   const [featureSearchQuery, setFeatureSearchQuery] = useState("");
-  const [taskActiveFilters, setTaskActiveFiltersState] = useState<ActiveFilters>(
-    () => ({ statuses: getStoredStatusFilter() ?? getDefaultStatusFilter() }),
-  );
+  const [taskActiveFilters, setTaskActiveFiltersState] =
+    useState<ActiveFilters>(() => ({
+      statuses: getStoredStatusFilter() ?? getDefaultStatusFilter(),
+    }));
   const [featureActiveFilters, setFeatureActiveFiltersState] =
     useState<FeatureActiveFilters>(() => ({
-      statuses: getStoredFeatureStatusFilter() ?? getDefaultFeatureStatusFilter(),
+      statuses:
+        getStoredFeatureStatusFilter() ?? getDefaultFeatureStatusFilter(),
     }));
   const [expandedFeatureIds, setExpandedFeatureIds] = useState<Set<string>>(
     () => new Set(),
@@ -112,6 +152,46 @@ export function BoardProvider({
   const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(
     null,
   );
+
+  // Backend search hooks
+  const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
+  const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
+  const trimmedTaskQuery = deferredTaskSearchQuery.trim();
+  const taskSearchActive = boardMode === "task" && trimmedTaskQuery.length > 0;
+  const taskSearchParams = taskSearchActive
+    ? {
+        title: trimmedTaskQuery,
+        status:
+          taskActiveFilters.statuses.length > 0
+            ? taskActiveFilters.statuses.join(",")
+            : undefined,
+      }
+    : {};
+
+  const {
+    results: backendTaskResults,
+    searching: taskSearching,
+    searchError: taskSearchError,
+  } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams);
+
+  const trimmedFeatureQuery = deferredFeatureSearchQuery.trim();
+  const featureSearchActive =
+    boardMode === "feature" && trimmedFeatureQuery.length > 0;
+  const featureSearchParams = featureSearchActive
+    ? {
+        title: trimmedFeatureQuery,
+        status:
+          featureActiveFilters.statuses.length > 0
+            ? featureActiveFilters.statuses.join(",")
+            : undefined,
+      }
+    : {};
+
+  const {
+    results: backendFeatureResults,
+    searching: featureSearching,
+    searchError: featureSearchError,
+  } = useBackendFeatureSearch(workspaceDetail.id, featureSearchParams);
 
   const toggleFeature = useCallback((featureId: string) => {
     setExpandedFeatureIds((prev) => {
@@ -160,14 +240,92 @@ export function BoardProvider({
     [],
   );
 
+  const syncBoard = useCallback(() => {
+    syncCurrentWorkspace().catch(() => {
+      // error captured in syncError
+    });
+  }, [syncCurrentWorkspace]);
+
+  const openTaskTab = useCallback(
+    (task: ParsedTask) => {
+      if (!task.backendId) return;
+      wsOpenTaskTab({
+        taskId: task.backendId,
+        taskName: task.id,
+        title: task.title,
+        featureId: task.featureBackendId,
+      });
+    },
+    [wsOpenTaskTab],
+  );
+
+  const openTaskTabNewSession = useCallback(
+    (task: ParsedTask) => {
+      if (!task.backendId) return;
+      wsOpenTaskTab(
+        {
+          taskId: task.backendId,
+          taskName: task.id,
+          title: task.title,
+          featureId: task.featureBackendId,
+        },
+        { forceNewSession: true },
+      );
+    },
+    [wsOpenTaskTab],
+  );
+
+  const openFeatureTab = useCallback(
+    (feature: ParsedFeature) => {
+      if (!feature.backendId) return;
+      wsOpenFeatureTab({
+        featureId: feature.backendId,
+        featureName: feature.id,
+        title: feature.title || feature.id,
+      });
+    },
+    [wsOpenFeatureTab],
+  );
+
+  const openFeatureTabNewSession = useCallback(
+    (feature: ParsedFeature) => {
+      if (!feature.backendId) return;
+      wsOpenFeatureTab(
+        {
+          featureId: feature.backendId,
+          featureName: feature.id,
+          title: feature.title || feature.id,
+        },
+        { forceNewSession: true },
+      );
+    },
+    [wsOpenFeatureTab],
+  );
+
+  // Map workspace sync error to BoardLoadError shape
+  const syncError = useMemo<BoardLoadError | null>(
+    () =>
+      wsyncError
+        ? {
+            kind: "network_error",
+            message: wsyncError.message ?? "Sync failed",
+            retryable: wsyncError.retryable,
+          }
+        : null,
+    [wsyncError],
+  );
+
   const value = useMemo<BoardContextValue>(
     () => ({
-      workspace,
+      workspaceDetail,
       features,
       trackedFeatures,
       loading,
       error,
       reload: reloadAll,
+      syncing,
+      syncError,
+      syncBoard,
 
       boardMode,
       setBoardMode: handleSetBoardMode,
@@ -194,14 +352,28 @@ export function BoardProvider({
       setSelectedTask,
       selectedFeature,
       setSelectedFeature,
+
+      backendTaskResults,
+      backendFeatureResults,
+      taskSearching,
+      featureSearching,
+      taskSearchError,
+      featureSearchError,
+      openTaskTab,
+      openTaskTabNewSession,
+      openFeatureTab,
+      openFeatureTabNewSession,
     }),
     [
-      workspace,
+      workspaceDetail,
       features,
       trackedFeatures,
       loading,
       error,
       reloadAll,
+      syncing,
+      syncError,
+      syncBoard,
       boardMode,
       handleSetBoardMode,
       taskSearchQuery,
@@ -214,16 +386,52 @@ export function BoardProvider({
       toggleFeature,
       selectedTask,
       selectedFeature,
+      backendTaskResults,
+      backendFeatureResults,
+      taskSearching,
+      featureSearching,
+      taskSearchError,
+      featureSearchError,
+      openTaskTab,
+      openTaskTabNewSession,
+      openFeatureTab,
+      openFeatureTabNewSession,
     ],
   );
 
-  return <BoardContext.Provider value={value}>{children}</BoardContext.Provider>;
+  const trackingValue = useMemo<BoardTrackingContextValue>(
+    () => ({
+      trackedFeatures,
+      setSelectedTask,
+      openTaskTab,
+      openTaskTabNewSession,
+    }),
+    [trackedFeatures, openTaskTab, openTaskTabNewSession],
+  );
+
+  return (
+    <BoardContext.Provider value={value}>
+      <BoardTrackingContext.Provider value={trackingValue}>
+        {children}
+      </BoardTrackingContext.Provider>
+    </BoardContext.Provider>
+  );
 }
 
 export function useBoardContext(): BoardContextValue {
   const ctx = useContext(BoardContext);
   if (!ctx) {
     throw new Error("useBoardContext must be used within a BoardProvider");
+  }
+  return ctx;
+}
+
+export function useBoardTrackingContext(): BoardTrackingContextValue {
+  const ctx = useContext(BoardTrackingContext);
+  if (!ctx) {
+    throw new Error(
+      "useBoardTrackingContext must be used within a BoardProvider",
+    );
   }
   return ctx;
 }
