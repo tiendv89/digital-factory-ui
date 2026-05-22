@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useDeferredValue, useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureListRow } from "./FeatureListRow";
 import type { ParsedFeature } from "@/services/yaml-parser";
@@ -108,19 +108,20 @@ export function FeatureBoardView() {
     featureSearching,
     featureSearchError,
   } = useBoardContext();
+  const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
 
   // Use backend search results when a search is active; otherwise filter client-side
   const visibleFeatures = useMemo(() => {
     if (backendFeatureResults != null) return backendFeatureResults;
     return features.filter(
       (f) =>
-        matchesFeatureModeSearch(f, featureSearchQuery) &&
+        matchesFeatureModeSearch(f, deferredFeatureSearchQuery) &&
         matchesFeatureModeStatusFilter(f, featureActiveFilters.statuses),
     );
   }, [
     features,
     backendFeatureResults,
-    featureSearchQuery,
+    deferredFeatureSearchQuery,
     featureActiveFilters,
   ]);
 

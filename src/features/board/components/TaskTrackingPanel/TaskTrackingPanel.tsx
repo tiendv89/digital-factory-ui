@@ -2,7 +2,7 @@
 
 import { Layers } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
-import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
+import { useBoardTrackingContext } from "../KanbanBoard/KanbanBoard.context";
 import { groupTrackedTasks } from "./groupTasks";
 import type { TrackedStatus } from "./TaskTrackingPanel.types";
 import { TaskTrackingSection } from "./TaskTrackingSection";
@@ -20,7 +20,7 @@ export function TaskTrackingPanel() {
     setSelectedTask,
     openTaskTab,
     openTaskTabNewSession,
-  } = useBoardContext();
+  } = useBoardTrackingContext();
 
   const sections = useMemo(
     () => groupTrackedTasks(trackedFeatures),

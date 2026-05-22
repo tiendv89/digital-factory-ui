@@ -328,22 +328,6 @@ async function applyMappedPullRequestTaskOverrides(
   return nextFeatures;
 }
 
-async function applyOpenPullRequestTaskOverrides(
-  client: BoardDataClient,
-  features: ParsedFeature[],
-): Promise<ParsedFeature[]> {
-  if (!client.listOpenPullRequests) return features;
-
-  const pulls = await client.listOpenPullRequests();
-  if (pulls.length === 0) return features;
-
-  if (client.listPullRequestFiles) {
-    return applyPullRequestFileTaskOverrides(client, features, pulls);
-  }
-
-  return applyMappedPullRequestTaskOverrides(client, features, pulls);
-}
-
 export async function fetchBoardData(
   client: BoardDataClient,
 ): Promise<ParsedFeature[]> {

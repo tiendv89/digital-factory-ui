@@ -1,6 +1,6 @@
 "use client";
 
-import { useBoardContext } from "@/features/board/components/KanbanBoard";
+import { useBoardContext } from "@/features/board/components/KanbanBoard/KanbanBoard.context";
 import { useFeatureDetail } from "@/features/board/hooks/useFeatureDetail";
 import { adaptFeatureDetail } from "@/features/workspaces/lib/workspaceAdapter";
 import { FeatureDetailSheet } from "./FeatureDetailSheet";

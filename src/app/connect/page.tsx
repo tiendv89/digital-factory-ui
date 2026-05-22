@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ConnectForm } from "@/features/workspaces/components/ConnectForm";
+import { ConnectForm } from "@/features/workspaces/components/ConnectForm/ConnectForm";
+import { ConnectFormProvider } from "@/features/workspaces/components/ConnectForm/ConnectForm.context";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 
 function WorkspaceList() {
@@ -56,7 +57,9 @@ function WorkspaceList() {
 export default function ConnectPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-bg px-4 py-16">
-      <ConnectForm />
+      <ConnectFormProvider>
+        <ConnectForm />
+      </ConnectFormProvider>
       <WorkspaceList />
     </main>
   );

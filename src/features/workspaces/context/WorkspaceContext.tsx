@@ -5,6 +5,8 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -37,6 +39,7 @@ import {
   getTaskTabHref,
   getFeatureTabHref,
 } from "@/features/workspaces/lib/tabState";
+import { createRequestSequence } from "@/lib/request-sequence";
 
 export type TaskTabEntry = {
   sessionId: string;
@@ -102,7 +105,18 @@ export type WorkspaceContextValue = {
   goToBoard: () => void;
 };
 
+export type WorkspaceActionsContextValue = Pick<
+  WorkspaceContextValue,
+  | "syncCurrentWorkspace"
+  | "syncingWorkspace"
+  | "syncError"
+  | "openTaskTab"
+  | "openFeatureTab"
+>;
+
 const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
+const WorkspaceActionsContext =
+  createContext<WorkspaceActionsContextValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -132,6 +146,18 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeFeatureTabId, setActiveFeatureTabId] = useState<string | null>(
     null,
   );
+  const openTaskTabsRef = useRef(openTaskTabs);
+  const openFeatureTabsRef = useRef(openFeatureTabs);
+  const loadWorkspaceSequenceRef = useRef(createRequestSequence());
+  const didBootstrapRef = useRef(false);
+
+  useEffect(() => {
+    openTaskTabsRef.current = openTaskTabs;
+  }, [openTaskTabs]);
+
+  useEffect(() => {
+    openFeatureTabsRef.current = openFeatureTabs;
+  }, [openFeatureTabs]);
 
   const isWorkspaceNotFound = useCallback((err: ApiError) => {
     return (
@@ -160,7 +186,34 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [router, selectedWorkspaceId],
   );
 
+  const loadWorkspace = useCallback(
+    (workspaceId: string) => {
+      const requestId = loadWorkspaceSequenceRef.current.next();
+      setLoadingWorkspace(true);
+      setWorkspaceError(null);
+      getWorkspace(workspaceId)
+        .then((detail) => {
+          if (!loadWorkspaceSequenceRef.current.isCurrent(requestId)) return;
+          setActiveWorkspace(detail);
+          setLoadingWorkspace(false);
+        })
+        .catch((err: ApiError) => {
+          if (!loadWorkspaceSequenceRef.current.isCurrent(requestId)) return;
+          if (isWorkspaceNotFound(err)) {
+            handleMissingWorkspace(workspaceId);
+            return;
+          }
+          setWorkspaceError(err);
+          setLoadingWorkspace(false);
+        });
+    },
+    [handleMissingWorkspace, isWorkspaceNotFound],
+  );
+
   useEffect(() => {
+    if (didBootstrapRef.current) return;
+    didBootstrapRef.current = true;
+
     const storedSummaries = getLocalWorkspaceSummaries();
     const storedId = getSelectedWorkspaceId();
     setSummaries(storedSummaries);
@@ -173,28 +226,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } else {
       setLoadingWorkspace(false);
     }
-  }, []);
-
-  const loadWorkspace = useCallback(
-    (workspaceId: string) => {
-      setLoadingWorkspace(true);
-      setWorkspaceError(null);
-      getWorkspace(workspaceId)
-        .then((detail) => {
-          setActiveWorkspace(detail);
-          setLoadingWorkspace(false);
-        })
-        .catch((err: ApiError) => {
-          if (isWorkspaceNotFound(err)) {
-            handleMissingWorkspace(workspaceId);
-            return;
-          }
-          setWorkspaceError(err);
-          setLoadingWorkspace(false);
-        });
-    },
-    [handleMissingWorkspace, isWorkspaceNotFound],
-  );
+  }, [loadWorkspace]);
 
   const selectWorkspace = useCallback(
     (workspaceId: string) => {
@@ -229,6 +261,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
           body,
           new Date().toISOString(),
         );
+        loadWorkspaceSequenceRef.current.next();
         saveLocalWorkspaceSummary(summary);
         setSelectedWorkspaceId(detail.id);
         setSummaries(getLocalWorkspaceSummaries());
@@ -300,7 +333,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const workspaceId = selectedWorkspaceId ?? activeWorkspace?.id;
       if (!workspaceId) return;
       if (!options?.forceNewSession) {
-        const existing = openTaskTabs.find(
+        const existing = openTaskTabsRef.current.find(
           (tab) =>
             tab.taskId === entry.taskId && tab.workspaceId === workspaceId,
         );
@@ -321,7 +354,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setActiveSurface("task-tab");
       router.push(getTaskTabHref(tab));
     },
-    [activeWorkspace?.id, openTaskTabs, router, selectedWorkspaceId],
+    [activeWorkspace?.id, router, selectedWorkspaceId],
   );
 
   const closeTaskTab = useCallback(
@@ -361,7 +394,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       const workspaceId = selectedWorkspaceId ?? activeWorkspace?.id;
       if (!workspaceId) return;
       if (!options?.forceNewSession) {
-        const existing = openFeatureTabs.find(
+        const existing = openFeatureTabsRef.current.find(
           (tab) =>
             tab.featureId === entry.featureId &&
             tab.workspaceId === workspaceId,
@@ -383,7 +416,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setActiveSurface("feature-tab");
       router.push(getFeatureTabHref(tab));
     },
-    [activeWorkspace?.id, openFeatureTabs, router, selectedWorkspaceId],
+    [activeWorkspace?.id, router, selectedWorkspaceId],
   );
 
   const closeFeatureTab = useCallback(
@@ -424,41 +457,93 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     router.push("/board");
   }, [router]);
 
+  const value = useMemo<WorkspaceContextValue>(
+    () => ({
+      summaries,
+      selectedWorkspaceId,
+      activeWorkspace,
+      loadingWorkspace,
+      workspaceError,
+      importingWorkspace,
+      importError,
+      syncingWorkspace,
+      syncError,
+      selectWorkspace,
+      importWorkspace: importWorkspaceFn,
+      clearImportError,
+      removeLocalSummary,
+      syncCurrentWorkspace,
+      clearSyncError,
+      activeSurface,
+      openTaskTabs,
+      activeTaskTabId,
+      openTaskTab,
+      closeTaskTab,
+      activateTaskTab,
+      markTaskTabActive,
+      openFeatureTabs,
+      activeFeatureTabId,
+      openFeatureTab,
+      closeFeatureTab,
+      activateFeatureTab,
+      markFeatureTabActive,
+      goToBoard,
+    }),
+    [
+      summaries,
+      selectedWorkspaceId,
+      activeWorkspace,
+      loadingWorkspace,
+      workspaceError,
+      importingWorkspace,
+      importError,
+      syncingWorkspace,
+      syncError,
+      selectWorkspace,
+      importWorkspaceFn,
+      clearImportError,
+      removeLocalSummary,
+      syncCurrentWorkspace,
+      clearSyncError,
+      activeSurface,
+      openTaskTabs,
+      activeTaskTabId,
+      openTaskTab,
+      closeTaskTab,
+      activateTaskTab,
+      markTaskTabActive,
+      openFeatureTabs,
+      activeFeatureTabId,
+      openFeatureTab,
+      closeFeatureTab,
+      activateFeatureTab,
+      markFeatureTabActive,
+      goToBoard,
+    ],
+  );
+
+  const actionsValue = useMemo<WorkspaceActionsContextValue>(
+    () => ({
+      syncCurrentWorkspace,
+      syncingWorkspace,
+      syncError,
+      openTaskTab,
+      openFeatureTab,
+    }),
+    [
+      syncCurrentWorkspace,
+      syncingWorkspace,
+      syncError,
+      openTaskTab,
+      openFeatureTab,
+    ],
+  );
+
   return (
-    <WorkspaceContext.Provider
-      value={{
-        summaries,
-        selectedWorkspaceId,
-        activeWorkspace,
-        loadingWorkspace,
-        workspaceError,
-        importingWorkspace,
-        importError,
-        syncingWorkspace,
-        syncError,
-        selectWorkspace,
-        importWorkspace: importWorkspaceFn,
-        clearImportError,
-        removeLocalSummary,
-        syncCurrentWorkspace,
-        clearSyncError,
-        activeSurface,
-        openTaskTabs,
-        activeTaskTabId,
-        openTaskTab,
-        closeTaskTab,
-        activateTaskTab,
-        markTaskTabActive,
-        openFeatureTabs,
-        activeFeatureTabId,
-        openFeatureTab,
-        closeFeatureTab,
-        activateFeatureTab,
-        markFeatureTabActive,
-        goToBoard,
-      }}
-    >
-      {children}
+    <WorkspaceContext.Provider value={value}>
+      <WorkspaceActionsContext.Provider value={actionsValue}>
+        {children}
+      </WorkspaceActionsContext.Provider>
     </WorkspaceContext.Provider>
   );
 }
@@ -468,6 +553,16 @@ export function useWorkspaceContext(): WorkspaceContextValue {
   if (!ctx) {
     throw new Error(
       "useWorkspaceContext must be used within a WorkspaceProvider",
+    );
+  }
+  return ctx;
+}
+
+export function useWorkspaceActionsContext(): WorkspaceActionsContextValue {
+  const ctx = useContext(WorkspaceActionsContext);
+  if (!ctx) {
+    throw new Error(
+      "useWorkspaceActionsContext must be used within a WorkspaceProvider",
     );
   }
   return ctx;

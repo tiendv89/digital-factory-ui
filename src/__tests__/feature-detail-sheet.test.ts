@@ -3,10 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ParsedFeature } from "../services/yaml-parser";
 import type { FeatureDetail } from "../services/workflow-backend/types";
-import {
-  FeatureDetailSheet,
-  FeatureDetailSheetMount,
-} from "../features/board/components/FeatureDetailSheet";
+import { FeatureDetailSheet } from "../features/board/components/FeatureDetailSheet/FeatureDetailSheet";
+import { FeatureDetailSheetMount } from "../features/board/components/FeatureDetailSheet/FeatureDetailSheetMount";
 
 const mockUseFeatureDetail = vi.hoisted(() => vi.fn());
 
@@ -22,7 +20,7 @@ const mockBoardContext = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/features/board/components/KanbanBoard", () => ({
+vi.mock("@/features/board/components/KanbanBoard/KanbanBoard.context", () => ({
   useBoardContext: () => mockBoardContext,
 }));
 

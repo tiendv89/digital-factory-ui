@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
-import { WorkspaceHeader } from "@/features/workspaces/components/WorkspaceHeader";
+import { WorkspaceHeader } from "@/features/workspaces/components/WorkspaceHeader/WorkspaceHeader";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 
 export function BoardHeader() {

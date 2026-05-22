@@ -26,13 +26,16 @@ export function useBackendFeatureSearch(
   workspaceId: string | null,
   params: FeatureSearchParams,
 ): UseBackendFeatureSearchResult {
+  const { title, status } = params;
   const [results, setResults] = useState<ParsedFeature[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<BoardLoadError | null>(null);
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    if (!workspaceId || isEmptyParams(params)) {
+    const searchParams = { title, status };
+
+    if (!workspaceId || isEmptyParams(searchParams)) {
       setResults(null);
       setSearching(false);
       setSearchError(null);
@@ -46,7 +49,10 @@ export function useBackendFeatureSearch(
       setSearchError(null);
 
       try {
-        const features = await searchFeatures(workspaceId, buildFeatureParams(params));
+        const features = await searchFeatures(
+          workspaceId,
+          buildFeatureParams(searchParams),
+        );
         if (cancelled || requestIdRef.current !== id) return;
         setResults(adaptFeatureSummaries(features));
         setSearching(false);
@@ -67,7 +73,7 @@ export function useBackendFeatureSearch(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [workspaceId, params.title, params.status]);
+  }, [workspaceId, title, status]);
 
   return { results, searching, searchError };
 }

@@ -18,7 +18,6 @@ import type {
   FeatureDetail,
   TaskDetail,
   TaskSummary,
-  FeatureDocument,
   SourceState,
 } from "../services/workflow-backend/types";
 import type { ParsedFeature } from "../services/yaml-parser";
@@ -97,7 +96,7 @@ function makeFeatureDetail(overrides: Partial<FeatureDetail> = {}): FeatureDetai
     title: "Feature Kanban Board",
     status: "in_implementation",
     current_stage: "in_tdd",
-    stages: [],
+    stages: {},
     updated_at: "2026-05-20T10:30:00Z",
     task_counts: {
       total: 6,
@@ -152,14 +151,6 @@ function makeTaskDetail(overrides: Partial<TaskDetail> = {}): TaskDetail {
     execution: { actor_type: "agent", last_updated_by: "bob@example.com" },
     pr_refs: [],
     ...overrides,
-  };
-}
-
-function makeDocument(documentType: string): FeatureDocument {
-  return {
-    document_type: documentType,
-    source_path: `docs/features/kanban-board-feature/${documentType}.md`,
-    url: "",
   };
 }
 
@@ -851,7 +842,7 @@ describe("FeatureTaskDrilldown — content rendering", () => {
       }),
     );
     expect(html).toContain("data-back-to-feature");
-    expect(html).toContain("Feature");
+    expect(html).toContain("Back to feature");
   });
 
   it("renders task name and title in drilldown header", () => {
@@ -907,6 +898,32 @@ describe("DrilldownTaskContent — back-to-feature affordance", () => {
     expect(html).not.toContain("data-detail-split-layout");
     expect(html).not.toContain("data-detail-section-one");
     expect(html).not.toContain("data-agent-chat-placeholder");
+  });
+
+  it("does not render PR status tags on GitHub links", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(DrilldownTaskContent, {
+        task: makeTaskDetail({
+          pr_refs: [
+            {
+              label: "Implementation PR",
+              repo: "acme/ui-service",
+              status: "merged",
+              url: "https://github.com/acme/ui-service/pull/42",
+            },
+          ],
+        }),
+        onBack: vi.fn(),
+        onReload: vi.fn(),
+      }),
+    );
+
+    const prCardStart = html.indexOf(
+      'data-pr-ref="https://github.com/acme/ui-service/pull/42"',
+    );
+    const prCard = html.slice(prCardStart, html.indexOf("</a>", prCardStart));
+    expect(prCard).toContain("Implementation PR");
+    expect(prCard).not.toContain(">merged<");
   });
 });
 

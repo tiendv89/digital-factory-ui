@@ -15,9 +15,7 @@
  *   - SIDEBAR_TASK_PARAMS independence from other query builders
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
+import { describe, it, expect, beforeEach } from "vitest";
 
 // ─── localStorage shim ────────────────────────────────────────────────────────
 

@@ -26,13 +26,16 @@ export function useBackendTaskSearch(
   workspaceId: string | null,
   params: TaskSearchParams,
 ): UseBackendTaskSearchResult {
+  const { task_id, title, status } = params;
   const [results, setResults] = useState<ParsedFeature[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<BoardLoadError | null>(null);
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    if (!workspaceId || isEmptyParams(params)) {
+    const searchParams = { task_id, title, status };
+
+    if (!workspaceId || isEmptyParams(searchParams)) {
       setResults(null);
       setSearching(false);
       setSearchError(null);
@@ -46,7 +49,10 @@ export function useBackendTaskSearch(
       setSearchError(null);
 
       try {
-        const tasks = await searchWorkspaceTasks(workspaceId, buildTaskParams(params));
+        const tasks = await searchWorkspaceTasks(
+          workspaceId,
+          buildTaskParams(searchParams),
+        );
         if (cancelled || requestIdRef.current !== id) return;
         setResults(adaptTaskSummariesToFeatures(tasks));
         setSearching(false);
@@ -67,7 +73,7 @@ export function useBackendTaskSearch(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [workspaceId, params.task_id, params.title, params.status]);
+  }, [workspaceId, task_id, title, status]);
 
   return { results, searching, searchError };
 }

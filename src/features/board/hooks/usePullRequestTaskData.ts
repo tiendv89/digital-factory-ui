@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import { useSidebarTasks } from "./useSidebarTasks";
 import { adaptTaskSummariesToFeatures } from "@/features/workspaces/lib/workspaceAdapter";
@@ -18,7 +19,10 @@ export function usePullRequestTaskData(
 ): UsePullRequestTaskDataResult {
   const { tasks, loading, error, reload } = useSidebarTasks(workspaceId);
 
-  const trackedFeatures = adaptTaskSummariesToFeatures(tasks);
+  const trackedFeatures = useMemo(
+    () => adaptTaskSummariesToFeatures(tasks),
+    [tasks],
+  );
 
   return {
     trackedFeatures,

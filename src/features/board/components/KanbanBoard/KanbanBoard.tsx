@@ -145,7 +145,7 @@ function ModeSegmentedControl() {
   );
 }
 
-function TaskModeFilterMenu({ onClose }: { onClose: () => void }) {
+function TaskModeFilterMenu() {
   const { taskActiveFilters, setTaskActiveFilters } = useBoardContext();
   const selectedStatuses = new Set(taskActiveFilters.statuses);
   const allSelected = isAllStatusFilterSelected(taskActiveFilters.statuses);
@@ -199,7 +199,7 @@ function TaskModeFilterMenu({ onClose }: { onClose: () => void }) {
   );
 }
 
-function FeatureModeFilterMenu({ onClose }: { onClose: () => void }) {
+function FeatureModeFilterMenu() {
   const { featureActiveFilters, setFeatureActiveFilters } = useBoardContext();
   const selectedStatuses = new Set(featureActiveFilters.statuses);
   const allSelected = isAllFeatureStatusFilterSelected(
@@ -363,9 +363,9 @@ function BoardControls() {
           </button>
           {filterOpen &&
             (boardMode === "task" ? (
-              <TaskModeFilterMenu onClose={() => setFilterOpen(false)} />
+              <TaskModeFilterMenu />
             ) : (
-              <FeatureModeFilterMenu onClose={() => setFilterOpen(false)} />
+              <FeatureModeFilterMenu />
             ))}
         </div>
       </div>

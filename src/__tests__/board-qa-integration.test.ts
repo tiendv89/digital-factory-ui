@@ -181,6 +181,26 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
     searchQuery: "",
     activeFilters: { statuses: [] },
   }),
+  useBoardTrackingContext: () => ({
+    trackedFeatures: [
+      {
+        id: "auth",
+        title: "Auth System",
+        featureStatus: "in_implementation",
+        tasks: [
+          {
+            id: "T3",
+            title: "JWT verification",
+            status: "in_review",
+            dependsOn: [],
+          },
+        ],
+      },
+    ],
+    setSelectedTask: mockSetSelectedTask,
+    openTaskTab: vi.fn(),
+    openTaskTabNewSession: vi.fn(),
+  }),
 }));
 
 import { TaskTrackingPanel } from "../features/board/components/TaskTrackingPanel";

@@ -63,7 +63,7 @@ vi.mock("@/features/workspaces/context/WorkspaceContext", () => ({
   useWorkspaceContext: () => mockWorkspaceContext,
 }));
 
-vi.mock("@/features/workspaces/components/ImportModal", () => ({
+vi.mock("@/features/workspaces/components/ImportModal/ImportModal", () => ({
   ImportModal: () => React.createElement("div", { "data-import-modal": true }),
 }));
 

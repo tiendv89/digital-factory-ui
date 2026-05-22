@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -16,7 +17,7 @@ import { useBoardData } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
 import { useBackendFeatureSearch } from "../../hooks/useBackendFeatureSearch";
 import { useBackendTaskSearch } from "../../hooks/useBackendTaskSearch";
-import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
+import { useWorkspaceActionsContext } from "@/features/workspaces/context/WorkspaceContext";
 import type {
   ActiveFilters,
   BoardLoadError,
@@ -94,6 +95,14 @@ export type BoardContextValue = {
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);
+export type BoardTrackingContextValue = Pick<
+  BoardContextValue,
+  "trackedFeatures" | "setSelectedTask" | "openTaskTab" | "openTaskTabNewSession"
+>;
+
+const BoardTrackingContext = createContext<BoardTrackingContextValue | null>(
+  null,
+);
 
 export type BoardProviderProps = {
   workspaceDetail: WorkspaceDetail;
@@ -118,7 +127,9 @@ export function BoardProvider({
     syncCurrentWorkspace,
     syncingWorkspace: syncing,
     syncError: wsyncError,
-  } = useWorkspaceContext();
+    openTaskTab: wsOpenTaskTab,
+    openFeatureTab: wsOpenFeatureTab,
+  } = useWorkspaceActionsContext();
 
   const [boardMode, setBoardModeState] = useState<BoardMode>(
     () => getStoredBoardMode() ?? getDefaultBoardMode(),
@@ -143,11 +154,13 @@ export function BoardProvider({
   );
 
   // Backend search hooks
-  const trimmedTaskQuery = taskSearchQuery.trim();
+  const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
+  const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
+  const trimmedTaskQuery = deferredTaskSearchQuery.trim();
   const taskSearchActive = boardMode === "task" && trimmedTaskQuery.length > 0;
   const taskSearchParams = taskSearchActive
     ? {
-        task_id: trimmedTaskQuery,
+        title: trimmedTaskQuery,
         status:
           taskActiveFilters.statuses.length > 0
             ? taskActiveFilters.statuses.join(",")
@@ -161,7 +174,7 @@ export function BoardProvider({
     searchError: taskSearchError,
   } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams);
 
-  const trimmedFeatureQuery = featureSearchQuery.trim();
+  const trimmedFeatureQuery = deferredFeatureSearchQuery.trim();
   const featureSearchActive =
     boardMode === "feature" && trimmedFeatureQuery.length > 0;
   const featureSearchParams = featureSearchActive
@@ -233,9 +246,6 @@ export function BoardProvider({
     });
   }, [syncCurrentWorkspace]);
 
-  const { openTaskTab: wsOpenTaskTab, openFeatureTab: wsOpenFeatureTab } =
-    useWorkspaceContext();
-
   const openTaskTab = useCallback(
     (task: ParsedTask) => {
       if (!task.backendId) return;
@@ -293,13 +303,17 @@ export function BoardProvider({
   );
 
   // Map workspace sync error to BoardLoadError shape
-  const syncError: BoardLoadError | null = wsyncError
-    ? {
-        kind: "network_error",
-        message: wsyncError.message ?? "Sync failed",
-        retryable: wsyncError.retryable,
-      }
-    : null;
+  const syncError = useMemo<BoardLoadError | null>(
+    () =>
+      wsyncError
+        ? {
+            kind: "network_error",
+            message: wsyncError.message ?? "Sync failed",
+            retryable: wsyncError.retryable,
+          }
+        : null,
+    [wsyncError],
+  );
 
   const value = useMemo<BoardContextValue>(
     () => ({
@@ -385,8 +399,22 @@ export function BoardProvider({
     ],
   );
 
+  const trackingValue = useMemo<BoardTrackingContextValue>(
+    () => ({
+      trackedFeatures,
+      setSelectedTask,
+      openTaskTab,
+      openTaskTabNewSession,
+    }),
+    [trackedFeatures, openTaskTab, openTaskTabNewSession],
+  );
+
   return (
-    <BoardContext.Provider value={value}>{children}</BoardContext.Provider>
+    <BoardContext.Provider value={value}>
+      <BoardTrackingContext.Provider value={trackingValue}>
+        {children}
+      </BoardTrackingContext.Provider>
+    </BoardContext.Provider>
   );
 }
 
@@ -394,6 +422,16 @@ export function useBoardContext(): BoardContextValue {
   const ctx = useContext(BoardContext);
   if (!ctx) {
     throw new Error("useBoardContext must be used within a BoardProvider");
+  }
+  return ctx;
+}
+
+export function useBoardTrackingContext(): BoardTrackingContextValue {
+  const ctx = useContext(BoardTrackingContext);
+  if (!ctx) {
+    throw new Error(
+      "useBoardTrackingContext must be used within a BoardProvider",
+    );
   }
   return ctx;
 }

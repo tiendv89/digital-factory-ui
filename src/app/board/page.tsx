@@ -4,14 +4,12 @@ import { AlertCircle } from "lucide-react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
-import { BoardHeader } from "@/features/board/components/BoardHeader";
-import {
-  BoardProvider,
-  KanbanBoard,
-} from "@/features/board/components/KanbanBoard";
-import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel";
-import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet";
-import { TaskDetailSheetMount } from "@/features/tasks";
+import { BoardHeader } from "@/features/board/components/BoardHeader/BoardHeader";
+import { BoardProvider } from "@/features/board/components/KanbanBoard/KanbanBoard.context";
+import { KanbanBoard } from "@/features/board/components/KanbanBoard/KanbanBoard";
+import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel/TaskTrackingPanel";
+import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet/FeatureDetailSheetMount";
+import { TaskDetailSheetMount } from "@/features/tasks/components/TaskDetailSheet/TaskDetailSheetMount";
 
 function LoadingState() {
   return (

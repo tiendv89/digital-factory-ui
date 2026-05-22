@@ -59,7 +59,6 @@ import { WorkspaceTabBar } from "../features/workspaces/components/WorkspaceTabB
 import { TaskCard } from "../features/board/components/TaskCard/TaskCard";
 import { TaskTrackingItem } from "../features/board/components/TaskTrackingPanel/TaskTrackingItem";
 import type { ParsedTask, ParsedFeature } from "../services/yaml-parser";
-import type { SelectedTask } from "../features/board/components/KanbanBoard/KanbanBoard.context";
 
 // ─── Test fixtures ────────────────────────────────────────────────────────────
 
@@ -295,6 +294,12 @@ describe("TaskTabView — content rendering", () => {
     expect(html).toContain("data-task-pr-refs");
     expect(html).toContain("https://github.com/acme/project-workspace/pull/42");
     expect(html).toContain("Workspace PR");
+
+    const prCardStart = html.indexOf(
+      'data-pr-ref="https://github.com/acme/project-workspace/pull/42"',
+    );
+    const prCard = html.slice(prCardStart, html.indexOf("</a>", prCardStart));
+    expect(prCard).not.toContain(">open<");
   });
 });
 

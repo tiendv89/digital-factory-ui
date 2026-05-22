@@ -1,4 +1,4 @@
-import { TaskSessionPage } from "@/features/workspaces/components/WorkspaceSessionPage";
+import { TaskSessionPage } from "@/features/workspaces/components/WorkspaceSessionPage/TaskSessionPage";
 
 type TaskRouteProps = {
   params: Promise<{ sessionId: string }>;

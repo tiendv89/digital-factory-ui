@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "next lint",
-    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "type-check": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },

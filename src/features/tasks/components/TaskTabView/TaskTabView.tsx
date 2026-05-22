@@ -19,17 +19,12 @@ import { useWorkspaceTask } from "../../hooks/useWorkspaceTask";
 import { formatTimestamp } from "@/lib/time";
 import { getStatusColor } from "@/features/board/lib/status";
 import { formatStatusLabel, getStatusStyle } from "../../lib/status";
-import type {
-  TaskDetail,
-  PullRequestRef,
-} from "@/services/workflow-backend/types";
+import type { TaskDetail } from "@/services/workflow-backend/types";
 
 export type TaskTabViewProps = {
   workspaceId: string;
   taskId: string;
 };
-
-type PullRequestRefWithUrl = PullRequestRef & { url: string };
 
 export function TaskTabView({ workspaceId, taskId }: TaskTabViewProps) {
   const { task, loading, error, reload } = useWorkspaceTask(
@@ -330,51 +325,42 @@ type PrEntry = {
 };
 
 function TaskPrRefsSection({ task }: { task: TaskDetail }) {
-  // Build a map of known URLs from pr_refs for dedup
-  const prRefsEntries: PrEntry[] = (task.pr_refs ?? []).map((ref) => ({
-    label: ref.label || ref.repo || "PR",
-    repo: ref.repo,
-    url: ref.url,
-    status: ref.status,
-  }));
+  const entriesByUrl = new Map<string, PrEntry>();
 
-  const knownUrls = new Set(prRefsEntries.map((e) => e.url).filter(Boolean));
+  function addEntry(entry: PrEntry) {
+    if (!entry.url || entriesByUrl.has(entry.url)) return;
+    entriesByUrl.set(entry.url, entry);
+  }
 
-  // Always show Repository PR slot
-  const legacyPr = task.pr;
-  const repoPrEntry: PrEntry =
-    legacyPr && legacyPr.url && !knownUrls.has(legacyPr.url)
-      ? {
-          label: "Repository PR",
-          repo: task.repo,
-          url: legacyPr.url,
-          status: legacyPr.status,
-        }
-      : (prRefsEntries.find((e) => e.url && e.label !== "Workspace PR") ?? {
-          label: "Repository PR",
-          url: undefined,
-        });
+  for (const ref of task.pr_refs ?? []) {
+    addEntry({
+      label: ref.label || ref.repo || "PR",
+      repo: ref.repo,
+      url: ref.url,
+      status: ref.status,
+    });
+  }
 
-  // Always show Workspace PR slot
-  const legacyWsPr = task.workspace_pr;
-  const workspacePrEntry: PrEntry =
-    legacyWsPr && legacyWsPr.url && !knownUrls.has(legacyWsPr.url)
-      ? {
-          label: "Workspace PR",
-          url: legacyWsPr.url,
-          status: legacyWsPr.status,
-        }
-      : (prRefsEntries.find((e) => e.url && e.label === "Workspace PR") ?? {
-          label: "Workspace PR",
-          url: undefined,
-        });
+  if (task.pr?.url) {
+    addEntry({
+      label: "Repository PR",
+      repo: task.repo,
+      url: task.pr.url,
+      status: task.pr.status,
+    });
+  }
 
-  // Extra pr_refs beyond the two fixed slots
-  const extraRefs = prRefsEntries.filter(
-    (e) => e.url !== repoPrEntry.url && e.url !== workspacePrEntry.url,
-  );
+  if (task.workspace_pr?.url) {
+    addEntry({
+      label: "Workspace PR",
+      url: task.workspace_pr.url,
+      status: task.workspace_pr.status,
+    });
+  }
 
-  const allEntries: PrEntry[] = [repoPrEntry, workspacePrEntry, ...extraRefs];
+  const allEntries = Array.from(entriesByUrl.values());
+
+  if (allEntries.length === 0) return null;
 
   return (
     <section>
@@ -490,25 +476,11 @@ function TaskActivityTimelineItem({
   );
 }
 
-function getPrStatusStyle(status: string): { bg: string; color: string } {
-  switch (status.toLowerCase()) {
-    case "merged":
-      return { bg: "#8250df1a", color: "#8250df" };
-    case "open":
-      return { bg: "#1a7f371a", color: "#1a7f37" };
-    case "closed":
-      return { bg: "#cf222e1a", color: "#cf222e" };
-    default:
-      return { bg: "transparent", color: "var(--color-text-secondary)" };
-  }
-}
-
 function PrRefCard({ entry }: { entry: PrEntry }) {
   const label = entry.label || entry.repo || "PR";
   const hasUrl = typeof entry.url === "string" && entry.url.length > 0;
 
   if (hasUrl) {
-    const statusStyle = entry.status ? getPrStatusStyle(entry.status) : null;
     return (
       <a
         href={entry.url!}
@@ -520,17 +492,6 @@ function PrRefCard({ entry }: { entry: PrEntry }) {
         <div className="flex items-center gap-2">
           <GitPullRequest className="h-4 w-4 text-success" aria-hidden="true" />
           <span className="text-sm font-medium text-text-primary">{label}</span>
-          {entry.status && statusStyle && (
-            <span
-              className="rounded px-1.5 text-[10px] font-semibold uppercase"
-              style={{
-                backgroundColor: statusStyle.bg,
-                color: statusStyle.color,
-              }}
-            >
-              {entry.status}
-            </span>
-          )}
         </div>
         <ExternalLink
           className="h-3.5 w-3.5 text-text-muted"

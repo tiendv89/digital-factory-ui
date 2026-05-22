@@ -60,37 +60,45 @@ vi.mock("@/features/workspaces/context/WorkspaceContext", () => ({
   useWorkspaceContext: () => mockWorkspaceContext,
 }));
 
-vi.mock("@/features/workspaces/components/ImportModal", () => ({
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    replace: vi.fn(),
+  }),
+}));
+
+vi.mock("@/features/workspaces/components/ImportModal/ImportModal", () => ({
   ImportModal: () => React.createElement("div", { "data-import-modal": true }),
 }));
 
-vi.mock("@/features/board/components/BoardHeader", () => ({
+vi.mock("@/features/board/components/BoardHeader/BoardHeader", () => ({
   BoardHeader: () => React.createElement("header", { "data-board-header": true }),
 }));
 
-vi.mock("@/features/board/components/KanbanBoard", () => ({
+vi.mock("@/features/board/components/KanbanBoard/KanbanBoard.context", () => ({
   BoardProvider: ({ children }: { children: React.ReactNode }) =>
     React.createElement("div", { "data-board-provider": true }, children),
+}));
+
+vi.mock("@/features/board/components/KanbanBoard/KanbanBoard", () => ({
   KanbanBoard: () => React.createElement("div", { "data-kanban-board": true }),
 }));
 
-vi.mock("@/features/board/components/TaskTrackingPanel", () => ({
+vi.mock("@/features/board/components/TaskTrackingPanel/TaskTrackingPanel", () => ({
   TaskTrackingPanel: () =>
     React.createElement("aside", { "data-task-tracking-panel": true }),
 }));
 
-vi.mock("@/features/board/components/FeatureDetailSheet", () => ({
+vi.mock("@/features/board/components/FeatureDetailSheet/FeatureDetailSheetMount", () => ({
   FeatureDetailSheetMount: () =>
     React.createElement("div", { "data-feature-detail-sheet": true }),
 }));
 
-vi.mock("@/features/tasks", () => ({
+vi.mock("@/features/tasks/components/TaskDetailSheet/TaskDetailSheetMount", () => ({
   TaskDetailSheetMount: () =>
     React.createElement("div", { "data-task-detail-sheet": true }),
-  TaskTabView: () => React.createElement("div", { "data-task-tab-view": true }),
 }));
 
-vi.mock("@/features/board/components/FeatureTabView", () => ({
+vi.mock("@/features/board/components/FeatureTabView/FeatureTabView", () => ({
   FeatureTabView: () =>
     React.createElement("div", { "data-feature-tab-view": true }),
 }));

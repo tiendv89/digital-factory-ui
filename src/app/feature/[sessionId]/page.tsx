@@ -1,4 +1,4 @@
-import { FeatureSessionPage } from "@/features/workspaces/components/WorkspaceSessionPage";
+import { FeatureSessionPage } from "@/features/workspaces/components/WorkspaceSessionPage/FeatureSessionPage";
 
 type FeatureRouteProps = {
   params: Promise<{ sessionId: string }>;

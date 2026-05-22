@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Check, FolderOpen, Plus, Search } from "lucide-react";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
-import { ImportModal } from "@/features/workspaces/components/ImportModal";
+import { ImportModal } from "@/features/workspaces/components/ImportModal/ImportModal";
 import type { LocalWorkspaceSummary } from "@/services/workflow-backend";
 
 const AVATAR_CLASSES = [

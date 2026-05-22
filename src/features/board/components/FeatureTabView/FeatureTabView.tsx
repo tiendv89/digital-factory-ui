@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { lazy, Suspense, useState, type ReactNode } from "react";
 import {
   AlertCircle,
   ArrowLeft,
@@ -22,7 +22,6 @@ import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceCont
 import { useFeatureDetail, useFeatureTask } from "../../hooks/useFeatureDetail";
 import { useDocumentContent } from "../../hooks/useDocumentContent";
 import { formatTimestamp } from "@/lib/time";
-import { MarkdownContent } from "@/lib/markdown";
 import { getFeatureStatusColor, getFeatureStatusLabel } from "../../lib/status";
 import { formatStatusLabel, getStatusStyle } from "@/features/tasks/lib/status";
 import { getStatusColor } from "@/features/board/lib/status";
@@ -34,19 +33,6 @@ import type {
   TaskDetail,
 } from "@/services/workflow-backend/types";
 
-function getPrStatusStyle(status: string): { bg: string; color: string } {
-  switch (status.toLowerCase()) {
-    case "merged":
-      return { bg: "#8250df1a", color: "#8250df" };
-    case "open":
-      return { bg: "#1a7f371a", color: "#1a7f37" };
-    case "closed":
-      return { bg: "#cf222e1a", color: "#cf222e" };
-    default:
-      return { bg: "transparent", color: "var(--color-text-secondary)" };
-  }
-}
-
 export type FeatureTabViewProps = {
   workspaceId: string;
   featureId: string;
@@ -54,6 +40,19 @@ export type FeatureTabViewProps = {
 
 type FeatureTabPanel = "product_spec" | "technical_design" | "tasks" | "logs";
 type PullRequestRefWithUrl = PullRequestRef & { url: string };
+const MarkdownContent = lazy(() =>
+  import("@/lib/markdown").then((module) => ({
+    default: module.MarkdownContent,
+  })),
+);
+
+function MarkdownFallback() {
+  return (
+    <div data-markdown-loading className="py-6">
+      <p className="text-sm text-text-muted">Loading document content…</p>
+    </div>
+  );
+}
 
 export function FeatureTabView({
   workspaceId,
@@ -536,7 +535,9 @@ function FeatureTasksPanel({
             </div>
           ) : tasksMarkdown ? (
             <div className="border border-border bg-surface px-6 py-5">
-              <MarkdownContent content={tasksMarkdown} />
+              <Suspense fallback={<MarkdownFallback />}>
+                <MarkdownContent content={tasksMarkdown} />
+              </Suspense>
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 border border-border bg-surface px-4 py-8">
@@ -764,7 +765,9 @@ function FeatureDocumentPanel({
           </div>
         ) : content ? (
           <div className="border border-border bg-surface px-6 py-5">
-            <MarkdownContent content={content} />
+            <Suspense fallback={<MarkdownFallback />}>
+              <MarkdownContent content={content} />
+            </Suspense>
           </div>
         ) : error ? (
           <div
@@ -933,7 +936,7 @@ export function DrilldownTaskContent({
             className="flex h-8 items-center gap-1.5 border border-border bg-surface px-3 text-xs text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
-            Back
+            Back to feature
           </button>
           <button
             type="button"
@@ -1195,17 +1198,6 @@ function DrilldownPrRefsSection({ task }: { task: TaskDetail }) {
               <span className="text-sm font-medium text-text-primary">
                 {ref.label || ref.repo || "PR"}
               </span>
-              {ref.status && (
-                <span
-                  className="rounded px-1.5 text-[10px] font-semibold uppercase"
-                  style={{
-                    backgroundColor: getPrStatusStyle(ref.status).bg,
-                    color: getPrStatusStyle(ref.status).color,
-                  }}
-                >
-                  {ref.status}
-                </span>
-              )}
             </div>
             <ExternalLink
               className="h-3.5 w-3.5 text-text-muted"

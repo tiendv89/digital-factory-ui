@@ -87,7 +87,7 @@ function makeFeatureDetail(overrides: Partial<FeatureDetail> = {}): FeatureDetai
     title: "My Feature",
     status: "in_implementation",
     current_stage: "in_tdd",
-    stages: [],
+    stages: {},
     updated_at: "2026-05-20T10:00:00Z",
     task_counts: {
       total: 3,

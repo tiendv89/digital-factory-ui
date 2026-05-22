@@ -3,7 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ParsedTask } from "../services/yaml-parser";
 import type { TaskDetail } from "../services/workflow-backend/types";
-import { TaskDetailSheet, TaskDetailSheetMount } from "../features/tasks";
+import { TaskDetailSheet } from "../features/tasks/components/TaskDetailSheet/TaskDetailSheet";
+import { TaskDetailSheetMount } from "../features/tasks/components/TaskDetailSheet/TaskDetailSheetMount";
 
 const mockUseFeatureTask = vi.hoisted(() => vi.fn());
 
@@ -22,7 +23,7 @@ const mockBoardContext = vi.hoisted(() => ({
   },
 }));
 
-vi.mock("@/features/board/components/KanbanBoard", () => ({
+vi.mock("@/features/board/components/KanbanBoard/KanbanBoard.context", () => ({
   useBoardContext: () => mockBoardContext,
 }));
 

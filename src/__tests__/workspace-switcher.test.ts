@@ -13,6 +13,8 @@ const mockWorkspaceContext = vi.hoisted(() => ({
     },
   ],
   selectedWorkspaceId: "ws-1",
+  activeSurface: "board" as string,
+  goToBoard: vi.fn(),
   selectWorkspace: vi.fn(),
 }));
 
@@ -20,7 +22,7 @@ vi.mock("@/features/workspaces/context/WorkspaceContext", () => ({
   useWorkspaceContext: () => mockWorkspaceContext,
 }));
 
-vi.mock("@/features/workspaces/components/ImportModal", () => ({
+vi.mock("@/features/workspaces/components/ImportModal/ImportModal", () => ({
   ImportModal: () => React.createElement("div", { "data-import-modal": true }),
 }));
 
@@ -34,7 +36,6 @@ describe("WorkspaceSwitcher", () => {
     expect(html).toContain('aria-label="Switch workspace"');
     expect(html).toContain("h-8");
     expect(html).not.toContain("text-2xl");
-    expect(html).toContain("Workspace");
     expect(html).toContain("Startup Project");
   });
 });

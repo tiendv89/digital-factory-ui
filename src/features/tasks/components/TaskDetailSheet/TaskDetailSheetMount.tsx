@@ -1,6 +1,6 @@
 "use client";
 
-import { useBoardContext } from "@/features/board/components/KanbanBoard";
+import { useBoardContext } from "@/features/board/components/KanbanBoard/KanbanBoard.context";
 import { useFeatureTask } from "@/features/board/hooks/useFeatureDetail";
 import { adaptTaskDetail } from "@/features/workspaces/lib/workspaceAdapter";
 import { getNextActionLabel } from "../../lib/status";

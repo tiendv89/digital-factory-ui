@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useDeferredValue, useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureRow } from "../FeatureRow";
 import { STATUS_COLUMNS } from "../../lib/status";
@@ -72,16 +72,22 @@ export function TaskBoardView() {
     openTaskTab,
     openTaskTabNewSession,
   } = useBoardContext();
+  const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
 
   // Use backend search results when a search is active; otherwise filter client-side
   const visibleFeatures = useMemo<ParsedFeature[]>(() => {
     if (backendTaskResults != null) return backendTaskResults;
     return features.filter(
       (f) =>
-        matchesTaskModeSearch(f, taskSearchQuery) &&
+        matchesTaskModeSearch(f, deferredTaskSearchQuery) &&
         matchesTaskModeStatusFilter(f, taskActiveFilters.statuses),
     );
-  }, [features, backendTaskResults, taskSearchQuery, taskActiveFilters]);
+  }, [
+    features,
+    backendTaskResults,
+    deferredTaskSearchQuery,
+    taskActiveFilters,
+  ]);
 
   const columnCounts = useMemo(() => {
     const counts: Record<string, number> = {};

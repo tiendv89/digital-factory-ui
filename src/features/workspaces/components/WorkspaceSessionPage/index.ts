@@ -1,4 +1,6 @@
-export {
-  FeatureSessionPage,
-  TaskSessionPage,
-} from "./WorkspaceSessionPage";
+export { FeatureSessionPage } from "./FeatureSessionPage";
+export { TaskSessionPage } from "./TaskSessionPage";
+export type {
+  FeatureSessionPageProps,
+  TaskSessionPageProps,
+} from "./WorkspaceSessionShared";

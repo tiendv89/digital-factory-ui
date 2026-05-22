@@ -55,7 +55,7 @@ describe("auto-refresh interval behavior", () => {
   });
 
   it("uses a ref so reload identity changes do not reset the interval", () => {
-    let reloadRef = vi.fn();
+    const reloadRef = vi.fn();
     const ref = { current: reloadRef };
 
     const id = setInterval(() => {

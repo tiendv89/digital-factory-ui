@@ -23,11 +23,12 @@ export function useBoardData(
   workspaceId: string | null,
   options: UseBoardDataOptions = {},
 ): UseBoardDataResult {
+  const { initialData } = options;
   const [features, setFeatures] = useState<ParsedFeature[]>(() =>
-    options.initialData ? adaptWorkspaceDetail(options.initialData) : [],
+    initialData ? adaptWorkspaceDetail(initialData) : [],
   );
   const [loading, setLoading] = useState<boolean>(
-    workspaceId !== null && !options.initialData,
+    workspaceId !== null && !initialData,
   );
   const [error, setError] = useState<BoardLoadError | null>(null);
   const [tick, setTick] = useState(0);
@@ -38,16 +39,16 @@ export function useBoardData(
   }, []);
 
   // When initialData changes (e.g. workspace synced), update features immediately
-  const prevInitialDataRef = useRef<WorkspaceDetail | undefined>(options.initialData);
+  const prevInitialDataRef = useRef<WorkspaceDetail | undefined>(initialData);
   useEffect(() => {
-    const next = options.initialData;
+    const next = initialData;
     if (!next) return;
     if (next === prevInitialDataRef.current) return;
     prevInitialDataRef.current = next;
     setFeatures(adaptWorkspaceDetail(next));
     setLoading(false);
     setError(null);
-  }, [options.initialData]);
+  }, [initialData]);
 
   useEffect(() => {
     if (!workspaceId) {
@@ -57,8 +58,8 @@ export function useBoardData(
       return;
     }
 
-    if (tick === 0 && options.initialData) {
-      setFeatures(adaptWorkspaceDetail(options.initialData));
+    if (tick === 0 && initialData) {
+      setFeatures(adaptWorkspaceDetail(initialData));
       setLoading(false);
       return;
     }
@@ -84,7 +85,7 @@ export function useBoardData(
     return () => {
       cancelled = true;
     };
-  }, [workspaceId, tick]);
+  }, [workspaceId, tick, initialData]);
 
   return { features, loading, error, reload };
 }

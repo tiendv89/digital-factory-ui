@@ -8,8 +8,6 @@ import {
   type TaskSummary,
 } from "@/services/workflow-backend";
 
-const POLL_INTERVAL_MS = 60_000;
-
 export type UseSidebarTasksResult = {
   tasks: TaskSummary[];
   loading: boolean;
@@ -57,20 +55,6 @@ export function useSidebarTasks(workspaceId: string | null): UseSidebarTasksResu
       cancelled = true;
     };
   }, [workspaceId, tick]);
-
-  // Poll independently
-  const reloadRef = useRef(reload);
-  useEffect(() => {
-    reloadRef.current = reload;
-  }, [reload]);
-
-  useEffect(() => {
-    if (!workspaceId) return;
-    const id = setInterval(() => {
-      reloadRef.current();
-    }, POLL_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [workspaceId]);
 
   return { tasks, loading, error, reload };
 }
