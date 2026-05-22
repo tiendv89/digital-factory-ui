@@ -70,12 +70,17 @@ describe("React performance boundaries", () => {
     const featureTabView = readSource(
       "src/features/board/components/FeatureTabView/FeatureTabView.tsx",
     );
+    const markdownBlock = readSource(
+      "src/features/board/components/FeatureTabView/MarkdownBlock.tsx",
+    );
 
+    // FeatureTabView must not directly import MarkdownContent (eager load)
     expect(featureTabView).not.toContain(
       'import { MarkdownContent } from "@/lib/markdown"',
     );
-    expect(featureTabView).toContain("lazy(");
-    expect(featureTabView).toContain("Suspense");
+    // The lazy load lives in the shared MarkdownBlock module
+    expect(markdownBlock).toContain("lazy(");
+    expect(markdownBlock).toContain("Suspense");
   });
 
   it("uses a narrow context for the tracking sidebar", () => {

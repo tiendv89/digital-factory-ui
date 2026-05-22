@@ -29,7 +29,15 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   const text = await res.text();
-  const body = text ? (JSON.parse(text) as { success: boolean; data?: unknown; error?: ApiError }) : null;
+  type ResponseBody = { success: boolean; data?: unknown; error?: ApiError };
+  let body: ResponseBody | null = null;
+  try {
+    body = text ? (JSON.parse(text) as ResponseBody) : null;
+  } catch {
+    if (!res.ok) {
+      throw { code: "PARSE_ERROR", message: `Non-JSON response (${res.status})`, retryable: res.status >= 500 } as ApiError;
+    }
+  }
 
   if (!res.ok || body?.success === false) {
     throw (body?.error ?? {
