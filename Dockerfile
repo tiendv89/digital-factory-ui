@@ -17,9 +17,6 @@ RUN apk add --no-cache git \
 # that your CI pipeline writes before invoking docker build.
 FROM node:22-alpine AS build
 
-ARG NEXT_PUBLIC_API_BASE_URL
-ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
-
 RUN npm install -g pnpm@10.5.2
 
 WORKDIR /app
