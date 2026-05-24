@@ -30,26 +30,25 @@ See `.env.template` for the full list with descriptions. Key variables:
 | Variable | Required | Description |
 |---|---|---|
 | `NEXT_PUBLIC_API_BASE_URL` | Yes | Base URL of the workflow-backend API (no trailing slash) |
-| `STORAGE_BUCKET` | No | Storage bucket name for file uploads |
-
 `NEXT_PUBLIC_*` variables are baked into the client bundle at build time. Set them in your deployment environment **before** running `next build` or `docker build`.
 
 ## Available scripts
 
 ```bash
 pnpm dev          # Start development server with hot reload
-pnpm build        # Production build
+pnpm build        # Production build (webpack bundler)
 pnpm start        # Start production server (requires build first)
 pnpm lint         # Run ESLint
-pnpm type-check   # TypeScript typecheck
+pnpm type-check   # Generate Next.js types then run tsc --noEmit
 pnpm test         # Run unit tests (Vitest)
+pnpm test:watch   # Run tests in watch mode
 ```
 
 ## Running tests
 
 ```bash
-pnpm test                              # Run all tests
-pnpm test src/__tests__/feature-tab-view.test.ts   # Single file
+pnpm test                                              # Run all tests
+pnpm test src/__tests__/feature-tab-view.test.ts       # Single file
 ```
 
 ## Docker
@@ -88,17 +87,27 @@ services:
 ```
 src/
   app/                     Next.js App Router pages and API routes
+    api/content/fetch/     Server-side content proxy route
+    board/                 Board page
+    connect/               Workspace connect page
+    feature/[sessionId]/   Feature detail page
+    task/[sessionId]/      Task detail page
   features/
     board/                 Kanban board, feature list, task list
-      components/
-        FeatureTabView/    Feature detail tab (split into focused sub-components)
+      components/          BoardHeader, FeatureBoardView, FeatureDetailSheet,
+                           FeatureTabView, KanbanBoard, TaskBoardView, TaskCard,
+                           TaskTrackingPanel, and more
       hooks/               Data-fetching hooks (useFeatureDetail, useBoardData, …)
     tasks/                 Task detail tab and drawer
     workspaces/            Workspace context, switcher, import modal, tab bar
   services/
     workflow-backend/      Typed API client for the backend
+    content-provider/      Fetches and parses workspace content (YAML, GitHub, …)
     local-workspace-store  Browser-local workspace summary persistence
-  lib/                     Shared utilities (markdown, click-intent, request-sequence, …)
+    workspace-store        Active workspace state
+  lib/                     Shared utilities (markdown, click-intent, request-sequence, time)
+  types/                   Shared TypeScript types (workspace, …)
+docs/                      QA notes and test plans
 ```
 
 ## Architecture notes
