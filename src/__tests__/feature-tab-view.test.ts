@@ -1112,9 +1112,9 @@ describe("WorkspaceTabBar — feature tab rendering", () => {
   });
 });
 
-// ─── Feature Mode gating — FeatureBoardView passes onDoubleClick ──────────────
+// ─── Feature Mode gating — FeatureBoardView passes onClick to openFeatureTab ──
 
-describe("Feature Mode gating — FeatureBoardView wires onDoubleClick to openFeatureTab", () => {
+describe("Feature Mode gating — FeatureBoardView wires onClick to openFeatureTab", () => {
   const openFeatureTabMock = vi.fn();
 
   beforeEach(() => {
@@ -1122,7 +1122,7 @@ describe("Feature Mode gating — FeatureBoardView wires onDoubleClick to openFe
     mockSetSelectedFeature.mockClear();
   });
 
-  it("renders FeatureListRow elements with double-click affordance present (role=button)", () => {
+  it("renders FeatureListRow elements with single-click affordance present (role=button)", () => {
     featureBoardContextRef.current = buildFeatureBoardContext({
       features: [makeParsedFeature({ id: "my-feat", featureStatus: "in_implementation" })],
       featureActiveFilters: { statuses: ["in_implementation"] },
@@ -1130,9 +1130,10 @@ describe("Feature Mode gating — FeatureBoardView wires onDoubleClick to openFe
     });
 
     const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
-    // FeatureListRow is rendered; double-click handler is wired at runtime
+    // FeatureListRow is rendered; single-click opens feature tab
     expect(html).toContain("my-feat");
     expect(html).toContain('role="button"');
+    expect(html).toContain("Open feature tab");
   });
 
   it("does not crash when rendering FeatureBoardView with features in feature mode", () => {
@@ -1151,7 +1152,7 @@ describe("Feature Mode gating — FeatureBoardView wires onDoubleClick to openFe
   });
 });
 
-// ─── FeatureListRow — double-click prop ──────────────────────────────────────
+// ─── FeatureListRow — onDoubleClick prop ──────────────────────────────────────
 
 describe("FeatureListRow — onDoubleClick prop", () => {
   it("renders without error when onDoubleClick is provided", () => {
@@ -1176,6 +1177,51 @@ describe("FeatureListRow — onDoubleClick prop", () => {
           onClick: vi.fn(),
         }),
       ),
+    ).not.toThrow();
+  });
+});
+
+// ─── Tab-first click interaction coverage ────────────────────────────────────
+
+describe("Tab-first click — FeatureListRow", () => {
+  it("aria-label references 'Open feature tab' not 'Open feature detail'", () => {
+    const feature = makeParsedFeature({ title: "My Feature" });
+    const html = renderToStaticMarkup(
+      React.createElement(FeatureListRow, {
+        feature,
+        onClick: vi.fn(),
+      }),
+    );
+    expect(html).toContain("Open feature tab for My Feature");
+    expect(html).not.toContain("Open feature detail");
+  });
+});
+
+describe("Tab-first click — FeatureBoardView", () => {
+  it("renders FeatureListRow with tab-first aria-label, not modal detail label", () => {
+    featureBoardContextRef.current = buildFeatureBoardContext({
+      features: [
+        makeParsedFeature({ id: "feat-tab", title: "Tab Feature", featureStatus: "in_implementation" }),
+      ],
+      featureActiveFilters: { statuses: ["in_implementation"] },
+    });
+
+    const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
+    expect(html).toContain("Open feature tab for Tab Feature");
+    expect(html).not.toContain("Open feature detail");
+  });
+
+  it("renders FeatureListRow without onDoubleClick prop (tab-first, no double-click controller)", () => {
+    featureBoardContextRef.current = buildFeatureBoardContext({
+      features: [
+        makeParsedFeature({ id: "feat-nodbl", featureStatus: "in_implementation" }),
+      ],
+      featureActiveFilters: { statuses: ["in_implementation"] },
+    });
+
+    // FeatureBoardView no longer passes onDoubleClick to FeatureListRow
+    expect(() =>
+      renderToStaticMarkup(React.createElement(FeatureBoardView)),
     ).not.toThrow();
   });
 });
