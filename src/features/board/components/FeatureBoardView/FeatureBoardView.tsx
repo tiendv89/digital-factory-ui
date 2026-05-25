@@ -108,7 +108,6 @@ export function FeatureBoardView() {
     backendFeatureResults,
     featureSearching,
     featureSearchError,
-    featurePage,
     setFeaturePage,
     featurePageInfo,
   } = useBoardContext();

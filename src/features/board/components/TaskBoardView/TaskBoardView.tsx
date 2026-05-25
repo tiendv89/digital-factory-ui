@@ -72,7 +72,6 @@ export function TaskBoardView() {
     taskSearchError,
     openTaskTab,
     openTaskTabNewSession,
-    taskPage,
     setTaskPage,
     taskPageInfo,
   } = useBoardContext();

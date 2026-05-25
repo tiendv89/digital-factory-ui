@@ -12,7 +12,7 @@
 
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   PaginationControls,
   type PageInfo,
@@ -124,14 +124,28 @@ describe("PaginationControls — component rendering", () => {
         onPageChange: vi.fn(),
       }),
     );
-    // Neither button should have disabled, except aria-label attrs
-    const prevDisabled =
-      html.indexOf('aria-label="Previous page"') >
-        -1 &&
-      html.indexOf("disabled", html.indexOf('aria-label="Previous page"')) <
-        html.indexOf('aria-label="Next page"');
     expect(html).toContain('aria-label="Previous page"');
     expect(html).toContain('aria-label="Next page"');
+    // Middle page: both buttons should be enabled
+    // The "disabled" marker appears as disabled="" in React SSR
+    // Check that neither button element containing aria-label has disabled
+    const prevBtnStart = html.indexOf('aria-label="Previous page"');
+    const nextBtnStart = html.indexOf('aria-label="Next page"');
+    // Find the nearest disabled="" before the aria-label (button opening)
+    const beforePrev = html.lastIndexOf("disabled", prevBtnStart);
+    const beforeNext = html.lastIndexOf("disabled", nextBtnStart);
+    // The aria-label is inside the button; the button tag starts before it
+    // For a disabled button: <button ... disabled="" ... aria-label="Previous page"
+    // For an enabled button: <button ... aria-label="Previous page"
+    // Check that button start marker doesn't have disabled near it
+    const prevButtonStart = html.lastIndexOf("<button", prevBtnStart);
+    const nextButtonStart = html.lastIndexOf("<button", nextBtnStart);
+    const hasPrevDisabled =
+      beforePrev > prevButtonStart && beforePrev < prevBtnStart;
+    const hasNextDisabled =
+      beforeNext > nextButtonStart && beforeNext < nextBtnStart;
+    expect(hasPrevDisabled).toBe(false);
+    expect(hasNextDisabled).toBe(false);
   });
 
   it("renders with navigation role for accessibility", () => {
