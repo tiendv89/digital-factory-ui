@@ -299,8 +299,8 @@ describe("Board context mock — pagination fields", () => {
     expect(true).toBe(true);
   });
 
-  it("mock includes featurePageInfo and taskPageInfo as null by default", () => {
-    // Default mock state has no active search, so pageInfo should be null
+  it("mock includes featurePagination and taskPagination as null by default", () => {
+    // Default mock state has no active search, so pagination should be null
     expect(true).toBe(true);
   });
 });

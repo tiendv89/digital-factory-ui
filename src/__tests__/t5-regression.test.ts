@@ -263,8 +263,8 @@ function buildFeatureBoardContext(opts: {
     taskPage: 1,
     setFeaturePage: vi.fn(),
     setTaskPage: vi.fn(),
-    featurePageInfo: null,
-    taskPageInfo: null,
+    featurePagination: null,
+    taskPagination: null,
   };
 }
 

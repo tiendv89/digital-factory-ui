@@ -109,7 +109,7 @@ export function FeatureBoardView() {
     featureSearching,
     featureSearchError,
     setFeaturePage,
-    featurePageInfo,
+    featurePagination,
   } = useBoardContext();
   const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
 
@@ -245,9 +245,9 @@ export function FeatureBoardView() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       {content}
-      {featurePageInfo && (
+      {featurePagination && (
         <PaginationControls
-          pageInfo={featurePageInfo}
+          pageInfo={featurePagination}
           onPageChange={setFeaturePage}
         />
       )}

@@ -73,7 +73,7 @@ export function TaskBoardView() {
     openTaskTab,
     openTaskTabNewSession,
     setTaskPage,
-    taskPageInfo,
+    taskPagination,
   } = useBoardContext();
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
 
@@ -173,9 +173,9 @@ export function TaskBoardView() {
           </div>
         </div>
       </div>
-      {taskPageInfo && (
+      {taskPagination && (
         <PaginationControls
-          pageInfo={taskPageInfo}
+          pageInfo={taskPagination}
           onPageChange={setTaskPage}
         />
       )}

@@ -21,6 +21,7 @@ function totalPages({ total, limit }: PageInfo): number {
 }
 
 function displayRange(info: PageInfo): { from: number; to: number } {
+  if (info.limit <= 0) return { from: 0, to: 0 };
   const from = (info.page - 1) * info.limit + 1;
   const to = Math.min(info.page * info.limit, info.total);
   return { from, to };
