@@ -3,6 +3,7 @@
 import { useDeferredValue, useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureRow } from "../FeatureRow";
+import { PaginationControls } from "../PaginationControls";
 import { STATUS_COLUMNS } from "../../lib/status";
 import {
   matchesTaskModeSearch,
@@ -71,6 +72,9 @@ export function TaskBoardView() {
     taskSearchError,
     openTaskTab,
     openTaskTabNewSession,
+    taskPage,
+    setTaskPage,
+    taskPageInfo,
   } = useBoardContext();
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
 
@@ -168,6 +172,12 @@ export function TaskBoardView() {
           ))}
         </div>
       </div>
+      {taskPageInfo && (
+        <PaginationControls
+          pageInfo={taskPageInfo}
+          onPageChange={setTaskPage}
+        />
+      )}
     </div>
   );
 }

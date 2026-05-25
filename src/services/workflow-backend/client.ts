@@ -139,6 +139,42 @@ export async function getFeatureTask(
   );
 }
 
+export async function searchFeaturesPage(
+  workspaceId: string,
+  params?: URLSearchParams,
+): Promise<PagedFeatures> {
+  const qs = params?.toString() ? `?${params.toString()}` : "";
+  const result = await request<FeatureSummary[] | PagedFeatures>(
+    `/api/workspaces/${workspaceId}/features${qs}`,
+  );
+  return asPagedResponse(result);
+}
+
+export async function searchWorkspaceTasksPage(
+  workspaceId: string,
+  params?: URLSearchParams,
+): Promise<PagedTasks> {
+  const qs = params?.toString() ? `?${params.toString()}` : "";
+  const result = await request<TaskSummary[] | PagedTasks>(
+    `/api/workspaces/${workspaceId}/tasks${qs}`,
+  );
+  return asPagedResponse(result);
+}
+
+function asPagedResponse<T>(
+  result: T[] | { items: T[]; total?: number; page?: number; limit?: number },
+): { items: T[]; total: number; page: number; limit: number } {
+  if (Array.isArray(result)) {
+    return { items: result, total: result.length, page: 1, limit: result.length };
+  }
+  return {
+    items: result.items,
+    total: result.total ?? result.items.length,
+    page: result.page ?? 1,
+    limit: result.limit ?? result.items.length,
+  };
+}
+
 function unwrapItems<T>(result: T[] | { items: T[] }): T[] {
   if (Array.isArray(result)) return result;
   if (result && typeof result === "object" && Array.isArray(result.items)) {
