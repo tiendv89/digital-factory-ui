@@ -14,3 +14,9 @@ export type ActiveFilters = {
 export type FeatureActiveFilters = {
   statuses: FeatureStatus[];
 };
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+}
