@@ -40,6 +40,8 @@ export {
   request,
   searchFeatureTasks,
   searchFeatures,
+  searchFeaturesPage,
   searchWorkspaceTasks,
+  searchWorkspaceTasksPage,
   syncWorkspace,
 } from "./client";

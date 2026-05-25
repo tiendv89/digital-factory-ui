@@ -1,10 +1,7 @@
 import type { FeatureSearchParams, TaskSearchParams } from "@/services/workflow-backend";
+import type { PaginationMeta } from "../types";
 
-export interface PaginationMeta {
-  total: number;
-  page: number;
-  limit: number;
-}
+export type { PaginationMeta };
 
 export type BoardListParams = {
   title?: string;
