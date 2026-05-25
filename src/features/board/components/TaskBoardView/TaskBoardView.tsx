@@ -3,6 +3,7 @@
 import { useDeferredValue, useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureRow } from "../FeatureRow";
+import { PaginationControls } from "../PaginationControls";
 import { STATUS_COLUMNS } from "../../lib/status";
 import {
   matchesTaskModeSearch,
@@ -71,6 +72,8 @@ export function TaskBoardView() {
     taskSearchError,
     openTaskTab,
     openTaskTabNewSession,
+    setTaskPage,
+    taskPagination,
   } = useBoardContext();
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
 
@@ -136,38 +139,46 @@ export function TaskBoardView() {
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-      <div className="w-full">
-        <div
-          className="sticky top-0 z-10 flex w-full border-b border-border"
-          role="row"
-          aria-label="Status columns"
-        >
-          {STATUS_COLUMNS.map((col) => (
-            <TaskColumnHeader
-              key={col.key}
-              label={col.label}
-              color={col.color}
-              count={columnCounts[col.key] ?? 0}
-            />
-          ))}
-        </div>
-
-        <div role="list" aria-label="Features" className="bg-surface">
-          {visibleFeatures.map((feature) => (
-            <div key={feature.id} role="listitem">
-              <FeatureRow
-                feature={feature}
-                isExpanded={expandedFeatureIds.has(feature.id)}
-                onToggle={() => toggleFeature(feature.id)}
-                onSelectTask={setSelectedTask}
-                onOpenTaskTab={openTaskTab}
-                onOpenTaskTabNewSession={openTaskTabNewSession}
+    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="w-full">
+          <div
+            className="sticky top-0 z-10 flex w-full border-b border-border"
+            role="row"
+            aria-label="Status columns"
+          >
+            {STATUS_COLUMNS.map((col) => (
+              <TaskColumnHeader
+                key={col.key}
+                label={col.label}
+                color={col.color}
+                count={columnCounts[col.key] ?? 0}
               />
-            </div>
-          ))}
+            ))}
+          </div>
+
+          <div role="list" aria-label="Features" className="bg-surface">
+            {visibleFeatures.map((feature) => (
+              <div key={feature.id} role="listitem">
+                <FeatureRow
+                  feature={feature}
+                  isExpanded={expandedFeatureIds.has(feature.id)}
+                  onToggle={() => toggleFeature(feature.id)}
+                  onSelectTask={setSelectedTask}
+                  onOpenTaskTab={openTaskTab}
+                  onOpenTaskTabNewSession={openTaskTabNewSession}
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
+      {taskPagination && (
+        <PaginationControls
+          pageInfo={taskPagination}
+          onPageChange={setTaskPage}
+        />
+      )}
     </div>
   );
 }

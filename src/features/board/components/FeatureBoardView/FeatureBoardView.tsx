@@ -3,6 +3,7 @@
 import { useDeferredValue, useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureListRow } from "./FeatureListRow";
+import { PaginationControls } from "../PaginationControls";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import {
   matchesFeatureModeSearch,
@@ -107,6 +108,8 @@ export function FeatureBoardView() {
     backendFeatureResults,
     featureSearching,
     featureSearchError,
+    setFeaturePage,
+    featurePagination,
   } = useBoardContext();
   const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
 
@@ -242,6 +245,12 @@ export function FeatureBoardView() {
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
       {content}
+      {featurePagination && (
+        <PaginationControls
+          pageInfo={featurePagination}
+          onPageChange={setFeaturePage}
+        />
+      )}
     </div>
   );
 }

@@ -153,19 +153,13 @@ function normalizePagedFeatures(
   if (Array.isArray(result)) {
     return { items: result, total: result.length, page: 1, limit: result.length };
   }
-  if (
-    result &&
-    typeof result === "object" &&
-    Array.isArray(result.items) &&
-    typeof result.total === "number" &&
-    typeof result.page === "number" &&
-    typeof result.limit === "number"
-  ) {
-    return result as PagedFeatures;
-  }
-  throw new Error(
-    "Expected API response data to be an array or a valid PagedFeatures object",
-  );
+  const items = Array.isArray(result.items) ? result.items : [];
+  return {
+    items,
+    total: typeof result.total === "number" ? result.total : items.length,
+    page: typeof result.page === "number" ? result.page : 1,
+    limit: typeof result.limit === "number" ? result.limit : items.length,
+  };
 }
 
 function normalizePagedTasks(
@@ -174,17 +168,11 @@ function normalizePagedTasks(
   if (Array.isArray(result)) {
     return { items: result, total: result.length, page: 1, limit: result.length };
   }
-  if (
-    result &&
-    typeof result === "object" &&
-    Array.isArray(result.items) &&
-    typeof result.total === "number" &&
-    typeof result.page === "number" &&
-    typeof result.limit === "number"
-  ) {
-    return result as PagedTasks;
-  }
-  throw new Error(
-    "Expected API response data to be an array or a valid PagedTasks object",
-  );
+  const items = Array.isArray(result.items) ? result.items : [];
+  return {
+    items,
+    total: typeof result.total === "number" ? result.total : items.length,
+    page: typeof result.page === "number" ? result.page : 1,
+    limit: typeof result.limit === "number" ? result.limit : items.length,
+  };
 }

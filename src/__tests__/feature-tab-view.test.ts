@@ -228,7 +228,16 @@ function buildFeatureBoardContext(opts: {
     taskSearching: false,
     taskSearchError: null,
     openTaskTab: vi.fn(),
+    openTaskTabNewSession: vi.fn(),
+    openFeatureTabNewSession: vi.fn(),
     workspaceDetail: { id: "ws-uuid-1" } as unknown as import("../services/workflow-backend").WorkspaceDetail,
+    // Pagination
+    featurePage: 1,
+    taskPage: 1,
+    setFeaturePage: vi.fn(),
+    setTaskPage: vi.fn(),
+    featurePagination: null,
+    taskPagination: null,
   };
 }
 
