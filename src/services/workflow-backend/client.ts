@@ -76,6 +76,17 @@ export async function searchFeatures(
   return unwrapItems(result);
 }
 
+export async function searchFeaturesPage(
+  workspaceId: string,
+  params?: URLSearchParams,
+): Promise<PagedFeatures> {
+  const qs = params?.toString() ? `?${params.toString()}` : "";
+  const result = await request<FeatureSummary[] | PagedFeatures>(
+    `/api/workspaces/${workspaceId}/features${qs}`,
+  );
+  return normalizePagedFeatures(result);
+}
+
 export async function getFeature(workspaceId: string, featureId: string): Promise<FeatureDetail> {
   return request<FeatureDetail>(`/api/workspaces/${workspaceId}/features/${featureId}`);
 }
@@ -89,6 +100,17 @@ export async function searchWorkspaceTasks(
     `/api/workspaces/${workspaceId}/tasks${qs}`,
   );
   return unwrapItems(result);
+}
+
+export async function searchWorkspaceTasksPage(
+  workspaceId: string,
+  params?: URLSearchParams,
+): Promise<PagedTasks> {
+  const qs = params?.toString() ? `?${params.toString()}` : "";
+  const result = await request<TaskSummary[] | PagedTasks>(
+    `/api/workspaces/${workspaceId}/tasks${qs}`,
+  );
+  return normalizePagedTasks(result);
 }
 
 export async function getWorkspaceTask(workspaceId: string, taskId: string): Promise<TaskDetail> {
@@ -123,4 +145,46 @@ function unwrapItems<T>(result: T[] | { items: T[] }): T[] {
     return result.items;
   }
   throw new Error("Expected API response data to be an array or a paged { items } object");
+}
+
+function normalizePagedFeatures(
+  result: FeatureSummary[] | PagedFeatures,
+): PagedFeatures {
+  if (Array.isArray(result)) {
+    return { items: result, total: result.length, page: 1, limit: result.length };
+  }
+  if (
+    result &&
+    typeof result === "object" &&
+    Array.isArray(result.items) &&
+    typeof result.total === "number" &&
+    typeof result.page === "number" &&
+    typeof result.limit === "number"
+  ) {
+    return result as PagedFeatures;
+  }
+  throw new Error(
+    "Expected API response data to be an array or a valid PagedFeatures object",
+  );
+}
+
+function normalizePagedTasks(
+  result: TaskSummary[] | PagedTasks,
+): PagedTasks {
+  if (Array.isArray(result)) {
+    return { items: result, total: result.length, page: 1, limit: result.length };
+  }
+  if (
+    result &&
+    typeof result === "object" &&
+    Array.isArray(result.items) &&
+    typeof result.total === "number" &&
+    typeof result.page === "number" &&
+    typeof result.limit === "number"
+  ) {
+    return result as PagedTasks;
+  }
+  throw new Error(
+    "Expected API response data to be an array or a valid PagedTasks object",
+  );
 }
