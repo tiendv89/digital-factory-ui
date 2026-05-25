@@ -12,7 +12,7 @@
 
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   PaginationControls,
   type PageInfo,
@@ -206,12 +206,86 @@ describe("PaginationControls — edge cases with metadata", () => {
 
 // ─── asPagedResponse client helper tests ──────────────────────────────────
 
-// We test asPagedResponse indirectly (it's not exported) by verifying the
-// behavior through the paged client functions.
+import {
+  searchFeaturesPage,
+  searchWorkspaceTasksPage,
+} from "../services/workflow-backend/client";
+
+function makeFetchResponse(status: number, body: unknown): Response {
+  const text = JSON.stringify(body);
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    text: () => Promise.resolve(text),
+  } as unknown as Response;
+}
+
+function pagedSuccess<T>(data: T): Response {
+  return makeFetchResponse(200, { success: true, data });
+}
+
 describe("client paged response — metadata handling", () => {
-  it.todo("searchFeaturesPage returns items + total + page + limit when backend returns paged");
-  it.todo("searchFeaturesPage handles array response (no metadata) with conservative fallback");
-  it.todo("searchWorkspaceTasksPage handles missing total with items.length fallback");
+  beforeEach(() => {
+    process.env.NEXT_PUBLIC_API_BASE_URL = "http://localhost:3001";
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.NEXT_PUBLIC_API_BASE_URL;
+  });
+
+  it("searchFeaturesPage returns items + total + page + limit when backend returns paged", async () => {
+    const pagedBody = {
+      items: [{ id: "f1", title: "Feature 1" }],
+      total: 42,
+      page: 2,
+      limit: 10,
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(pagedSuccess(pagedBody)));
+
+    const result = await searchFeaturesPage("ws-1");
+
+    expect(result.items).toEqual(pagedBody.items);
+    expect(result.total).toBe(42);
+    expect(result.page).toBe(2);
+    expect(result.limit).toBe(10);
+  });
+
+  it("searchFeaturesPage handles array response (no metadata) with conservative fallback", async () => {
+    const arrayBody = [
+      { id: "f1", title: "Feature 1" },
+      { id: "f2", title: "Feature 2" },
+      { id: "f3", title: "Feature 3" },
+    ];
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(pagedSuccess(arrayBody)));
+
+    const result = await searchFeaturesPage("ws-1");
+
+    expect(result.items).toEqual(arrayBody);
+    expect(result.total).toBe(3);
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(3);
+  });
+
+  it("searchWorkspaceTasksPage handles missing total with items.length fallback", async () => {
+    const pagedBody = {
+      items: [
+        { id: "t1", title: "Task 1", status: "todo" },
+        { id: "t2", title: "Task 2", status: "done" },
+      ],
+      page: 1,
+      limit: 50,
+      // total is intentionally omitted
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(pagedSuccess(pagedBody)));
+
+    const result = await searchWorkspaceTasksPage("ws-1");
+
+    expect(result.items).toEqual(pagedBody.items);
+    expect(result.total).toBe(2); // falls back to items.length
+    expect(result.page).toBe(1);
+    expect(result.limit).toBe(50);
+  });
 });
 
 // ─── Context pagination fields present in mock ───────────────────────────
