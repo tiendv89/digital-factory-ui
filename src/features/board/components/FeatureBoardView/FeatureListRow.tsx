@@ -13,7 +13,6 @@ import { getFeatureStatusColor, getFeatureStatusLabel } from "../../lib/status";
 type FeatureListRowProps = {
   feature: ParsedFeature;
   onClick: () => void;
-  onDoubleClick?: () => void;
   onOpenNewTab?: () => void;
 };
 

@@ -1,6 +1,6 @@
 /**
  * Tests for T5 feature tab deliverables:
- *   - Feature Mode gating: FeatureListRow receives onDoubleClick in FeatureBoardView
+ *   - Feature Mode gating: FeatureBoardView wires FeatureListRow with tab-first onClick
  *   - Feature tab loading, error, and content rendering
  *   - Feature header fields (copy-id, status, stage, updated-at, task-counts)
  *   - Source state stale warning
@@ -1152,23 +1152,23 @@ describe("Feature Mode gating — FeatureBoardView wires onClick to openFeatureT
   });
 });
 
-// ─── FeatureListRow — onDoubleClick prop ──────────────────────────────────────
+// ─── FeatureListRow — onOpenNewTab prop ───────────────────────────────────────
 
-describe("FeatureListRow — onDoubleClick prop", () => {
-  it("renders without error when onDoubleClick is provided", () => {
+describe("FeatureListRow — onOpenNewTab prop", () => {
+  it("renders without error when onOpenNewTab is provided", () => {
     const feature = makeParsedFeature();
     expect(() =>
       renderToStaticMarkup(
         React.createElement(FeatureListRow, {
           feature,
           onClick: vi.fn(),
-          onDoubleClick: vi.fn(),
+          onOpenNewTab: vi.fn(),
         }),
       ),
     ).not.toThrow();
   });
 
-  it("renders without error when onDoubleClick is omitted", () => {
+  it("renders without error when onOpenNewTab is omitted", () => {
     const feature = makeParsedFeature();
     expect(() =>
       renderToStaticMarkup(
