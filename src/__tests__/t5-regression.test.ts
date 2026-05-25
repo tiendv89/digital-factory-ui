@@ -244,6 +244,27 @@ function buildFeatureBoardContext(opts: {
     setSelectedTask: mockSetSelectedTask,
     selectedFeature: null,
     setSelectedFeature: mockSetSelectedFeature,
+    workspaceDetail: null as unknown,
+    syncing: false,
+    syncError: null,
+    syncBoard: vi.fn(),
+    backendTaskResults: null,
+    backendFeatureResults: null,
+    taskSearching: false,
+    featureSearching: false,
+    taskSearchError: null,
+    featureSearchError: null,
+    openTaskTab: vi.fn(),
+    openTaskTabNewSession: vi.fn(),
+    openFeatureTab: vi.fn(),
+    openFeatureTabNewSession: vi.fn(),
+    // Pagination
+    featurePage: 1,
+    taskPage: 1,
+    setFeaturePage: vi.fn(),
+    setTaskPage: vi.fn(),
+    featurePageInfo: null,
+    taskPageInfo: null,
   };
 }
 
