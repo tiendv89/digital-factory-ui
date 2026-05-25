@@ -39,8 +39,6 @@ import {
 import {
   BOARD_DEFAULT_LIMIT,
   BOARD_DEFAULT_SORT,
-  shouldResetPage,
-  type BoardListParams,
 } from "../../lib/backend-list-params";
 
 export type SelectedTask = {
@@ -170,47 +168,44 @@ export function BoardProvider({
   const [taskPage, setTaskPage] = useState(1);
   const [featurePage, setFeaturePage] = useState(1);
 
-  // Reset page to 1 when search query or filters change
-  const prevTaskSearchRef = useRef<BoardListParams>({
-    page: 1,
-    limit: BOARD_DEFAULT_LIMIT,
-    sort: BOARD_DEFAULT_SORT,
-  });
-  const prevFeatureSearchRef = useRef<BoardListParams>({
-    page: 1,
-    limit: BOARD_DEFAULT_LIMIT,
-    sort: BOARD_DEFAULT_SORT,
-  });
-
   // Backend search hooks
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
   const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
   const trimmedTaskQuery = deferredTaskSearchQuery.trim();
   const taskSearchActive = boardMode === "task" && trimmedTaskQuery.length > 0;
 
+  // Reset page to 1 when search query or filters change
+  const prevTaskQueryRef = useRef(trimmedTaskQuery);
+  const prevTaskStatusRef = useRef(
+    taskActiveFilters.statuses.join(","),
+  );
+  useEffect(() => {
+    const currentStatus = taskActiveFilters.statuses.join(",");
+    if (
+      trimmedTaskQuery !== prevTaskQueryRef.current ||
+      currentStatus !== prevTaskStatusRef.current
+    ) {
+      setTaskPage(1);
+    }
+    prevTaskQueryRef.current = trimmedTaskQuery;
+    prevTaskStatusRef.current = currentStatus;
+  }, [trimmedTaskQuery, taskActiveFilters.statuses]);
+
   const taskSearchParams = useMemo(() => {
+    if (!taskSearchActive) return {};
+
     const status =
       taskActiveFilters.statuses.length > 0
         ? taskActiveFilters.statuses.join(",")
         : undefined;
 
-    const nextParams: BoardListParams = {
-      title: trimmedTaskQuery || undefined,
+    return {
+      title: trimmedTaskQuery,
       status,
       page: taskPage,
       limit: BOARD_DEFAULT_LIMIT,
       sort: BOARD_DEFAULT_SORT,
     };
-
-    if (shouldResetPage(prevTaskSearchRef.current, nextParams)) {
-      setTaskPage(1);
-      nextParams.page = 1;
-    }
-
-    prevTaskSearchRef.current = nextParams;
-
-    if (!taskSearchActive) return {};
-    return nextParams;
   }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskSearchActive]);
 
   const {
@@ -224,29 +219,37 @@ export function BoardProvider({
   const featureSearchActive =
     boardMode === "feature" && trimmedFeatureQuery.length > 0;
 
+  const prevFeatureQueryRef = useRef(trimmedFeatureQuery);
+  const prevFeatureStatusRef = useRef(
+    featureActiveFilters.statuses.join(","),
+  );
+  useEffect(() => {
+    const currentStatus = featureActiveFilters.statuses.join(",");
+    if (
+      trimmedFeatureQuery !== prevFeatureQueryRef.current ||
+      currentStatus !== prevFeatureStatusRef.current
+    ) {
+      setFeaturePage(1);
+    }
+    prevFeatureQueryRef.current = trimmedFeatureQuery;
+    prevFeatureStatusRef.current = currentStatus;
+  }, [trimmedFeatureQuery, featureActiveFilters.statuses]);
+
   const featureSearchParams = useMemo(() => {
+    if (!featureSearchActive) return {};
+
     const status =
       featureActiveFilters.statuses.length > 0
         ? featureActiveFilters.statuses.join(",")
         : undefined;
 
-    const nextParams: BoardListParams = {
-      title: trimmedFeatureQuery || undefined,
+    return {
+      title: trimmedFeatureQuery,
       status,
       page: featurePage,
       limit: BOARD_DEFAULT_LIMIT,
       sort: BOARD_DEFAULT_SORT,
     };
-
-    if (shouldResetPage(prevFeatureSearchRef.current, nextParams)) {
-      setFeaturePage(1);
-      nextParams.page = 1;
-    }
-
-    prevFeatureSearchRef.current = nextParams;
-
-    if (!featureSearchActive) return {};
-    return nextParams;
   }, [trimmedFeatureQuery, featureActiveFilters.statuses, featurePage, featureSearchActive]);
 
   const {
