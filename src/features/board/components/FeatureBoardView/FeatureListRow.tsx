@@ -9,7 +9,6 @@ import {
   getFeatureLastModifiedAt,
   isTodayTimestamp,
 } from "@/lib/time";
-import { getFeatureStatusColor, getFeatureStatusLabel } from "../../lib/status";
 
 type FeatureListRowProps = {
   feature: ParsedFeature;
@@ -17,28 +16,6 @@ type FeatureListRowProps = {
   onDoubleClick?: () => void;
   onOpenNewTab?: () => void;
 };
-
-function FeatureStatusPill({ status }: { status: string }) {
-  const color = getFeatureStatusColor(status);
-  const label = getFeatureStatusLabel(status);
-  return (
-    <span
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
-      style={{
-        color,
-        background: `${color}18`,
-        border: `1px solid ${color}40`,
-      }}
-    >
-      <span
-        className="h-1.5 w-1.5 rounded-full"
-        style={{ background: color }}
-        aria-hidden="true"
-      />
-      {label}
-    </span>
-  );
-}
 
 export function FeatureListRow({
   feature,
@@ -138,26 +115,25 @@ export function FeatureListRow({
       aria-label={`Open feature detail for ${feature.title || feature.id}`}
       className="flex h-full min-h-[82px] w-full cursor-pointer flex-col gap-2 border border-border bg-surface px-3 py-3 text-left transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <FeatureStatusPill status={feature.featureStatus} />
+      {/* Title — primary text area, wraps before truncating */}
+      <div className="min-w-0 flex-1">
+        <p
+          className="line-clamp-2 text-sm font-semibold text-text-primary"
+          title={feature.title || feature.id}
+        >
+          {feature.title || feature.id}
+        </p>
       </div>
 
-      <div className="min-w-0">
+      {/* Feature ID — compact secondary metadata below title */}
+      {feature.title && feature.title !== feature.id && (
         <p
-          className="truncate text-sm font-semibold uppercase text-text-primary"
+          className="truncate text-[11px] font-medium uppercase tracking-wide text-text-muted"
           title={feature.id}
         >
           {feature.id}
         </p>
-        {feature.title && feature.title !== feature.id && (
-          <p
-            className="truncate text-xs text-text-secondary"
-            title={feature.title}
-          >
-            {feature.title}
-          </p>
-        )}
-      </div>
+      )}
 
       <div className="mt-auto flex min-w-0 items-center gap-3 text-xs text-text-muted">
         <span className="shrink-0">{taskCountLabel}</span>
