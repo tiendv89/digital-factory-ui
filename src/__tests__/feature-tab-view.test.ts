@@ -21,6 +21,7 @@ import type {
   SourceState,
 } from "../services/workflow-backend/types";
 import type { ParsedFeature } from "../services/yaml-parser";
+import type { ParsedTask } from "../services/yaml-parser";
 import type { FeatureActiveFilters, ActiveFilters } from "../features/board/types";
 
 // ─── Mock useFeatureDetail / useFeatureTask ───────────────────────────────────
@@ -85,6 +86,8 @@ import { FeatureTaskDrilldown, DrilldownTaskContent } from "../features/board/co
 import { WorkspaceTabBar } from "../features/workspaces/components/WorkspaceTabBar/WorkspaceTabBar";
 import { FeatureBoardView } from "../features/board/components/FeatureBoardView/FeatureBoardView";
 import { FeatureListRow } from "../features/board/components/FeatureBoardView/FeatureListRow";
+import { TaskCard } from "../features/board/components/TaskCard";
+import { TaskBoardView } from "../features/board/components/TaskBoardView/TaskBoardView";
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -161,6 +164,16 @@ function makeParsedFeature(overrides: Partial<ParsedFeature> = {}): ParsedFeatur
     featureStatus: "in_implementation",
     tasks: [],
     backendId: "feat-uuid-1",
+    ...overrides,
+  };
+}
+
+function makeParsedTask(overrides: Partial<ParsedTask> = {}): ParsedTask {
+  return {
+    id: "T1",
+    title: "Task One",
+    status: "todo",
+    dependsOn: [],
     ...overrides,
   };
 }
@@ -1223,5 +1236,87 @@ describe("Tab-first click — FeatureBoardView", () => {
     expect(() =>
       renderToStaticMarkup(React.createElement(FeatureBoardView)),
     ).not.toThrow();
+  });
+});
+
+// ─── Tab-first click — TaskCard ───────────────────────────────────────────────
+
+describe("Tab-first click — TaskCard", () => {
+  it("renders without error when onOpenTab is provided", () => {
+    const task = makeParsedTask({ id: "T2", title: "Tab-first Task" });
+    expect(() =>
+      renderToStaticMarkup(
+        React.createElement(TaskCard, {
+          task,
+          featureId: "feat-1",
+          featureTitle: "My Feature",
+          onSelect: vi.fn(),
+          onOpenTab: vi.fn(),
+        }),
+      ),
+    ).not.toThrow();
+  });
+
+  it("renders without error when onOpenTab is omitted (falls back to onSelect)", () => {
+    const task = makeParsedTask({ id: "T3", title: "Selection Task" });
+    expect(() =>
+      renderToStaticMarkup(
+        React.createElement(TaskCard, {
+          task,
+          featureId: "feat-1",
+          featureTitle: "My Feature",
+          onSelect: vi.fn(),
+        }),
+      ),
+    ).not.toThrow();
+  });
+
+  it("renders data-task-id and aria-label referencing the task, not a modal detail", () => {
+    const task = makeParsedTask({ id: "T4", title: "Tab Task Alpha" });
+    const html = renderToStaticMarkup(
+      React.createElement(TaskCard, {
+        task,
+        featureId: "feat-1",
+        featureTitle: "My Feature",
+        onSelect: vi.fn(),
+        onOpenTab: vi.fn(),
+      }),
+    );
+    expect(html).toContain('data-task-id="T4"');
+    expect(html).toContain("Task T4: Tab Task Alpha");
+    expect(html).not.toContain("Open feature detail");
+    expect(html).not.toContain("Open task detail");
+    expect(html).not.toContain("modal-detail");
+  });
+});
+
+// ─── Tab-first click — TaskBoardView wiring ──────────────────────────────────
+
+describe("Tab-first click — TaskBoardView wiring", () => {
+  it("renders TaskCards with tab-opening onOpenTaskTab inside expanded feature rows in task mode", () => {
+    const task = makeParsedTask({ id: "T5", title: "Wired Task", status: "todo" });
+    const feature = makeParsedFeature({
+      id: "feat-tab-task",
+      title: "Tab Task Feature",
+      featureStatus: "in_implementation",
+      tasks: [task],
+    });
+
+    // Use task-mode context with expanded feature so TaskCard renders inside FeatureRow
+    featureBoardContextRef.current = {
+      ...buildFeatureBoardContext({
+        features: [feature],
+      }),
+      boardMode: "task" as const,
+      expandedFeatureIds: new Set<string>(["feat-tab-task"]),
+    };
+
+    const html = renderToStaticMarkup(React.createElement(TaskBoardView));
+    // TaskCard is rendered inside the expanded FeatureRow — verify its task identity
+    expect(html).toContain('data-task-id="T5"');
+    expect(html).toContain("Task T5: Wired Task");
+    // Tab-first: should not contain modal detail markers
+    expect(html).not.toContain("Open feature detail");
+    expect(html).not.toContain("task detail");
   });
 });
