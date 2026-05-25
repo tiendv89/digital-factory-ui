@@ -74,9 +74,30 @@ export function TaskBoardView() {
   } = useBoardContext();
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
 
+  // Build a lookup of real feature lifecycle status from the already-loaded
+  // features array (which carries backend FeatureSummary.status).  When
+  // backend task search results are active, enrich them with this lifecycle
+  // status so task-mode feature rows show the real feature status instead of
+  // a task-derived proxy.
+  const featureStatusMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of features) {
+      if (f.id && f.featureStatus) {
+        map.set(f.id, f.featureStatus);
+      }
+    }
+    return map;
+  }, [features]);
+
   // Use backend search results when a search is active; otherwise filter client-side
   const visibleFeatures = useMemo<ParsedFeature[]>(() => {
-    if (backendTaskResults != null) return backendTaskResults;
+    if (backendTaskResults != null) {
+      // Enrich backend results with real feature lifecycle status when available
+      return backendTaskResults.map((f) => ({
+        ...f,
+        featureStatus: featureStatusMap.get(f.id) ?? f.featureStatus,
+      }));
+    }
     return features.filter(
       (f) =>
         matchesTaskModeSearch(f, deferredTaskSearchQuery) &&
@@ -85,6 +106,7 @@ export function TaskBoardView() {
   }, [
     features,
     backendTaskResults,
+    featureStatusMap,
     deferredTaskSearchQuery,
     taskActiveFilters,
   ]);
