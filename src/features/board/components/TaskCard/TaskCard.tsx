@@ -1,9 +1,8 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import type { ParsedTask } from "@/services/yaml-parser";
-import { createSingleDoubleClickController } from "@/lib/click-intent";
 import type { SelectedTask } from "../KanbanBoard/KanbanBoard.context";
 import { getNextAction } from "../../lib/status";
 
@@ -25,21 +24,6 @@ export function TaskCard({
   onOpenNewTab,
 }: TaskCardProps) {
   const nextAction = getNextAction(task.status);
-
-  const clickController = useMemo(
-    () =>
-      createSingleDoubleClickController({
-        onSingleClick: () => onSelect({ task, featureId, featureTitle }),
-        onDoubleClick: () => {
-          if (onOpenTab) {
-            onOpenTab(task);
-          }
-        },
-      }),
-    [featureId, featureTitle, onOpenTab, onSelect, task],
-  );
-
-  useEffect(() => clickController.clearPendingClick, [clickController]);
 
   const [menuPosition, setMenuPosition] = useState<{
     x: number;
@@ -71,16 +55,14 @@ export function TaskCard({
     };
   }, [menuOpen]);
 
-  function handleDoubleClick(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    clickController.handleDoubleClick();
-  }
-
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      onSelect({ task, featureId, featureTitle });
+      if (onOpenTab) {
+        onOpenTab(task);
+      } else {
+        onSelect({ task, featureId, featureTitle });
+      }
     }
   }
 
@@ -99,12 +81,19 @@ export function TaskCard({
     setMenuPosition(null);
   }
 
+  function handleClick() {
+    if (onOpenTab) {
+      onOpenTab(task);
+    } else {
+      onSelect({ task, featureId, featureTitle });
+    }
+  }
+
   return (
     <div
       role="button"
       tabIndex={0}
-      onClick={clickController.handleClick}
-      onDoubleClick={handleDoubleClick}
+      onClick={handleClick}
       onKeyDown={handleKeyDown}
       onContextMenu={handleContextMenu}
       aria-haspopup="menu"

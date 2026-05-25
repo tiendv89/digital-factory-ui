@@ -97,7 +97,7 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
     expect(html).toContain('tabindex="0"');
   });
 
-  it("renders aria-label that references 'Open feature detail'", () => {
+  it("renders aria-label that references 'Open feature tab'", () => {
     const feature = makeFeature({ title: "Auth System" });
     const html = renderToStaticMarkup(
       React.createElement(FeatureListRow, {
@@ -105,7 +105,7 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
         onClick: () => undefined,
       }),
     );
-    expect(html).toContain("Open feature detail for Auth System");
+    expect(html).toContain("Open feature tab for Auth System");
   });
 
   it("renders feature id prominently", () => {
@@ -341,7 +341,7 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     expect(html).not.toContain("data-task-id");
   });
 
-  it("renders FeatureListRow with role=button (confirming setSelectedFeature is the click path)", () => {
+  it("renders FeatureListRow with role=button (confirming openFeatureTab is the click path)", () => {
     featureBoardContextRef.current = buildFeatureBoardContext({
       features: [
         makeFeature({ id: "feat-clickable", title: "Clickable Feature" }),
@@ -351,7 +351,7 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
 
     const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
     expect(html).toContain('role="button"');
-    expect(html).toContain("Open feature detail for Clickable Feature");
+    expect(html).toContain("Open feature tab for Clickable Feature");
   });
 
   it("renders loading state without crashing", () => {
