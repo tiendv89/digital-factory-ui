@@ -147,7 +147,7 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
     expect(html).not.toContain("Setup OAuth");
   });
 
-  it("renders the feature status pill", () => {
+  it("suppresses the feature status pill in feature mode cards", () => {
     const feature = makeFeature({ featureStatus: "in_implementation" });
     const html = renderToStaticMarkup(
       React.createElement(FeatureListRow, {
@@ -155,7 +155,9 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
         onClick: () => undefined,
       }),
     );
-    expect(html).toContain("In Progress");
+    // Status pill must NOT render in Feature mode; status is shown in the
+    // kanban-style status column/cell, not as a card badge.
+    expect(html).not.toContain("In Progress");
   });
 
   it("renders without crashing for every feature lifecycle status", () => {
