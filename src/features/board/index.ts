@@ -24,7 +24,7 @@ export {
   mapClientError,
   type BoardDataClient,
 } from "./data/load-board-data";
-export type { BoardLoadError, ActiveFilters } from "./types";
+export type { BoardLoadError, ActiveFilters, PaginationMeta } from "./types";
 export {
   STATUS_COLUMNS,
   getStatusColor,
@@ -34,3 +34,12 @@ export {
   type TaskStatus,
   type StatusColumn,
 } from "./lib/status";
+export {
+  BOARD_DEFAULT_LIMIT,
+  BOARD_DEFAULT_SORT,
+  shouldResetPage,
+  makeDefaultBoardListParams,
+  buildBoardFeatureParams,
+  buildBoardTaskParams,
+  type BoardListParams,
+} from "./lib/backend-list-params";

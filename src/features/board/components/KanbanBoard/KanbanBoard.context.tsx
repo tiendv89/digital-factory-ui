@@ -22,6 +22,7 @@ import type {
   ActiveFilters,
   BoardLoadError,
   FeatureActiveFilters,
+  PaginationMeta,
 } from "../../types";
 import {
   type BoardMode,
@@ -35,6 +36,10 @@ import {
   saveFeatureStatusFilter,
   saveStatusFilter,
 } from "../../lib/status-filter-store";
+import {
+  BOARD_DEFAULT_LIMIT,
+  BOARD_DEFAULT_SORT,
+} from "../../lib/backend-list-params";
 
 export type SelectedTask = {
   task: ParsedTask;
@@ -92,6 +97,14 @@ export type BoardContextValue = {
   featureSearching: boolean;
   taskSearchError: BoardLoadError | null;
   featureSearchError: BoardLoadError | null;
+
+  // Pagination state per mode
+  taskPage: number;
+  setTaskPage: (page: number) => void;
+  featurePage: number;
+  setFeaturePage: (page: number) => void;
+  taskPagination: PaginationMeta | null;
+  featurePagination: PaginationMeta | null;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);
@@ -152,45 +165,98 @@ export function BoardProvider({
   const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(
     null,
   );
+  const [taskPage, setTaskPage] = useState(1);
+  const [featurePage, setFeaturePage] = useState(1);
 
   // Backend search hooks
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
   const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
   const trimmedTaskQuery = deferredTaskSearchQuery.trim();
   const taskSearchActive = boardMode === "task" && trimmedTaskQuery.length > 0;
-  const taskSearchParams = taskSearchActive
-    ? {
-        title: trimmedTaskQuery,
-        status:
-          taskActiveFilters.statuses.length > 0
-            ? taskActiveFilters.statuses.join(",")
-            : undefined,
-      }
-    : {};
+
+  // Reset page to 1 when search query or filters change
+  const prevTaskQueryRef = useRef(trimmedTaskQuery);
+  const prevTaskStatusRef = useRef(
+    taskActiveFilters.statuses.join(","),
+  );
+  useEffect(() => {
+    const currentStatus = taskActiveFilters.statuses.join(",");
+    if (
+      trimmedTaskQuery !== prevTaskQueryRef.current ||
+      currentStatus !== prevTaskStatusRef.current
+    ) {
+      setTaskPage(1);
+    }
+    prevTaskQueryRef.current = trimmedTaskQuery;
+    prevTaskStatusRef.current = currentStatus;
+  }, [trimmedTaskQuery, taskActiveFilters.statuses]);
+
+  const taskSearchParams = useMemo(() => {
+    if (!taskSearchActive) return {};
+
+    const status =
+      taskActiveFilters.statuses.length > 0
+        ? taskActiveFilters.statuses.join(",")
+        : undefined;
+
+    return {
+      title: trimmedTaskQuery,
+      status,
+      page: taskPage,
+      limit: BOARD_DEFAULT_LIMIT,
+      sort: BOARD_DEFAULT_SORT,
+    };
+  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskSearchActive]);
 
   const {
     results: backendTaskResults,
     searching: taskSearching,
     searchError: taskSearchError,
+    pagination: taskPagination,
   } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams);
 
   const trimmedFeatureQuery = deferredFeatureSearchQuery.trim();
   const featureSearchActive =
     boardMode === "feature" && trimmedFeatureQuery.length > 0;
-  const featureSearchParams = featureSearchActive
-    ? {
-        title: trimmedFeatureQuery,
-        status:
-          featureActiveFilters.statuses.length > 0
-            ? featureActiveFilters.statuses.join(",")
-            : undefined,
-      }
-    : {};
+
+  const prevFeatureQueryRef = useRef(trimmedFeatureQuery);
+  const prevFeatureStatusRef = useRef(
+    featureActiveFilters.statuses.join(","),
+  );
+  useEffect(() => {
+    const currentStatus = featureActiveFilters.statuses.join(",");
+    if (
+      trimmedFeatureQuery !== prevFeatureQueryRef.current ||
+      currentStatus !== prevFeatureStatusRef.current
+    ) {
+      setFeaturePage(1);
+    }
+    prevFeatureQueryRef.current = trimmedFeatureQuery;
+    prevFeatureStatusRef.current = currentStatus;
+  }, [trimmedFeatureQuery, featureActiveFilters.statuses]);
+
+  const featureSearchParams = useMemo(() => {
+    if (!featureSearchActive) return {};
+
+    const status =
+      featureActiveFilters.statuses.length > 0
+        ? featureActiveFilters.statuses.join(",")
+        : undefined;
+
+    return {
+      title: trimmedFeatureQuery,
+      status,
+      page: featurePage,
+      limit: BOARD_DEFAULT_LIMIT,
+      sort: BOARD_DEFAULT_SORT,
+    };
+  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featurePage, featureSearchActive]);
 
   const {
     results: backendFeatureResults,
     searching: featureSearching,
     searchError: featureSearchError,
+    pagination: featurePagination,
   } = useBackendFeatureSearch(workspaceDetail.id, featureSearchParams);
 
   const toggleFeature = useCallback((featureId: string) => {
@@ -363,6 +429,13 @@ export function BoardProvider({
       openTaskTabNewSession,
       openFeatureTab,
       openFeatureTabNewSession,
+
+      taskPage,
+      setTaskPage,
+      featurePage,
+      setFeaturePage,
+      taskPagination,
+      featurePagination,
     }),
     [
       workspaceDetail,
@@ -396,6 +469,11 @@ export function BoardProvider({
       openTaskTabNewSession,
       openFeatureTab,
       openFeatureTabNewSession,
+
+      taskPage,
+      featurePage,
+      taskPagination,
+      featurePagination,
     ],
   );
 

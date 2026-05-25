@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  searchWorkspaceTasks,
+  searchWorkspaceTasksPage,
   buildTaskParams,
   type TaskSearchParams,
 } from "@/services/workflow-backend";
 import { adaptTaskSummariesToFeatures } from "@/features/workspaces/lib/workspaceAdapter";
 import type { ParsedFeature } from "@/services/yaml-parser";
-import type { BoardLoadError } from "../types";
+import type { BoardLoadError, PaginationMeta } from "../types";
 
 const DEBOUNCE_MS = 300;
 
@@ -20,25 +20,28 @@ export type UseBackendTaskSearchResult = {
   results: ParsedFeature[] | null;
   searching: boolean;
   searchError: BoardLoadError | null;
+  pagination: PaginationMeta | null;
 };
 
 export function useBackendTaskSearch(
   workspaceId: string | null,
   params: TaskSearchParams,
 ): UseBackendTaskSearchResult {
-  const { task_id, title, status } = params;
+  const { task_id, title, status, page, limit, sort } = params;
   const [results, setResults] = useState<ParsedFeature[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<BoardLoadError | null>(null);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    const searchParams = { task_id, title, status };
+    const searchParams = { task_id, title, status, page, limit, sort };
 
     if (!workspaceId || isEmptyParams(searchParams)) {
       setResults(null);
       setSearching(false);
       setSearchError(null);
+      setPagination(null);
       return;
     }
 
@@ -49,12 +52,17 @@ export function useBackendTaskSearch(
       setSearchError(null);
 
       try {
-        const tasks = await searchWorkspaceTasks(
+        const paged = await searchWorkspaceTasksPage(
           workspaceId,
           buildTaskParams(searchParams),
         );
         if (cancelled || requestIdRef.current !== id) return;
-        setResults(adaptTaskSummariesToFeatures(tasks));
+        setResults(adaptTaskSummariesToFeatures(paged.items));
+        setPagination({
+          total: paged.total,
+          page: paged.page,
+          limit: paged.limit,
+        });
         setSearching(false);
       } catch (err: unknown) {
         if (cancelled || requestIdRef.current !== id) return;
@@ -65,6 +73,7 @@ export function useBackendTaskSearch(
           retryable: e.retryable,
         });
         setResults([]);
+        setPagination(null);
         setSearching(false);
       }
     }, DEBOUNCE_MS);
@@ -73,7 +82,7 @@ export function useBackendTaskSearch(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [workspaceId, task_id, title, status]);
+  }, [workspaceId, task_id, title, status, page, limit, sort]);
 
-  return { results, searching, searchError };
+  return { results, searching, searchError, pagination };
 }
