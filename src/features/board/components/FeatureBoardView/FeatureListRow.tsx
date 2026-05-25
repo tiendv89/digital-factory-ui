@@ -1,8 +1,7 @@
 "use client";
 
 import { Clock3 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { createSingleDoubleClickController } from "@/lib/click-intent";
+import { useRef, useState, useEffect } from "react";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import {
   formatTimestamp,
@@ -43,7 +42,6 @@ function FeatureStatusPill({ status }: { status: string }) {
 export function FeatureListRow({
   feature,
   onClick,
-  onDoubleClick,
   onOpenNewTab,
 }: FeatureListRowProps) {
   const lastModifiedAt = getFeatureLastModifiedAt(feature);
@@ -52,19 +50,6 @@ export function FeatureListRow({
     : false;
   const totalTasks = feature.taskCounts?.total ?? feature.tasks.length;
   const taskCountLabel = `${totalTasks} ${totalTasks === 1 ? "task" : "tasks"}`;
-
-  const clickController = useMemo(
-    () =>
-      createSingleDoubleClickController({
-        onSingleClick: onClick,
-        onDoubleClick: () => {
-          if (onDoubleClick) onDoubleClick();
-        },
-      }),
-    [onClick, onDoubleClick],
-  );
-
-  useEffect(() => clickController.clearPendingClick, [clickController]);
 
   const [menuPosition, setMenuPosition] = useState<{
     x: number;
@@ -96,12 +81,6 @@ export function FeatureListRow({
     };
   }, [menuOpen]);
 
-  function handleDoubleClick(e: React.MouseEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    clickController.handleDoubleClick();
-  }
-
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
@@ -129,13 +108,12 @@ export function FeatureListRow({
       data-feature-card-status={feature.featureStatus}
       role="button"
       tabIndex={0}
-      onClick={clickController.handleClick}
-      onDoubleClick={handleDoubleClick}
+      onClick={onClick}
       onKeyDown={handleKeyDown}
       onContextMenu={handleContextMenu}
       aria-haspopup="menu"
       aria-expanded={menuOpen}
-      aria-label={`Open feature detail for ${feature.title || feature.id}`}
+      aria-label={`Open feature tab for ${feature.title || feature.id}`}
       className="flex h-full min-h-[82px] w-full cursor-pointer flex-col gap-2 border border-border bg-surface px-3 py-3 text-left transition-colors hover:bg-surface-subtle focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
     >
       <div className="flex min-w-0 items-center justify-between gap-2">

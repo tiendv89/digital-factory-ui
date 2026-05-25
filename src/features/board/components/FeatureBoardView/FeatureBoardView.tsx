@@ -225,8 +225,7 @@ export function FeatureBoardView() {
                     {column.key === feature.featureStatus && (
                       <FeatureListRow
                         feature={feature}
-                        onClick={() => setSelectedFeature(feature)}
-                        onDoubleClick={() => openFeatureTab(feature)}
+                        onClick={() => openFeatureTab(feature)}
                         onOpenNewTab={() => openFeatureTabNewSession(feature)}
                       />
                     )}
