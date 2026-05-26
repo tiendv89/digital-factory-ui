@@ -298,8 +298,8 @@ describe("FeatureDetailSheet — unknown status", () => {
         onClose: () => undefined,
       }),
     );
-    // getFeatureStatusLabel returns the raw value when unknown
-    expect(html).toContain("some_future_status");
+    // getFeatureStatusLabel returns "Unknown" for non-feature-lifecycle values
+    expect(html).toContain("Unknown");
   });
 });
 
