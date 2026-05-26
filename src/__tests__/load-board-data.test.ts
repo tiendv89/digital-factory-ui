@@ -527,4 +527,65 @@ branch: feature/dashboard-T4
     expect(caught).toBeInstanceOf(BoardLoadFailure);
     expect((caught as BoardLoadFailure).error.kind).toBe("network_error");
   });
+
+  it("normalizes feature lifecycle status from status.yaml", async () => {
+    const list = vi.fn();
+    list.mockResolvedValueOnce([dirEntry("feature-a")]);
+    list.mockResolvedValueOnce([]);
+
+    const get = vi.fn();
+    get.mockImplementation(async (p: string) => {
+      if (p === "docs/features/feature-a/status.yaml") {
+        return `feature_id: feature-a\ntitle: Feature A\nfeature_status: in_implementation\n`;
+      }
+      throw new GitHubNotFoundError(p);
+    });
+
+    const client = makeClient({ listDirectory: list, getFileContent: get });
+    const features = await fetchBoardData(client);
+    expect(features).toHaveLength(1);
+    expect(features[0].featureStatus).toBe("in_implementation");
+  });
+
+  it("normalizes invalid feature_status from status.yaml to 'unknown'", async () => {
+    const list = vi.fn();
+    list.mockResolvedValueOnce([dirEntry("feature-b")]);
+    list.mockResolvedValueOnce([]);
+
+    const get = vi.fn();
+    get.mockImplementation(async (p: string) => {
+      if (p === "docs/features/feature-b/status.yaml") {
+        return `feature_id: feature-b\ntitle: Feature B\nfeature_status: in_progress\n`;
+      }
+      throw new GitHubNotFoundError(p);
+    });
+
+    const client = makeClient({ listDirectory: list, getFileContent: get });
+    const features = await fetchBoardData(client);
+    expect(features).toHaveLength(1);
+    expect(features[0].featureStatus).toBe("unknown");
+  });
+
+  it("rejects task lifecycle statuses as feature status from status.yaml", async () => {
+    const invalidStatuses = ["todo", "ready", "in_progress", "in_review"];
+
+    for (const status of invalidStatuses) {
+      const list = vi.fn();
+      list.mockResolvedValueOnce([dirEntry(`feat-${status}`)]);
+      list.mockResolvedValueOnce([]);
+
+      const get = vi.fn();
+      get.mockImplementation(async (p: string) => {
+        if (p === `docs/features/feat-${status}/status.yaml`) {
+          return `feature_id: feat-${status}\nfeature_status: ${status}\n`;
+        }
+        throw new GitHubNotFoundError(p);
+      });
+
+      const client = makeClient({ listDirectory: list, getFileContent: get });
+      const features = await fetchBoardData(client);
+      expect(features).toHaveLength(1);
+      expect(features[0].featureStatus).toBe("unknown");
+    }
+  });
 });

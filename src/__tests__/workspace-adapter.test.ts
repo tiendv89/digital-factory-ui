@@ -155,6 +155,23 @@ describe("adaptFeatureSummaries", () => {
     expect(result).toHaveLength(3);
     expect(result.map((f) => f.id)).toEqual(["feat-a", "feat-b", "feat-c"]);
   });
+
+  it("normalizes non-feature-lifecycle statuses to 'unknown'", () => {
+    const fs = makeFeatureSummary({ feature_name: "bad-status", status: "in_progress" } as Partial<FeatureSummary> & { status: "in_progress" });
+    const features = adaptFeatureSummaries([fs]);
+    expect(features).toHaveLength(1);
+    expect(features[0].featureStatus).toBe("unknown");
+  });
+
+  it.each(["todo", "ready", "in_progress", "in_review"])(
+    "rejects task lifecycle status '%s' from FeatureSummary",
+    (taskStatus) => {
+      const fs = makeFeatureSummary({ feature_name: "feat", status: taskStatus } as unknown as FeatureSummary);
+      const features = adaptFeatureSummaries([fs]);
+      expect(features[0].featureStatus).toBe("unknown");
+      expect(features[0].featureStatus).not.toBe(taskStatus);
+    },
+  );
 });
 
 describe("adaptTaskDetail", () => {
