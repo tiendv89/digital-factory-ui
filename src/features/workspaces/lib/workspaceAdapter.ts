@@ -71,9 +71,7 @@ function findRepositoryPullRequestRef(
   return (task.pr_refs ?? []).find((ref) => ref.url !== workspacePr?.url);
 }
 
-function deriveFeatureStatusFromTasks(
-  tasks: Array<{ status: string }>,
-): string {
+function deriveFeatureStatusFromTasks(): string {
   // Feature lifecycle status must never be derived from task statuses.
   // Task statuses (todo, ready, in_progress, in_review, done, blocked,
   // cancelled) belong to the task lifecycle and are not valid feature
@@ -179,9 +177,7 @@ export function adaptTaskSummariesToFeatures(
   return [...featureMap.values()]
     .sort((a, b) => a.order - b.order)
     .map((entry) => {
-      entry.feature.featureStatus = deriveFeatureStatusFromTasks(
-        entry.feature.tasks,
-      );
+      entry.feature.featureStatus = deriveFeatureStatusFromTasks();
       return entry.feature;
     });
 }
