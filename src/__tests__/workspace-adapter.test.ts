@@ -3,6 +3,9 @@ import {
   adaptTaskDetail,
   adaptTaskSummariesToFeatures,
   adaptFeatureSummaries,
+  normalizeFeatureLifecycleStatus,
+  isFeatureLifecycleStatus,
+  FEATURE_LIFECYCLE_STATUSES,
 } from "../features/workspaces/lib/workspaceAdapter";
 import type {
   TaskDetail,
@@ -94,9 +97,30 @@ describe("adaptTaskSummariesToFeatures", () => {
     expect(parsedTask.pr?.url).toBe("https://github.com/x/y/pull/10");
   });
 
-  it("does NOT derive featureStatus from task statuses — returns 'unknown'", () => {
-    const task = makeTask();
+  it("sets featureStatus to 'unknown' when no featureStatuses map is provided (never derives from task statuses)", () => {
+    const task = makeTask({ status: "in_progress" });
     const features = adaptTaskSummariesToFeatures([task]);
+    expect(features[0].featureStatus).toBe("unknown");
+  });
+
+  it("reads featureStatus from the featureStatuses map keyed by feature_id", () => {
+    const task = makeTask({ feature_id: "feat-uuid-1", status: "in_progress" });
+    const statusMap = new Map([["feat-uuid-1", "in_design"]]);
+    const features = adaptTaskSummariesToFeatures([task], statusMap);
+    expect(features[0].featureStatus).toBe("in_design");
+  });
+
+  it("normalizes invalid feature lifecycle values from status map to 'unknown'", () => {
+    const task = makeTask({ feature_id: "feat-uuid-1" });
+    const statusMap = new Map([["feat-uuid-1", "invalid_status"]]);
+    const features = adaptTaskSummariesToFeatures([task], statusMap);
+    expect(features[0].featureStatus).toBe("unknown");
+  });
+
+  it("falls back to 'unknown' when feature_id is not in the status map", () => {
+    const task = makeTask({ feature_id: "feat-missing", status: "in_progress" });
+    const statusMap = new Map([["other-id", "in_design"]]);
+    const features = adaptTaskSummariesToFeatures([task], statusMap);
     expect(features[0].featureStatus).toBe("unknown");
   });
 
@@ -177,5 +201,133 @@ describe("adaptTaskDetail", () => {
         note: "Task activated",
       },
     ]);
+  });
+});
+
+// ─── Feature lifecycle status normalization ───────────────────────────
+
+describe("normalizeFeatureLifecycleStatus", () => {
+  it.each(FEATURE_LIFECYCLE_STATUSES)(
+    "accepts valid feature lifecycle status: %s",
+    (status) => {
+      expect(normalizeFeatureLifecycleStatus(status)).toBe(status);
+    },
+  );
+
+  it.each(["todo", "ready", "in_progress", "in_review"])(
+    "rejects task lifecycle status '%s' (returns 'unknown')",
+    (taskStatus) => {
+      expect(normalizeFeatureLifecycleStatus(taskStatus)).toBe("unknown");
+    },
+  );
+
+  it("returns 'unknown' for empty string", () => {
+    expect(normalizeFeatureLifecycleStatus("")).toBe("unknown");
+  });
+
+  it("returns 'unknown' for arbitrary invalid strings", () => {
+    expect(normalizeFeatureLifecycleStatus("garbage")).toBe("unknown");
+    expect(normalizeFeatureLifecycleStatus("PENDING")).toBe("unknown");
+    expect(normalizeFeatureLifecycleStatus("todo ")).toBe("unknown");
+  });
+});
+
+describe("isFeatureLifecycleStatus", () => {
+  it.each(FEATURE_LIFECYCLE_STATUSES)(
+    "returns true for valid status: %s",
+    (status) => {
+      expect(isFeatureLifecycleStatus(status)).toBe(true);
+    },
+  );
+
+  it.each(["todo", "ready", "in_progress", "in_review", "garbage", "in_design "])(
+    "returns false for non-feature-lifecycle value: %s",
+    (value) => {
+      expect(isFeatureLifecycleStatus(value)).toBe(false);
+    },
+  );
+});
+
+// ─── Regression: task statuses must never appear as feature lifecycle status ──
+
+describe("adaptTaskSummariesToFeatures — task status regression", () => {
+  const ALL_FEATURE_LIFECYCLE_STATUSES = [
+    "in_design",
+    "in_tdd",
+    "ready_for_implementation",
+    "in_implementation",
+    "in_handoff",
+    "done",
+    "blocked",
+    "cancelled",
+  ] as const;
+
+  const ALL_TASK_STATUSES = [
+    "todo",
+    "ready",
+    "in_progress",
+    "blocked",
+    "in_review",
+    "done",
+    "cancelled",
+  ] as const;
+
+  const statusMap = new Map([
+    ["feat-design", "in_design"],
+    ["feat-tdd", "in_tdd"],
+    ["feat-ready-impl", "ready_for_implementation"],
+    ["feat-in-impl", "in_implementation"],
+    ["feat-handoff", "in_handoff"],
+    ["feat-done", "done"],
+    ["feat-blocked", "blocked"],
+    ["feat-cancelled", "cancelled"],
+    ["feat-unknown", "unknown"],
+  ]);
+
+  it("all valid feature lifecycle statuses are rendered correctly when provided via the status map", () => {
+    for (const status of ALL_FEATURE_LIFECYCLE_STATUSES) {
+      const key = `feat-${status.replace(/_/g, "-")}`.replace("ready-for-implementation", "ready-impl");
+      const task = makeTask({ feature_id: key, task_name: "T1", id: `t-${status}` });
+      const features = adaptTaskSummariesToFeatures([task], statusMap);
+      expect(features).toHaveLength(1);
+      expect(features[0].featureStatus).toBe(status);
+    }
+  });
+
+  it("does not show task status 'todo' as feature row status", () => {
+    const task = makeTask({ feature_id: "feat-design", task_name: "T1", status: "todo" });
+    const features = adaptTaskSummariesToFeatures([task], statusMap);
+    expect(features[0].featureStatus).toBe("in_design");
+    expect(features[0].featureStatus).not.toBe("todo");
+  });
+
+  it("does not show task status 'ready' as feature row status", () => {
+    const task = makeTask({ feature_id: "feat-in-impl", task_name: "T1", status: "ready" });
+    const features = adaptTaskSummariesToFeatures([task], statusMap);
+    expect(features[0].featureStatus).toBe("in_implementation");
+    expect(features[0].featureStatus).not.toBe("ready");
+  });
+
+  it("does not show task status 'in_progress' as feature row status", () => {
+    const task = makeTask({ feature_id: "feat-design", task_name: "T1", status: "in_progress" });
+    const features = adaptTaskSummariesToFeatures([task], statusMap);
+    expect(features[0].featureStatus).toBe("in_design");
+    expect(features[0].featureStatus).not.toBe("in_progress");
+  });
+
+  it("does not show task status 'in_review' as feature row status", () => {
+    const task = makeTask({ feature_id: "feat-handoff", task_name: "T1", status: "in_review" });
+    const features = adaptTaskSummariesToFeatures([task], statusMap);
+    expect(features[0].featureStatus).toBe("in_handoff");
+    expect(features[0].featureStatus).not.toBe("in_review");
+  });
+
+  it("without status map, all task statuses result in featureStatus 'unknown'", () => {
+    for (const taskStatus of ALL_TASK_STATUSES) {
+      const task = makeTask({ feature_id: `feat-${taskStatus}`, task_name: "T1", status: taskStatus });
+      const features = adaptTaskSummariesToFeatures([task]);
+      expect(features[0].featureStatus).toBe("unknown");
+      expect(features[0].featureStatus).not.toBe(taskStatus);
+    }
   });
 });
