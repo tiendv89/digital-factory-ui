@@ -156,7 +156,7 @@ export function adaptFeatureSummary(
   return {
     id: feature.feature_name,
     title: feature.title,
-    featureStatus: feature.status,
+    featureStatus: normalizeFeatureLifecycleStatus(feature.status),
     tasks: featureTasks,
     backendId: feature.id,
     currentStage: feature.current_stage,
@@ -218,7 +218,7 @@ export function adaptFeatureSummaries(
   return features.map((f) => ({
     id: f.feature_name,
     title: f.title,
-    featureStatus: f.status,
+    featureStatus: normalizeFeatureLifecycleStatus(f.status),
     tasks: [],
     backendId: f.id,
     currentStage: f.current_stage,
@@ -231,7 +231,7 @@ export function adaptFeatureDetail(feature: FeatureDetail): ParsedFeature {
   return {
     id: feature.feature_name,
     title: feature.title,
-    featureStatus: feature.status,
+    featureStatus: normalizeFeatureLifecycleStatus(feature.status),
     tasks: feature.tasks.map(adaptTaskSummary),
     activity: adaptFeatureActivity(feature),
     backendId: feature.id,
