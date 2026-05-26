@@ -74,22 +74,13 @@ function findRepositoryPullRequestRef(
 function deriveFeatureStatusFromTasks(
   tasks: Array<{ status: string }>,
 ): string {
-  if (tasks.length === 0) return "unknown";
-
-  const statuses = tasks.map((task) => task.status);
-  const allDone = statuses.every((status) => status === "done");
-  if (allDone) return "done";
-
-  const allCancelled = statuses.every((status) => status === "cancelled");
-  if (allCancelled) return "cancelled";
-
-  if (statuses.includes("blocked")) return "blocked";
-  if (statuses.includes("in_progress") || statuses.includes("in_review")) {
-    return "in_implementation";
-  }
-  if (statuses.includes("ready")) return "ready_for_implementation";
-  if (statuses.includes("todo")) return "in_design";
-
+  // Feature lifecycle status must never be derived from task statuses.
+  // Task statuses (todo, ready, in_progress, in_review, done, blocked,
+  // cancelled) belong to the task lifecycle and are not valid feature
+  // lifecycle statuses.  When no real feature lifecycle status is
+  // available — for example when building features from task search
+  // results — we return "unknown" so consumers can treat it as missing
+  // data rather than a guessed status.
   return "unknown";
 }
 
