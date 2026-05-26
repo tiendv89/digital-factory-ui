@@ -174,6 +174,20 @@ export function BoardProvider({
   const [taskLimit, setTaskLimit] = useState(BOARD_DEFAULT_LIMIT);
   const [featureLimit, setFeatureLimit] = useState(BOARD_DEFAULT_LIMIT);
 
+  // Build a map of feature backend ID -> feature lifecycle status from the
+  // already-loaded features array.  Passed to useBackendTaskSearch so
+  // adaptTaskSummariesToFeatures can set the correct feature lifecycle status
+  // on each ParsedFeature instead of falling back to a task-derived value.
+  const featureStatusMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of features) {
+      if (f.backendId && f.featureStatus) {
+        map.set(f.backendId, f.featureStatus);
+      }
+    }
+    return map as ReadonlyMap<string, string>;
+  }, [features]);
+
   // Backend search hooks
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
   const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
@@ -234,7 +248,7 @@ export function BoardProvider({
     searching: taskSearching,
     searchError: taskSearchError,
     pagination: taskPagination,
-  } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams);
+  } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams, featureStatusMap);
 
   const trimmedFeatureQuery = deferredFeatureSearchQuery.trim();
 

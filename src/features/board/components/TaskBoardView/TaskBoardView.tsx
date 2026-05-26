@@ -70,33 +70,17 @@ export function TaskBoardView() {
     setTaskLimit,
   } = useBoardContext();
 
-  // Build a lookup of real feature lifecycle status from the already-loaded
-  // features array (which carries backend FeatureSummary.status).  When
-  // backend task search results are active, enrich them with this lifecycle
-  // status so task-mode feature rows show the real feature status instead of
-  // a task-derived proxy.
-  const featureStatusMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const f of features) {
-      if (f.id && f.featureStatus) {
-        map.set(f.id, f.featureStatus);
-      }
-    }
-    return map;
-  }, [features]);
-
   // Use backend search results when a search or filter is active; otherwise
   // show all features from the workspace root payload without local filtering.
+  // Feature lifecycle status on each ParsedFeature is already set by
+  // adaptTaskSummariesToFeatures from the featureStatusMap passed through
+  // useBackendTaskSearch.
   const visibleFeatures = useMemo<ParsedFeature[]>(() => {
     if (backendTaskResults != null) {
-      // Enrich backend results with real feature lifecycle status when available
-      return backendTaskResults.map((f) => ({
-        ...f,
-        featureStatus: featureStatusMap.get(f.id) ?? f.featureStatus,
-      }));
+      return backendTaskResults;
     }
     return features;
-  }, [features, backendTaskResults, featureStatusMap]);
+  }, [features, backendTaskResults]);
 
   const columnCounts = useMemo(() => {
     const counts: Record<string, number> = {};
