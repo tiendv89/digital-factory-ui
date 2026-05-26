@@ -23,6 +23,7 @@ import type {
   FeatureSummary,
   PagedFeatures,
   PagedTasks,
+  TaskDetail,
   TaskSummary,
 } from "../services/workflow-backend/types";
 
@@ -61,7 +62,14 @@ function makeFeatureSummary(
     status: "in_implementation",
     current_stage: "in_implementation",
     updated_at: "2026-01-01T00:00:00Z",
-    task_counts: { total: 2, done: 1, in_progress: 1, blocked: 0, ready: 0, todo: 0 },
+    task_counts: {
+      total: 2,
+      done: 1,
+      in_progress: 1,
+      blocked: 0,
+      ready: 0,
+      todo: 0,
+    },
     ...overrides,
   };
 }
@@ -112,7 +120,9 @@ function makeFeatureDetail(
   };
 }
 
-function makeDocument(overrides: Partial<FeatureDocument> = {}): FeatureDocument {
+function makeDocument(
+  overrides: Partial<FeatureDocument> = {},
+): FeatureDocument {
   return {
     document_type: "tasks",
     source_path: "docs/features/test/tasks.md",
@@ -365,19 +375,13 @@ describe("page changes preserve query params", () => {
 
   it("empty string title → undefined title does NOT reset (both are empty)", () => {
     expect(
-      shouldResetPage(
-        { ...base, title: "" },
-        { ...base, title: undefined },
-      ),
+      shouldResetPage({ ...base, title: "" }, { ...base, title: undefined }),
     ).toBe(false);
   });
 
   it("whitespace-only title is treated as empty", () => {
     expect(
-      shouldResetPage(
-        { ...base, title: "   " },
-        { ...base, title: undefined },
-      ),
+      shouldResetPage({ ...base, title: "   " }, { ...base, title: undefined }),
     ).toBe(false);
   });
 });
@@ -425,7 +429,10 @@ describe("feature single-click opens the Feature tab", () => {
   it("FeatureListRow supports right-click new-tab via onOpenNewTab", () => {
     const onOpenFeatureTab = vi.fn();
     const onOpenNewTab = vi.fn();
-    const feature = makeFeature({ id: "ctx-feature", title: "Context Feature" });
+    const feature = makeFeature({
+      id: "ctx-feature",
+      title: "Context Feature",
+    });
 
     const html = renderToStaticMarkup(
       React.createElement(FeatureListRow, {
@@ -738,8 +745,7 @@ See [design doc](https://example.com/design) for details.
   });
 
   it("MarkdownContent renders inline code and bold text in tasks.md", () => {
-    const content =
-      "Run `npm test` before committing. **Do not skip tests.**";
+    const content = "Run `npm test` before committing. **Do not skip tests.**";
 
     const html = renderToStaticMarkup(
       React.createElement(MarkdownContent, { content }),
@@ -791,6 +797,9 @@ See [design doc](https://example.com/design) for details.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { FeatureRow } from "../features/board/components/FeatureRow/FeatureRow";
+import {
+  DrilldownTaskContent,
+} from "../features/board/components/FeatureTabView/FeatureTaskDrilldown";
 
 describe("status regression: Feature row renders lifecycle status", () => {
   it("FeatureRow renders feature lifecycle status for all statuses", () => {
@@ -857,6 +866,42 @@ describe("repository regression: Task tab treats repo as plain text", () => {
   it("task summary without repo defaults to repo string", () => {
     const task = makeTaskSummary();
     expect(task.repo).toBe("digital-factory-ui");
+  });
+
+  it("renders repo as plain text in DOM (not a link)", () => {
+    // Verify that when a task contains a repo, the repo is rendered as
+    // text inside the metadata section — not as an <a> link — matching
+    // the spec requirement that task repository is plain text.
+    const taskDetail: TaskDetail = {
+      ...makeTaskSummary({ repo: "my-test-repo", branch: "feature/branch" }),
+      next_action: "none",
+      blocked_reason: "",
+      workspace_id: "ws-1",
+      depends_on: [],
+      execution: { actor_type: "agent" },
+    };
+
+    // DrilldownTaskContent accepts a TaskDetail directly (no hook needed)
+    const contentHtml = renderToStaticMarkup(
+      React.createElement(DrilldownTaskContent, {
+        task: taskDetail,
+        onBack: vi.fn(),
+        onReload: vi.fn(),
+      }),
+    );
+
+    // The repo text must appear in the rendered output
+    expect(contentHtml).toContain("my-test-repo");
+
+    // Per spec: repo must be plain text, NOT a hyperlink.
+    // Verify the repo text is not wrapped in an <a> tag.
+    // Search for '<a' before 'my-test-repo' — there should be none
+    // between the Details heading and the repo value.
+    const aTagCount = (contentHtml.match(/<a\b/g) ?? []).length;
+    // The only links should be for PR refs and external references
+    // (not repository metadata). For this task with no PRs,
+    // there should be zero <a> tags.
+    expect(aTagCount).toBe(0);
   });
 });
 
