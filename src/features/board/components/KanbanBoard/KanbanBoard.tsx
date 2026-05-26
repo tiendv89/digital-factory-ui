@@ -14,6 +14,7 @@ import { useBoardContext } from "./KanbanBoard.context";
 import { TaskBoardView } from "../TaskBoardView";
 import { FeatureBoardView } from "../FeatureBoardView";
 import { BoardTableTitle } from "../BoardTableTitle";
+import { CreateTaskButton } from "../CreateTaskButton";
 import { FEATURE_STATUS_OPTIONS, STATUS_COLUMNS } from "../../lib/status";
 import {
   isAllFeatureStatusFilterSelected,
@@ -307,6 +308,11 @@ function BoardControls() {
       <ModeSegmentedControl />
 
       <div className="flex items-center gap-2">
+        <CreateTaskButton
+          workspaceName={
+            workspaceDetail.name || workspaceDetail.slug || "workspace"
+          }
+        />
         {showSyncButton && (
           <button
             type="button"

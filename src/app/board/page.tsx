@@ -8,8 +8,6 @@ import { BoardHeader } from "@/features/board/components/BoardHeader/BoardHeader
 import { BoardProvider } from "@/features/board/components/KanbanBoard/KanbanBoard.context";
 import { KanbanBoard } from "@/features/board/components/KanbanBoard/KanbanBoard";
 import { TaskTrackingPanel } from "@/features/board/components/TaskTrackingPanel/TaskTrackingPanel";
-import { FeatureDetailSheetMount } from "@/features/board/components/FeatureDetailSheet/FeatureDetailSheetMount";
-import { TaskDetailSheetMount } from "@/features/tasks/components/TaskDetailSheet/TaskDetailSheetMount";
 
 function LoadingState() {
   return (
@@ -80,8 +78,6 @@ export default function BoardPage() {
             <KanbanBoard />
           </section>
         </div>
-        <TaskDetailSheetMount />
-        <FeatureDetailSheetMount />
       </BoardProvider>
     </main>
   );

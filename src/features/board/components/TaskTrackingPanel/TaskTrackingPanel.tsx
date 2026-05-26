@@ -17,7 +17,6 @@ const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
 export function TaskTrackingPanel() {
   const {
     trackedFeatures,
-    setSelectedTask,
     openTaskTab,
     openTaskTabNewSession,
   } = useBoardTrackingContext();
@@ -35,14 +34,10 @@ export function TaskTrackingPanel() {
   }, []);
 
   const handleSelectTask = useCallback(
-    (task: ParsedTask, feature: ParsedFeature) => {
-      setSelectedTask({
-        task,
-        featureId: feature.id,
-        featureTitle: feature.title,
-      });
+    (task: ParsedTask, _feature: ParsedFeature) => {
+      openTaskTab(task);
     },
-    [setSelectedTask],
+    [openTaskTab],
   );
 
   const handleOpenTaskTab = useCallback(

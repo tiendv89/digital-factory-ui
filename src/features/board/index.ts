@@ -4,7 +4,6 @@ export {
   KanbanBoard,
   type BoardContextValue,
   type BoardProviderProps,
-  type SelectedTask,
 } from "./components/KanbanBoard";
 export { BoardHeader } from "./components/BoardHeader";
 export {
