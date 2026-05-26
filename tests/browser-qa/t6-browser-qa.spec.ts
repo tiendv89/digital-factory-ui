@@ -11,17 +11,13 @@
  * Run:  npx playwright test --config=playwright.config.ts
  */
 
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
 
 // ═══════════════════════════════════════════════════════════════════════
 // Helpers
 // ═══════════════════════════════════════════════════════════════════════
 
-async function navigateToQAPage(
-  page: ReturnType<(typeof test)["info"]> extends never
-    ? never
-    : Parameters<Parameters<typeof test>[1]>[0]["page"],
-) {
+async function navigateToQAPage(page: Page) {
   await page.goto("/test/board-qa");
   // Wait for the page heading to confirm full render (avoid networkidle
   // which can time out at 60 s on dev servers with long-lived connections)
