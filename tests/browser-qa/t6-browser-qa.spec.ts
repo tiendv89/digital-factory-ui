@@ -17,10 +17,14 @@ import { test, expect } from "@playwright/test";
 // Helpers
 // ═══════════════════════════════════════════════════════════════════════
 
-async function navigateToQAPage(page: ReturnType<typeof test["info"]> extends never ? never : Parameters<Parameters<typeof test>[1]>[0]["page"]) {
+async function navigateToQAPage(
+  page: ReturnType<(typeof test)["info"]> extends never
+    ? never
+    : Parameters<Parameters<typeof test>[1]>[0]["page"],
+) {
   await page.goto("/test/board-qa");
-  await page.waitForLoadState("networkidle");
-  // Wait for the page heading to confirm full render
+  // Wait for the page heading to confirm full render (avoid networkidle
+  // which can time out at 60 s on dev servers with long-lived connections)
   await page.waitForSelector("h1", { timeout: 10000 });
 }
 
@@ -29,8 +33,9 @@ async function navigateToQAPage(page: ReturnType<typeof test["info"]> extends ne
 // ═══════════════════════════════════════════════════════════════════════
 
 test.describe("T6 Browser QA — Feature Card Regression", () => {
-
-  test("feature cards render ID smaller than title and prioritize title width", async ({ page }) => {
+  test("feature cards render ID smaller than title and prioritize title width", async ({
+    page,
+  }) => {
     await navigateToQAPage(page);
 
     // Scroll to feature cards section
@@ -43,14 +48,16 @@ test.describe("T6 Browser QA — Feature Card Regression", () => {
     });
 
     // Verify all cards have the expected DOM structure
-    const cards = page.locator("#section-feature-cards [data-feature-card-status]");
+    const cards = page.locator(
+      "#section-feature-cards [data-feature-card-status]",
+    );
     const count = await cards.count();
     expect(count).toBeGreaterThanOrEqual(3);
 
     // First card (Normal — ID + Title): should have both line-clamp-2 title and uppercase ID
     const firstCard = cards.nth(0);
     await expect(firstCard.locator(".line-clamp-2")).toBeVisible();
-    
+
     // The ID element should use text-[11px] and uppercase
     const idEl = firstCard.locator(".text-\\[11px\\].uppercase");
     await expect(idEl).toBeVisible();
@@ -82,7 +89,9 @@ test.describe("T6 Browser QA — Feature Card Regression", () => {
     const occurrences = (sameCardText?.match(/simple-feature/g) || []).length;
     // In HTML, the title appears in: the <p> text, the aria-label, and the title attribute
     // But the ID metadata line (separate <p>) should NOT be present
-    const idMetadataLines = await sameCard.locator(".truncate.text-\\[11px\\].uppercase").count();
+    const idMetadataLines = await sameCard
+      .locator(".truncate.text-\\[11px\\].uppercase")
+      .count();
     expect(idMetadataLines).toBe(0);
 
     // Verify aria-label confirms tab-opening behavior
@@ -90,7 +99,9 @@ test.describe("T6 Browser QA — Feature Card Regression", () => {
     expect(ariaLabel).toContain("Open feature tab for");
   });
 
-  test("feature cards suppress status tag in Feature mode", async ({ page }) => {
+  test("feature cards suppress status tag in Feature mode", async ({
+    page,
+  }) => {
     await navigateToQAPage(page);
 
     // Scroll to no-status-pill section
@@ -103,11 +114,19 @@ test.describe("T6 Browser QA — Feature Card Regression", () => {
 
     // All 8 feature cards should NOT contain status labels
     const statusLabels = [
-      "In Design", "In TDD", "Ready", "In Progress",
-      "Handoff", "Done", "Blocked", "Cancelled",
+      "In Design",
+      "In TDD",
+      "Ready",
+      "In Progress",
+      "Handoff",
+      "Done",
+      "Blocked",
+      "Cancelled",
     ];
 
-    const cards = page.locator("#section-no-status-pill [data-feature-card-status]");
+    const cards = page.locator(
+      "#section-no-status-pill [data-feature-card-status]",
+    );
     const count = await cards.count();
     expect(count).toBe(8);
 
@@ -128,8 +147,9 @@ test.describe("T6 Browser QA — Feature Card Regression", () => {
 // ═══════════════════════════════════════════════════════════════════════
 
 test.describe("T6 Browser QA — Status Regression", () => {
-
-  test("FeatureRow renders lifecycle status for all statuses", async ({ page }) => {
+  test("FeatureRow renders lifecycle status for all statuses", async ({
+    page,
+  }) => {
     await navigateToQAPage(page);
 
     await page.locator("#section-feature-row-status").scrollIntoViewIfNeeded();
@@ -153,14 +173,19 @@ test.describe("T6 Browser QA — Status Regression", () => {
 
     for (const [statusKey, label] of Object.entries(expectedLabels)) {
       // Each feature row should contain its status label
-      const labelVisible = await page.getByText(label, { exact: true }).first().isVisible();
+      const labelVisible = await page
+        .getByText(label, { exact: true })
+        .first()
+        .isVisible();
       expect(labelVisible).toBe(true);
     }
 
     // Verify that a feature with status "blocked" and in_progress tasks
     // still shows "Blocked" (not task-derived)
     // The blocked feature is the 7th one (index 6 in the array)
-    const sectionContent = await page.locator("#section-feature-row-status").textContent();
+    const sectionContent = await page
+      .locator("#section-feature-row-status")
+      .textContent();
     expect(sectionContent).toContain("Blocked");
   });
 });
@@ -170,8 +195,9 @@ test.describe("T6 Browser QA — Status Regression", () => {
 // ═══════════════════════════════════════════════════════════════════════
 
 test.describe("T6 Browser QA — Task Card Regression", () => {
-
-  test("task cards render with data-task-id and tab-first behavior", async ({ page }) => {
+  test("task cards render with data-task-id and tab-first behavior", async ({
+    page,
+  }) => {
     await navigateToQAPage(page);
 
     await page.locator("#section-task-cards").scrollIntoViewIfNeeded();
@@ -206,8 +232,9 @@ test.describe("T6 Browser QA — Task Card Regression", () => {
 // ═══════════════════════════════════════════════════════════════════════
 
 test.describe("T6 Browser QA — Task Docs Regression", () => {
-
-  test('Task Docs renders "Tasks List" and "Task Docs" tab labels', async ({ page }) => {
+  test('Task Docs renders "Tasks List" and "Task Docs" tab labels', async ({
+    page,
+  }) => {
     await navigateToQAPage(page);
 
     await page.locator("#section-task-docs").scrollIntoViewIfNeeded();
@@ -226,7 +253,7 @@ test.describe("T6 Browser QA — Task Docs Regression", () => {
     expect(sectionText).not.toContain("tasks.md");
 
     // Verify task rows are rendered
-    const taskRows = page.locator('[data-feature-task-row]');
+    const taskRows = page.locator("[data-feature-task-row]");
     const count = await taskRows.count();
     expect(count).toBe(3);
 
@@ -236,7 +263,9 @@ test.describe("T6 Browser QA — Task Docs Regression", () => {
     await expect(page.locator('[data-feature-task-row="T3"]')).toBeVisible();
   });
 
-  test("Task Docs tab shows markdown content when clicked", async ({ page }) => {
+  test("Task Docs tab shows markdown content when clicked", async ({
+    page,
+  }) => {
     await navigateToQAPage(page);
 
     await page.locator("#section-task-docs").scrollIntoViewIfNeeded();
@@ -252,7 +281,7 @@ test.describe("T6 Browser QA — Task Docs Regression", () => {
     });
 
     // Verify the markdown content is rendered
-    const markdownSection = page.locator('[data-feature-tasks-markdown]');
+    const markdownSection = page.locator("[data-feature-tasks-markdown]");
     await expect(markdownSection).toBeVisible();
 
     // Check for markdown-rendered headings
@@ -268,8 +297,9 @@ test.describe("T6 Browser QA — Task Docs Regression", () => {
 // ═══════════════════════════════════════════════════════════════════════
 
 test.describe("T6 Browser QA — Pagination Regression", () => {
-
-  test("pagination controls render page info and navigation buttons", async ({ page }) => {
+  test("pagination controls render page info and navigation buttons", async ({
+    page,
+  }) => {
     await navigateToQAPage(page);
 
     await page.locator("#section-pagination").scrollIntoViewIfNeeded();
@@ -296,7 +326,6 @@ test.describe("T6 Browser QA — Pagination Regression", () => {
 // ═══════════════════════════════════════════════════════════════════════
 
 test.describe("T6 Browser QA — Full Page Screenshot", () => {
-
   test("captures full QA page for visual evidence", async ({ page }) => {
     await navigateToQAPage(page);
 
