@@ -96,7 +96,6 @@ export function FeatureBoardView() {
     features,
     loading,
     error,
-    setSelectedFeature,
     openFeatureTab,
     openFeatureTabNewSession,
     backendFeatureResults,

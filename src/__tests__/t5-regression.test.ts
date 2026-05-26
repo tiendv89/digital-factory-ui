@@ -312,7 +312,7 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     expect(html).toMatch(/data-feature-status-count="done"[^>]*>0/);
   });
 
-  it("renders each visible feature as one table row with one matching status cell", () => {
+  it("renders each visible feature (no local filtering — all shown from workspace root)", () => {
     featureBoardContextRef.current = buildFeatureBoardContext({
       features: [
         makeFeature({ id: "active-feat", featureStatus: "in_implementation" }),
@@ -323,16 +323,18 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     });
 
     const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
-    expect(html.match(/data-feature-grid-row/g) ?? []).toHaveLength(2);
+    // Without local filtering, all 3 features are rendered (backend handles filtering)
+    expect(html.match(/data-feature-grid-row/g) ?? []).toHaveLength(3);
     expect(html.match(/data-feature-status-cell/g) ?? []).toHaveLength(
-      2 * FEATURE_STATUS_OPTIONS.length,
+      3 * FEATURE_STATUS_OPTIONS.length,
     );
     expect(html).toContain('data-feature-card-status="in_implementation"');
     expect(html).toContain('data-feature-card-status="blocked"');
-    expect(html.match(/data-feature-card-status/g) ?? []).toHaveLength(2);
+    expect(html).toContain('data-feature-card-status="done"');
+    expect(html.match(/data-feature-card-status/g) ?? []).toHaveLength(3);
     expect(html).toContain("active-feat");
     expect(html).toContain("blocked-feat");
-    expect(html).not.toContain("done-feat");
+    expect(html).toContain("done-feat");
     expect(html).toContain('class="grid min-h-26 border-b border-border"');
   });
 
@@ -395,17 +397,20 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     expect(html).not.toContain('role="list"');
   });
 
-  it("renders 'No features match' when features exist but none pass filters", () => {
+  it("renders all features regardless of filter mismatch (backend handles filtering)", () => {
     featureBoardContextRef.current = buildFeatureBoardContext({
       features: [makeFeature({ featureStatus: "done" })],
       featureActiveFilters: { statuses: ["in_implementation"] },
     });
 
     const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
-    expect(html).toContain("No features match");
+    // Without local filtering, all features from the workspace root are shown.
+    // The "done" feature appears in its status column.
+    expect(html).toContain('data-feature-card-status="done"');
+    expect(html).not.toContain("No features match");
   });
 
-  it("filters out 'done' features with default filter (done not selected)", () => {
+  it("shows all features including done when using workspace root (no local filtering)", () => {
     featureBoardContextRef.current = buildFeatureBoardContext({
       features: [
         makeFeature({ id: "active-feat", featureStatus: "in_implementation" }),
@@ -415,11 +420,13 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     });
 
     const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
+    // Without local filtering, both features are shown from the workspace root.
+    // Backend handles any actual status filtering.
     expect(html).toContain("active-feat");
-    expect(html).not.toContain("done-feat");
+    expect(html).toContain("done-feat");
   });
 
-  it("filters by feature search query (feature id match)", () => {
+  it("shows all features regardless of search query (backend handles search)", () => {
     featureBoardContextRef.current = buildFeatureBoardContext({
       features: [
         makeFeature({ id: "auth-feature", title: "Auth Feature" }),
@@ -430,8 +437,11 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     });
 
     const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
+    // Without local filtering, all features are shown from the workspace root.
+    // Backend search results (backendFeatureResults) are null in this test,
+    // so the view falls back to the un-filtered features array.
     expect(html).toContain("auth-feature");
-    expect(html).not.toContain("payment-feature");
+    expect(html).toContain("payment-feature");
   });
 });
 
