@@ -285,8 +285,18 @@ describe("adaptTaskSummariesToFeatures — task status regression", () => {
   ]);
 
   it("all valid feature lifecycle statuses are rendered correctly when provided via the status map", () => {
+    const STATUS_TO_KEY: Record<string, string> = {
+      in_design: "feat-design",
+      in_tdd: "feat-tdd",
+      ready_for_implementation: "feat-ready-impl",
+      in_implementation: "feat-in-impl",
+      in_handoff: "feat-handoff",
+      done: "feat-done",
+      blocked: "feat-blocked",
+      cancelled: "feat-cancelled",
+    };
     for (const status of ALL_FEATURE_LIFECYCLE_STATUSES) {
-      const key = `feat-${status.replace(/_/g, "-")}`.replace("ready-for-implementation", "ready-impl");
+      const key = STATUS_TO_KEY[status];
       const task = makeTask({ feature_id: key, task_name: "T1", id: `t-${status}` });
       const features = adaptTaskSummariesToFeatures([task], statusMap);
       expect(features).toHaveLength(1);
