@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureListRow } from "./FeatureListRow";
 import { PaginationControls } from "../PaginationControls";
-import type { ParsedFeature } from "@/services/yaml-parser";
 import {
   FEATURE_STATUS_OPTIONS,
   isValidFeatureStatus,
