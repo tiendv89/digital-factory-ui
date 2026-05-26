@@ -1,14 +1,10 @@
 "use client";
 
-import { useDeferredValue, useMemo } from "react";
+import { useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureListRow } from "./FeatureListRow";
 import { PaginationControls } from "../PaginationControls";
 import type { ParsedFeature } from "@/services/yaml-parser";
-import {
-  matchesFeatureModeSearch,
-  matchesFeatureModeStatusFilter,
-} from "../../lib/filter";
 import {
   FEATURE_STATUS_OPTIONS,
   getFeatureStatusColor,
@@ -100,8 +96,6 @@ export function FeatureBoardView() {
     features,
     loading,
     error,
-    featureSearchQuery,
-    featureActiveFilters,
     setSelectedFeature,
     openFeatureTab,
     openFeatureTabNewSession,
@@ -111,22 +105,13 @@ export function FeatureBoardView() {
     setFeaturePage,
     featurePagination,
   } = useBoardContext();
-  const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
 
-  // Use backend search results when a search is active; otherwise filter client-side
+  // Use backend search results when a search or filter is active; otherwise
+  // show all features from the workspace root payload without local filtering.
   const visibleFeatures = useMemo(() => {
     if (backendFeatureResults != null) return backendFeatureResults;
-    return features.filter(
-      (f) =>
-        matchesFeatureModeSearch(f, deferredFeatureSearchQuery) &&
-        matchesFeatureModeStatusFilter(f, featureActiveFilters.statuses),
-    );
-  }, [
-    features,
-    backendFeatureResults,
-    deferredFeatureSearchQuery,
-    featureActiveFilters,
-  ]);
+    return features;
+  }, [features, backendFeatureResults]);
 
   const featureStatusColumns = useMemo(
     () => getFeatureStatusColumns(visibleFeatures),

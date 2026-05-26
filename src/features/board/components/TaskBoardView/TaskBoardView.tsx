@@ -1,14 +1,10 @@
 "use client";
 
-import { useDeferredValue, useMemo } from "react";
+import { useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureRow } from "../FeatureRow";
 import { PaginationControls } from "../PaginationControls";
 import { STATUS_COLUMNS } from "../../lib/status";
-import {
-  matchesTaskModeSearch,
-  matchesTaskModeStatusFilter,
-} from "../../lib/filter";
 import {
   AccessDeniedState,
   EmptyBoardState,
@@ -62,8 +58,6 @@ export function TaskBoardView() {
     features,
     loading,
     error,
-    taskSearchQuery,
-    taskActiveFilters,
     expandedFeatureIds,
     toggleFeature,
     setSelectedTask,
@@ -75,7 +69,6 @@ export function TaskBoardView() {
     setTaskPage,
     taskPagination,
   } = useBoardContext();
-  const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
 
   // Build a lookup of real feature lifecycle status from the already-loaded
   // features array (which carries backend FeatureSummary.status).  When
@@ -92,7 +85,8 @@ export function TaskBoardView() {
     return map;
   }, [features]);
 
-  // Use backend search results when a search is active; otherwise filter client-side
+  // Use backend search results when a search or filter is active; otherwise
+  // show all features from the workspace root payload without local filtering.
   const visibleFeatures = useMemo<ParsedFeature[]>(() => {
     if (backendTaskResults != null) {
       // Enrich backend results with real feature lifecycle status when available
@@ -101,18 +95,8 @@ export function TaskBoardView() {
         featureStatus: featureStatusMap.get(f.id) ?? f.featureStatus,
       }));
     }
-    return features.filter(
-      (f) =>
-        matchesTaskModeSearch(f, deferredTaskSearchQuery) &&
-        matchesTaskModeStatusFilter(f, taskActiveFilters.statuses),
-    );
-  }, [
-    features,
-    backendTaskResults,
-    featureStatusMap,
-    deferredTaskSearchQuery,
-    taskActiveFilters,
-  ]);
+    return features;
+  }, [features, backendTaskResults, featureStatusMap]);
 
   const columnCounts = useMemo(() => {
     const counts: Record<string, number> = {};
