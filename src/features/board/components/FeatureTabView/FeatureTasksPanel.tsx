@@ -25,10 +25,14 @@ export function FeatureTasksPanel({ feature, onDrilldown }: FeatureTasksPanelPro
   const tasks = feature.tasks ?? [];
 
   const tasksDoc = (feature.documents ?? []).find(
-    (d) => d.document_type === "tasks",
+    (d) => d.document_type === "tasks_md",
   );
 
-  const { content: tasksMarkdown, loading: mdLoading } = useDocumentContent(
+  const {
+    content: tasksMarkdown,
+    loading: mdLoading,
+    error: mdError,
+  } = useDocumentContent(
     subView === "markdown" ? tasksDoc?.url : undefined,
     subView === "markdown" ? tasksDoc?.content : undefined,
   );
@@ -109,10 +113,41 @@ export function FeatureTasksPanel({ feature, onDrilldown }: FeatureTasksPanelPro
             <div className="border border-border bg-surface px-6 py-5">
               <MarkdownBlock content={tasksMarkdown} />
             </div>
+          ) : mdError ? (
+            <div
+              data-feature-tasks-doc-error
+              className="flex flex-col gap-2 border border-danger/30 bg-danger-bg px-4 py-4"
+            >
+              <div className="flex items-center gap-2">
+                <AlertCircle
+                  className="h-4 w-4 shrink-0 text-danger"
+                  aria-hidden="true"
+                />
+                <p className="text-sm text-danger">
+                  Failed to load Task Docs content.
+                </p>
+              </div>
+              {tasksDoc?.url && (
+                <a
+                  href={tasksDoc.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="flex items-center gap-1.5 text-xs text-primary transition-colors hover:underline"
+                >
+                  Open in GitHub
+                  <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                </a>
+              )}
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center gap-2 border border-border bg-surface px-4 py-8">
+            <div
+              data-feature-tasks-doc-empty
+              className="flex flex-col items-center justify-center gap-2 border border-border bg-surface px-4 py-8"
+            >
               <p className="text-sm text-text-muted">
-                No Task Docs document available.
+                {tasksDoc
+                  ? "No Task Docs content available."
+                  : "No Task Docs document available."}
               </p>
               {tasksDoc?.url && (
                 <a
