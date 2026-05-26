@@ -71,7 +71,7 @@ export function FeatureTasksPanel({ feature, onDrilldown }: FeatureTasksPanelPro
             }
           >
             <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-            tasks.md
+            Task Docs
           </button>
         </div>
       </div>
@@ -103,7 +103,7 @@ export function FeatureTasksPanel({ feature, onDrilldown }: FeatureTasksPanelPro
                 className="h-4 w-4 animate-spin text-text-muted"
                 aria-hidden="true"
               />
-              <p className="text-sm text-text-muted">Loading tasks.md…</p>
+              <p className="text-sm text-text-muted">Loading Task Docs…</p>
             </div>
           ) : tasksMarkdown ? (
             <div className="border border-border bg-surface px-6 py-5">
@@ -112,7 +112,7 @@ export function FeatureTasksPanel({ feature, onDrilldown }: FeatureTasksPanelPro
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 border border-border bg-surface px-4 py-8">
               <p className="text-sm text-text-muted">
-                No tasks.md document available.
+                No Task Docs document available.
               </p>
               {tasksDoc?.url && (
                 <a

@@ -2,13 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  searchFeatures,
+  searchFeaturesPage,
   buildFeatureParams,
   type FeatureSearchParams,
 } from "@/services/workflow-backend";
 import { adaptFeatureSummaries } from "@/features/workspaces/lib/workspaceAdapter";
 import type { ParsedFeature } from "@/services/yaml-parser";
-import type { BoardLoadError } from "../types";
+import type { BoardLoadError, PaginationMeta } from "../types";
 
 const DEBOUNCE_MS = 300;
 
@@ -20,25 +20,28 @@ export type UseBackendFeatureSearchResult = {
   results: ParsedFeature[] | null;
   searching: boolean;
   searchError: BoardLoadError | null;
+  pagination: PaginationMeta | null;
 };
 
 export function useBackendFeatureSearch(
   workspaceId: string | null,
   params: FeatureSearchParams,
 ): UseBackendFeatureSearchResult {
-  const { title, status } = params;
+  const { title, status, page, limit, sort } = params;
   const [results, setResults] = useState<ParsedFeature[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<BoardLoadError | null>(null);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
   const requestIdRef = useRef(0);
 
   useEffect(() => {
-    const searchParams = { title, status };
+    const searchParams = { title, status, page, limit, sort };
 
     if (!workspaceId || isEmptyParams(searchParams)) {
       setResults(null);
       setSearching(false);
       setSearchError(null);
+      setPagination(null);
       return;
     }
 
@@ -49,12 +52,17 @@ export function useBackendFeatureSearch(
       setSearchError(null);
 
       try {
-        const features = await searchFeatures(
+        const paged = await searchFeaturesPage(
           workspaceId,
           buildFeatureParams(searchParams),
         );
         if (cancelled || requestIdRef.current !== id) return;
-        setResults(adaptFeatureSummaries(features));
+        setResults(adaptFeatureSummaries(paged.items));
+        setPagination({
+          total: paged.total,
+          page: paged.page,
+          limit: paged.limit,
+        });
         setSearching(false);
       } catch (err: unknown) {
         if (cancelled || requestIdRef.current !== id) return;
@@ -65,6 +73,7 @@ export function useBackendFeatureSearch(
           retryable: e.retryable,
         });
         setResults([]);
+        setPagination(null);
         setSearching(false);
       }
     }, DEBOUNCE_MS);
@@ -73,7 +82,7 @@ export function useBackendFeatureSearch(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [workspaceId, title, status]);
+  }, [workspaceId, title, status, page, limit, sort]);
 
-  return { results, searching, searchError };
+  return { results, searching, searchError, pagination };
 }

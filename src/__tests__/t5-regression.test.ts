@@ -97,7 +97,7 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
     expect(html).toContain('tabindex="0"');
   });
 
-  it("renders aria-label that references 'Open feature detail'", () => {
+  it("renders aria-label that references 'Open feature tab'", () => {
     const feature = makeFeature({ title: "Auth System" });
     const html = renderToStaticMarkup(
       React.createElement(FeatureListRow, {
@@ -105,7 +105,7 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
         onClick: () => undefined,
       }),
     );
-    expect(html).toContain("Open feature detail for Auth System");
+    expect(html).toContain("Open feature tab for Auth System");
   });
 
   it("renders feature id prominently", () => {
@@ -147,7 +147,7 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
     expect(html).not.toContain("Setup OAuth");
   });
 
-  it("renders the feature status pill", () => {
+  it("suppresses the feature status pill in feature mode cards", () => {
     const feature = makeFeature({ featureStatus: "in_implementation" });
     const html = renderToStaticMarkup(
       React.createElement(FeatureListRow, {
@@ -155,7 +155,9 @@ describe("FeatureListRow — accessible click target for setSelectedFeature flow
         onClick: () => undefined,
       }),
     );
-    expect(html).toContain("In Progress");
+    // Status pill must NOT render in Feature mode; status is shown in the
+    // kanban-style status column/cell, not as a card badge.
+    expect(html).not.toContain("In Progress");
   });
 
   it("renders without crashing for every feature lifecycle status", () => {
@@ -244,6 +246,27 @@ function buildFeatureBoardContext(opts: {
     setSelectedTask: mockSetSelectedTask,
     selectedFeature: null,
     setSelectedFeature: mockSetSelectedFeature,
+    workspaceDetail: null as unknown,
+    syncing: false,
+    syncError: null,
+    syncBoard: vi.fn(),
+    backendTaskResults: null,
+    backendFeatureResults: null,
+    taskSearching: false,
+    featureSearching: false,
+    taskSearchError: null,
+    featureSearchError: null,
+    openTaskTab: vi.fn(),
+    openTaskTabNewSession: vi.fn(),
+    openFeatureTab: vi.fn(),
+    openFeatureTabNewSession: vi.fn(),
+    // Pagination
+    featurePage: 1,
+    taskPage: 1,
+    setFeaturePage: vi.fn(),
+    setTaskPage: vi.fn(),
+    featurePagination: null,
+    taskPagination: null,
   };
 }
 
@@ -341,7 +364,7 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     expect(html).not.toContain("data-task-id");
   });
 
-  it("renders FeatureListRow with role=button (confirming setSelectedFeature is the click path)", () => {
+  it("renders FeatureListRow with role=button (confirming openFeatureTab is the click path)", () => {
     featureBoardContextRef.current = buildFeatureBoardContext({
       features: [
         makeFeature({ id: "feat-clickable", title: "Clickable Feature" }),
@@ -351,7 +374,7 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
 
     const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
     expect(html).toContain('role="button"');
-    expect(html).toContain("Open feature detail for Clickable Feature");
+    expect(html).toContain("Open feature tab for Clickable Feature");
   });
 
   it("renders loading state without crashing", () => {

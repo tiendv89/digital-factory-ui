@@ -200,8 +200,6 @@ export function DrilldownTaskContent({
 }
 
 function DrilldownMetadataSection({ task }: { task: TaskDetail }) {
-  const repoUrl = task.repo ? `https://github.com/${task.repo}` : null;
-
   return (
     <section>
       <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-muted">
@@ -214,17 +212,8 @@ function DrilldownMetadataSection({ task }: { task: TaskDetail }) {
             <span>Repository</span>
           </div>
           <div className="text-sm">
-            {task.repo && repoUrl ? (
-              <a
-                href={repoUrl}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="inline-flex items-center gap-1.5 text-primary transition-colors hover:underline"
-                aria-label={`Open repository ${task.repo}`}
-              >
-                <span className="text-text-primary">{task.repo}</span>
-                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-              </a>
+            {task.repo ? (
+              <span className="text-text-primary">{task.repo}</span>
             ) : (
               <span className="italic text-text-muted">None</span>
             )}

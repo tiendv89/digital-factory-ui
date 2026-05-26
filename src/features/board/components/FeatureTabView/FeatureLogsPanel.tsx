@@ -2,7 +2,7 @@
 
 import { Clock3 } from "lucide-react";
 import { formatTimestamp } from "@/lib/time";
-import { formatStatusLabel, getStatusStyle } from "@/features/tasks/lib/status";
+import { formatStatusLabel } from "@/features/tasks/lib/status";
 import type { ActivityEvent, FeatureDetail } from "@/services/workflow-backend/types";
 
 type FeatureLogEntry = ActivityEvent & {

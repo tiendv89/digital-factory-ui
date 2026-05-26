@@ -255,11 +255,13 @@ describe("TaskTabView — content rendering", () => {
     expect(html).toContain("#8e67cb");
   });
 
-  it("renders repo link in metadata", () => {
+  it("renders repository as plain text in metadata", () => {
     const html = renderToStaticMarkup(
       React.createElement(TaskTabView, { workspaceId: "ws-1", taskId: "task-uuid-1" }),
     );
     expect(html).toContain("acme/api-service");
+    // Repository must be plain text, not a hyperlink
+    expect(html).not.toContain("github.com/acme/api-service");
   });
 
   it("renders branch in metadata", () => {
