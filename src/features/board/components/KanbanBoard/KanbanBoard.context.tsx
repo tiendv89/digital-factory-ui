@@ -45,12 +45,6 @@ import {
   BOARD_DEFAULT_SORT,
 } from "../../lib/backend-list-params";
 
-export type SelectedTask = {
-  task: ParsedTask;
-  featureId: string;
-  featureTitle: string;
-} | null;
-
 export type BoardContextValue = {
   workspaceDetail: WorkspaceDetail;
   features: ParsedFeature[];
@@ -89,10 +83,6 @@ export type BoardContextValue = {
 
   expandedFeatureIds: Set<string>;
   toggleFeature: (featureId: string) => void;
-  selectedTask: SelectedTask;
-  setSelectedTask: (task: SelectedTask) => void;
-  selectedFeature: ParsedFeature | null;
-  setSelectedFeature: (feature: ParsedFeature | null) => void;
 
   // Backend search results (null = use workspace detail)
   backendTaskResults: ParsedFeature[] | null;
@@ -114,7 +104,7 @@ export type BoardContextValue = {
 const BoardContext = createContext<BoardContextValue | null>(null);
 export type BoardTrackingContextValue = Pick<
   BoardContextValue,
-  "trackedFeatures" | "setSelectedTask" | "openTaskTab" | "openTaskTabNewSession"
+  "trackedFeatures" | "openTaskTab" | "openTaskTabNewSession"
 >;
 
 const BoardTrackingContext = createContext<BoardTrackingContextValue | null>(
@@ -164,10 +154,6 @@ export function BoardProvider({
     }));
   const [expandedFeatureIds, setExpandedFeatureIds] = useState<Set<string>>(
     () => new Set(),
-  );
-  const [selectedTask, setSelectedTask] = useState<SelectedTask>(null);
-  const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(
-    null,
   );
   const [taskPage, setTaskPage] = useState(1);
   const [featurePage, setFeaturePage] = useState(1);
@@ -434,10 +420,6 @@ export function BoardProvider({
 
       expandedFeatureIds,
       toggleFeature,
-      selectedTask,
-      setSelectedTask,
-      selectedFeature,
-      setSelectedFeature,
 
       backendTaskResults,
       backendFeatureResults,
@@ -477,8 +459,6 @@ export function BoardProvider({
       handleSetFeatureActiveFilters,
       expandedFeatureIds,
       toggleFeature,
-      selectedTask,
-      selectedFeature,
       backendTaskResults,
       backendFeatureResults,
       taskSearching,
@@ -500,7 +480,6 @@ export function BoardProvider({
   const trackingValue = useMemo<BoardTrackingContextValue>(
     () => ({
       trackedFeatures,
-      setSelectedTask,
       openTaskTab,
       openTaskTabNewSession,
     }),

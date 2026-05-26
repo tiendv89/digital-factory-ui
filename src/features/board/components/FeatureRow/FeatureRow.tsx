@@ -7,7 +7,6 @@ import {
   getFeatureLastModifiedAt,
   isTodayTimestamp,
 } from "@/lib/time";
-import type { SelectedTask } from "../KanbanBoard/KanbanBoard.context";
 import { TaskCard } from "../TaskCard";
 import {
   STATUS_COLUMNS,
@@ -19,7 +18,6 @@ type FeatureRowProps = {
   feature: ParsedFeature;
   isExpanded: boolean;
   onToggle: () => void;
-  onSelectTask: (task: SelectedTask) => void;
   onOpenTaskTab?: (task: ParsedTask) => void;
   onOpenTaskTabNewSession?: (task: ParsedTask) => void;
 };
@@ -101,7 +99,6 @@ export function FeatureRow({
   feature,
   isExpanded,
   onToggle,
-  onSelectTask,
   onOpenTaskTab,
   onOpenTaskTabNewSession,
 }: FeatureRowProps) {
@@ -213,7 +210,6 @@ export function FeatureRow({
                         task={task}
                         featureId={feature.id}
                         featureTitle={feature.title || feature.id}
-                        onSelect={onSelectTask}
                         onOpenTab={onOpenTaskTab}
                         onOpenNewTab={onOpenTaskTabNewSession}
                       />

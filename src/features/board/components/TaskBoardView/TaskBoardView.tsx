@@ -60,7 +60,6 @@ export function TaskBoardView() {
     error,
     expandedFeatureIds,
     toggleFeature,
-    setSelectedTask,
     backendTaskResults,
     taskSearching,
     taskSearchError,
@@ -170,7 +169,6 @@ export function TaskBoardView() {
                   feature={feature}
                   isExpanded={expandedFeatureIds.has(feature.id)}
                   onToggle={() => toggleFeature(feature.id)}
-                  onSelectTask={setSelectedTask}
                   onOpenTaskTab={openTaskTab}
                   onOpenTaskTabNewSession={openTaskTabNewSession}
                 />

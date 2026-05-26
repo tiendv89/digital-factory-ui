@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ActiveFilters } from "../features/board/types";
 import type { ParsedFeature } from "../services/yaml-parser";
 
-const mockSetSelectedTask = vi.fn();
+const mockOpenTaskTab = vi.fn();
 
 const mockData = vi.hoisted(() => {
   const features: ParsedFeature[] = [
@@ -68,14 +68,12 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
   useBoardContext: () => ({
     features: mockData.context.features,
     trackedFeatures: mockData.context.trackedFeatures,
-    setSelectedTask: mockSetSelectedTask,
     searchQuery: mockData.context.searchQuery,
     activeFilters: mockData.context.activeFilters,
   }),
   useBoardTrackingContext: () => ({
     trackedFeatures: mockData.context.trackedFeatures,
-    setSelectedTask: mockSetSelectedTask,
-    openTaskTab: vi.fn(),
+    openTaskTab: mockOpenTaskTab,
     openTaskTabNewSession: vi.fn(),
   }),
 }));
@@ -91,7 +89,7 @@ describe("TaskTrackingPanel — companion panel", () => {
     mockData.context.trackedFeatures = mockData.features;
     mockData.context.searchQuery = "";
     mockData.context.activeFilters = { statuses: [] };
-    mockSetSelectedTask.mockClear();
+    mockOpenTaskTab.mockClear();
   });
 
   it("renders the compact sidebar header without helper copy", () => {
