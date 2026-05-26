@@ -21,7 +21,6 @@ import {
   isValidFeatureStatus,
   normalizeFeatureStatus,
   getFeatureStatusLabel,
-  getFeatureStatusColor,
 } from "../features/board/lib/status";
 import { FeatureListRow } from "../features/board/components/FeatureBoardView/FeatureListRow";
 import { FeatureRow } from "../features/board/components/FeatureRow/FeatureRow";
