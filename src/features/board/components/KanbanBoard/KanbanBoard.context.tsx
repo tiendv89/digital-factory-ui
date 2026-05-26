@@ -37,6 +37,10 @@ import {
   saveStatusFilter,
 } from "../../lib/status-filter-store";
 import {
+  isAllStatusFilterSelected,
+  isAllFeatureStatusFilterSelected,
+} from "../../lib/status-filter";
+import {
   BOARD_DEFAULT_LIMIT,
   BOARD_DEFAULT_SORT,
 } from "../../lib/backend-list-params";
@@ -172,7 +176,17 @@ export function BoardProvider({
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
   const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
   const trimmedTaskQuery = deferredTaskSearchQuery.trim();
-  const taskSearchActive = boardMode === "task" && trimmedTaskQuery.length > 0;
+
+  // Backend search is active when either search text is present OR the status
+  // filter is a non-default subset (not all statuses selected).  When every
+  // status is selected there is no effective filter, so we fall back to the
+  // workspace root payload.
+  const taskStatusFilterActive =
+    taskActiveFilters.statuses.length > 0 &&
+    !isAllStatusFilterSelected(taskActiveFilters.statuses);
+  const taskSearchActive =
+    boardMode === "task" &&
+    (trimmedTaskQuery.length > 0 || taskStatusFilterActive);
 
   // Reset page to 1 when search query or filters change
   const prevTaskQueryRef = useRef(trimmedTaskQuery);
@@ -194,19 +208,18 @@ export function BoardProvider({
   const taskSearchParams = useMemo(() => {
     if (!taskSearchActive) return {};
 
-    const status =
-      taskActiveFilters.statuses.length > 0
-        ? taskActiveFilters.statuses.join(",")
-        : undefined;
+    const status = taskStatusFilterActive
+      ? taskActiveFilters.statuses.join(",")
+      : undefined;
 
     return {
-      title: trimmedTaskQuery,
+      title: trimmedTaskQuery || undefined,
       status,
       page: taskPage,
       limit: BOARD_DEFAULT_LIMIT,
       sort: BOARD_DEFAULT_SORT,
     };
-  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskSearchActive]);
+  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskSearchActive, taskStatusFilterActive]);
 
   const {
     results: backendTaskResults,
@@ -216,8 +229,16 @@ export function BoardProvider({
   } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams);
 
   const trimmedFeatureQuery = deferredFeatureSearchQuery.trim();
+
+  // Feature-mode backend search activates when search text is present OR the
+  // status filter is a non-default subset.  All-feature-statuses-selected
+  // means no effective filter — fall back to the workspace root payload.
+  const featureStatusFilterActive =
+    featureActiveFilters.statuses.length > 0 &&
+    !isAllFeatureStatusFilterSelected(featureActiveFilters.statuses);
   const featureSearchActive =
-    boardMode === "feature" && trimmedFeatureQuery.length > 0;
+    boardMode === "feature" &&
+    (trimmedFeatureQuery.length > 0 || featureStatusFilterActive);
 
   const prevFeatureQueryRef = useRef(trimmedFeatureQuery);
   const prevFeatureStatusRef = useRef(
@@ -238,19 +259,18 @@ export function BoardProvider({
   const featureSearchParams = useMemo(() => {
     if (!featureSearchActive) return {};
 
-    const status =
-      featureActiveFilters.statuses.length > 0
-        ? featureActiveFilters.statuses.join(",")
-        : undefined;
+    const status = featureStatusFilterActive
+      ? featureActiveFilters.statuses.join(",")
+      : undefined;
 
     return {
-      title: trimmedFeatureQuery,
+      title: trimmedFeatureQuery || undefined,
       status,
       page: featurePage,
       limit: BOARD_DEFAULT_LIMIT,
       sort: BOARD_DEFAULT_SORT,
     };
-  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featurePage, featureSearchActive]);
+  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featurePage, featureSearchActive, featureStatusFilterActive]);
 
   const {
     results: backendFeatureResults,
