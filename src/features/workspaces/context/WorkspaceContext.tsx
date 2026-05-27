@@ -40,6 +40,11 @@ import {
   getFeatureTabHref,
 } from "@/features/workspaces/lib/tabState";
 import { createRequestSequence } from "@/lib/request-sequence";
+import {
+  clearStatusFilter,
+  clearFeatureStatusFilter,
+  clearBoardMode,
+} from "@/features/board/lib/status-filter-store";
 
 export type TaskTabEntry = {
   sessionId: string;
@@ -233,6 +238,21 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setSelectedWorkspaceIdState(workspaceId);
       setSelectedWorkspaceId(workspaceId);
       setActiveWorkspace(null);
+
+      // Close all open tabs — stale tabs from the previous workspace
+      // must not survive a workspace switch.
+      setOpenTaskTabs([]);
+      setOpenFeatureTabs([]);
+      setActiveTaskTabId(null);
+      setActiveFeatureTabId(null);
+      setActiveSurface("board");
+
+      // Clear board-level persisted filter/mode state so the new
+      // BoardProvider starts with factory defaults instead of stale
+      // values from the previous workspace.
+      clearStatusFilter();
+      clearFeatureStatusFilter();
+      clearBoardMode();
 
       const summary = summaries.find((s) => s.workspaceId === workspaceId);
       if (summary) {
