@@ -166,11 +166,11 @@ describe("getFeatureStatusLabel", () => {
   });
 
   it.each(TASK_STATUSES_THAT_MUST_NOT_APPEAR)(
-    "does NOT have a feature-label mapping for task status '%s' — falls back to raw string",
+    "does NOT have a feature-label mapping for task status '%s' — returns 'Unknown'",
     (status: string) => {
       const label = getFeatureStatusLabel(status);
-      // Falls back to raw string
-      expect(label).toBe(status);
+      // Returns "Unknown" for non-feature-lifecycle values (defense in depth)
+      expect(label).toBe("Unknown");
       // Must not be a human-readable feature status label
       const featureLabels = FEATURE_STATUS_OPTIONS.map((o) => o.label);
       expect(featureLabels).not.toContain(label);

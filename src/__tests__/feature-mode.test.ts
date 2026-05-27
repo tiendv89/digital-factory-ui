@@ -388,8 +388,8 @@ describe("feature mode with empty filters", () => {
 // ─── unknown feature statuses ─────────────────────────────────────────────
 
 describe("unknown feature statuses", () => {
-  it("getFeatureStatusLabel returns the raw status string as fallback", () => {
-    expect(getFeatureStatusLabel("future_unknown_status")).toBe("future_unknown_status");
+  it("getFeatureStatusLabel returns 'Unknown' for unrecognized statuses", () => {
+    expect(getFeatureStatusLabel("future_unknown_status")).toBe("Unknown");
   });
 
   it("getFeatureStatusColor returns fallback color for unknown status", () => {

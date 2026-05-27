@@ -114,7 +114,7 @@ export function normalizeFeatureStatus(status: string): FeatureStatus {
 }
 
 export function getFeatureStatusLabel(status: string): string {
-  return FEATURE_STATUS_LABELS[status] ?? status;
+  return FEATURE_STATUS_LABELS[status] ?? "Unknown";
 }
 
 export function getFeatureStatusColor(status: string): string {

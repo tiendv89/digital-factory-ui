@@ -30,7 +30,7 @@ import {
   matchesFeatureModeSearch,
   matchesFeatureModeStatusFilter,
 } from "../features/board/lib/filter";
-import { FEATURE_STATUS_OPTIONS } from "../features/board/lib/status";
+import { FEATURE_STATUS_OPTIONS, getFeatureStatusLabel } from "../features/board/lib/status";
 import { FeatureListRow } from "../features/board/components/FeatureBoardView/FeatureListRow";
 
 // ─── localStorage shim ─────────────────────────────────────────────────────
@@ -610,5 +610,40 @@ describe("FeatureListRow — responsive layout and overflow safety", () => {
       }),
     );
     expect(html).toContain("shrink-0");
+  });
+});
+
+// ─── Feature status label rendering — T5 regression ─────────────────────
+
+describe("getFeatureStatusLabel — only renders feature lifecycle status labels", () => {
+  it("renders correct label for every valid feature lifecycle status", () => {
+    const expectedLabels: Record<string, string> = {
+      in_design: "In Design",
+      in_tdd: "In TDD",
+      ready_for_implementation: "Ready",
+      in_implementation: "In Progress",
+      in_handoff: "Handoff",
+      done: "Done",
+      blocked: "Blocked",
+      cancelled: "Cancelled",
+    };
+    for (const [status, label] of Object.entries(expectedLabels)) {
+      expect(getFeatureStatusLabel(status)).toBe(label);
+    }
+  });
+
+  it("returns 'Unknown' for non-feature-lifecycle status strings", () => {
+    const invalid = ["todo", "ready", "in_progress", "in_review", "garbage", "", "pending"];
+    for (const s of invalid) {
+      expect(getFeatureStatusLabel(s)).toBe("Unknown");
+    }
+  });
+
+  it("does not leak task lifecycle statuses as feature row labels", () => {
+    const taskStatuses = ["todo", "ready", "in_progress", "in_review"];
+    for (const ts of taskStatuses) {
+      expect(getFeatureStatusLabel(ts)).not.toBe(ts);
+      expect(getFeatureStatusLabel(ts)).not.toBe(ts.replace(/_/g, " "));
+    }
   });
 });

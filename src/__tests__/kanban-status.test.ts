@@ -124,10 +124,8 @@ describe("getFeatureStatusLabel", () => {
     expect(getFeatureStatusLabel("done")).toBe("Done");
   });
 
-  it("falls back to the raw status string for unknown values", () => {
-    expect(getFeatureStatusLabel("some_unknown_state")).toBe(
-      "some_unknown_state",
-    );
+  it("returns 'Unknown' for unrecognized statuses", () => {
+    expect(getFeatureStatusLabel("some_unknown_state")).toBe("Unknown");
   });
 });
 
