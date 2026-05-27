@@ -94,10 +94,10 @@ describe("adaptTaskSummariesToFeatures", () => {
     expect(parsedTask.pr?.url).toBe("https://github.com/x/y/pull/10");
   });
 
-  it("derives featureStatus from sidebar task statuses", () => {
+  it("does NOT derive featureStatus from task statuses — returns 'unknown'", () => {
     const task = makeTask();
     const features = adaptTaskSummariesToFeatures([task]);
-    expect(features[0].featureStatus).toBe("in_implementation");
+    expect(features[0].featureStatus).toBe("unknown");
   });
 
   it("falls back to feature_name when feature_id is missing", () => {
