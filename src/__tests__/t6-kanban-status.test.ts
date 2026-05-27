@@ -323,9 +323,9 @@ describe("T6 regression — task statuses are not feature lifecycle statuses", (
         onSelectTask: () => undefined,
       }),
     );
-    // getFeatureStatusLabel("todo") returns "todo" (raw fallback)
-    expect(html).toContain("todo");
-    // But this should not contain In Design (which would be a lifecycle label)
+    // getFeatureStatusLabel("todo") returns "Unknown" (defense in depth — T5 change)
+    expect(html).toContain("Unknown");
+    // Must not be a human-readable feature lifecycle label
     expect(html).not.toContain("In Design");
   });
 });
