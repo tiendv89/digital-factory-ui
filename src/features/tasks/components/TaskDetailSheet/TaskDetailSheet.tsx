@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { LogEntry, ParsedTask } from "@/services/yaml-parser";
 import { formatTimestamp } from "@/lib/time";
+import { tokenizeText } from "@/lib/url-tokenizer";
 import {
   formatStatusLabel,
   getStatusStyle,
@@ -513,10 +514,36 @@ function TimelineEntry({
         </div>
         <span className="text-xs text-text-muted">by {entry.by}</span>
         {entry.note ? (
-          <p className="mt-1 text-sm text-text-secondary">{entry.note}</p>
+          <p className="mt-1 text-sm text-text-secondary">
+            <TimelineNoteText text={entry.note} />
+          </p>
         ) : null}
       </div>
     </li>
+  );
+}
+
+function TimelineNoteText({ text }: { text: string }) {
+  const tokens = tokenizeText(text);
+  return (
+    <>
+      {tokens.map((token, i) =>
+        token.type === "link" ? (
+          <a
+            key={i}
+            href={token.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:opacity-80"
+            data-timeline-link
+          >
+            {token.label}
+          </a>
+        ) : (
+          <span key={i}>{token.value}</span>
+        ),
+      )}
+    </>
   );
 }
 

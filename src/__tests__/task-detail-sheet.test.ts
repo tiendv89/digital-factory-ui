@@ -165,6 +165,60 @@ describe("TaskDetailSheet", () => {
     expect(html).toContain("https://example.com/workspace/pr/5");
     expect(html).not.toContain("https://example.com/repo/pr/5");
   });
+
+  it("renders URLs in log notes as clickable links with data-timeline-link attribute", () => {
+    const taskWithUrlNote: ParsedTask = {
+      ...task,
+      log: [
+        {
+          action: "in_review",
+          by: "alice",
+          at: "2026-05-07T10:00:00Z",
+          note: "PR merged at https://github.com/tiendv89/digital-factory-ui/pull/57 done",
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(
+      React.createElement(TaskDetailSheet, {
+        task: taskWithUrlNote,
+        featureTitle: "Dashboard",
+        repository: "tiendv89/digital-factory-ui",
+        nextAction: "Human approves or rejects",
+        onClose: () => undefined,
+      }),
+    );
+
+    expect(html).toContain("data-timeline-link");
+    expect(html).toContain('href="https://github.com/tiendv89/digital-factory-ui/pull/57"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+  });
+
+  it("renders plain note text without link markup when no URL is present", () => {
+    const taskWithPlainNote: ParsedTask = {
+      ...task,
+      log: [
+        {
+          action: "done",
+          by: "bob",
+          at: "2026-05-07T11:00:00Z",
+          note: "Task completed without any links",
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(
+      React.createElement(TaskDetailSheet, {
+        task: taskWithPlainNote,
+        featureTitle: "Dashboard",
+        repository: "tiendv89/digital-factory-ui",
+        nextAction: "Human approves or rejects",
+        onClose: () => undefined,
+      }),
+    );
+
+    expect(html).toContain("Task completed without any links");
+    expect(html).not.toContain("data-timeline-link");
+  });
 });
 
 describe("TaskDetailSheetMount", () => {
