@@ -130,7 +130,7 @@ describe("FEATURE_STATUS_OPTIONS — Kanban column contract", () => {
   it("does NOT contain any task lifecycle status", () => {
     const keys = new Set(FEATURE_STATUS_OPTIONS.map((o) => o.key));
     for (const taskStatus of TASK_STATUSES) {
-      expect(keys.has(taskStatus)).toBe(false);
+      expect(keys.has(taskStatus as FeatureStatus)).toBe(false);
     }
   });
 });
@@ -201,7 +201,7 @@ describe("FeatureRow — lifecycle status rendering", () => {
           feature,
           isExpanded: false,
           onToggle: () => undefined,
-          onSelectTask: () => undefined,
+          onOpenTaskTab: () => undefined,
         }),
       );
       expect(html).toContain(label);
@@ -223,7 +223,7 @@ describe("FeatureRow — lifecycle status rendering", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
     expect(html).toContain("Blocked");
@@ -246,7 +246,7 @@ describe("FeatureRow — lifecycle status rendering", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
     expect(html).toContain("Done");
@@ -320,7 +320,7 @@ describe("T6 regression — task statuses are not feature lifecycle statuses", (
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
     // getFeatureStatusLabel("todo") returns "Unknown" (defense in depth — T5 change)

@@ -4,13 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ParsedFeature } from "../services/yaml-parser";
 import type { FeatureDetail } from "../services/workflow-backend/types";
 import { FeatureDetailSheet } from "../features/board/components/FeatureDetailSheet/FeatureDetailSheet";
-import { FeatureDetailSheetMount } from "../features/board/components/FeatureDetailSheet/FeatureDetailSheetMount";
 
 const mockUseFeatureDetail = vi.hoisted(() => vi.fn());
 
 const mockBoardContext = vi.hoisted(() => ({
-  selectedFeature: null as ParsedFeature | null,
-  setSelectedFeature: vi.fn(),
   workspaceDetail: {
     id: "ws-1",
   },
@@ -96,8 +93,6 @@ const featureWithUnknownStatus: ParsedFeature = {
 };
 
 beforeEach(() => {
-  mockBoardContext.selectedFeature = null;
-  mockBoardContext.setSelectedFeature.mockReset();
   mockUseFeatureDetail.mockReset();
   mockUseFeatureDetail.mockReturnValue({
     feature: null,
@@ -303,121 +298,3 @@ describe("FeatureDetailSheet — unknown status", () => {
   });
 });
 
-describe("FeatureDetailSheetMount", () => {
-  it("renders no feature content when selectedFeature is null", () => {
-    mockBoardContext.selectedFeature = null;
-    const html = renderToStaticMarkup(
-      React.createElement(FeatureDetailSheetMount),
-    );
-    // Feature content should not be rendered when closed
-    expect(html).not.toContain("Feature Kanban Board");
-    expect(html).not.toContain("feature-kanban-board");
-  });
-
-  it("renders dialog when selectedFeature is set in context", () => {
-    mockBoardContext.selectedFeature = feature;
-    const html = renderToStaticMarkup(
-      React.createElement(FeatureDetailSheetMount),
-    );
-    expect(html).toContain('role="dialog"');
-    expect(html).toContain("Feature Kanban Board");
-    expect(html).toContain("feature-kanban-board");
-  });
-
-  it("requests feature detail from the backend by workspace and backend feature id", () => {
-    mockBoardContext.selectedFeature = feature;
-
-    renderToStaticMarkup(React.createElement(FeatureDetailSheetMount));
-
-    expect(mockUseFeatureDetail).toHaveBeenCalledWith("ws-1", "feat-uuid-1");
-  });
-
-  it("renders backend feature detail when the detail request resolves", () => {
-    const backendFeature: FeatureDetail = {
-      id: "feat-uuid-1",
-      feature_id: "feat-uuid-1",
-      feature_name: "feature-kanban-board",
-      title: "Backend Feature Detail",
-      status: "in_review",
-      current_stage: "in_review",
-      updated_at: "2026-05-20T10:30:00Z",
-      task_counts: {
-        total: 1,
-        done: 0,
-        in_progress: 0,
-        blocked: 0,
-        ready: 0,
-        todo: 0,
-      },
-      workspace_id: "ws-1",
-      documents: [],
-      tasks: [
-        {
-          id: "task-uuid-9",
-          task_id: "task-uuid-9",
-          task_name: "T9",
-          feature_id: "feat-uuid-1",
-          feature_name: "feature-kanban-board",
-          title: "Backend task detail",
-          status: "ready",
-          repo: "digital-factory-ui",
-          branch: "feature/backend-detail-T9",
-          is_blocked: false,
-          pr: null,
-          workspace_pr: null,
-        },
-      ],
-      activity: [
-        {
-          action: "approved",
-          scope: "feature",
-          actor: "reviewer@example.com",
-          occurred_at: "2026-05-20T12:00:00Z",
-          note: "Feature approved",
-          feature_id: "feat-uuid-1",
-        },
-        {
-          action: "ready",
-          scope: "task",
-          actor: "agent@example.com",
-          occurred_at: "2026-05-20T11:00:00Z",
-          note: "Task ready",
-          feature_id: "feat-uuid-1",
-          task_id: "task-uuid-9",
-        },
-      ],
-      source_state: { stale: false },
-    };
-
-    mockBoardContext.selectedFeature = feature;
-    mockUseFeatureDetail.mockReturnValue({
-      feature: backendFeature,
-      loading: false,
-      error: null,
-      reload: vi.fn(),
-    });
-
-    const html = renderToStaticMarkup(
-      React.createElement(FeatureDetailSheetMount),
-    );
-
-    expect(html).toContain("Backend Feature Detail");
-    expect(html).toContain("Backend task detail");
-    expect(html.match(/data-feature-timeline-entry/g) ?? []).toHaveLength(2);
-    expect(html).toContain("Feature approved");
-    expect(html).toContain("Task ready");
-    expect(html).toContain("by reviewer@example.com");
-
-    const featureEventIndex = html.indexOf("Feature approved");
-    const taskEventIndex = html.indexOf("Task ready");
-    expect(featureEventIndex).toBeGreaterThan(-1);
-    expect(taskEventIndex).toBeGreaterThan(-1);
-    expect(featureEventIndex).toBeLessThan(taskEventIndex);
-  });
-
-  it("does not call setSelectedFeature on render", () => {
-    mockBoardContext.selectedFeature = feature;
-    renderToStaticMarkup(React.createElement(FeatureDetailSheetMount));
-    expect(mockBoardContext.setSelectedFeature).not.toHaveBeenCalled();
-  });
-});

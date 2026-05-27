@@ -156,7 +156,7 @@ describe("FeatureRow task grid", () => {
         feature,
         isExpanded: true,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -206,7 +206,7 @@ describe("FeatureRow task grid", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -247,7 +247,7 @@ describe("FeatureRow task grid", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -285,7 +285,7 @@ describe("FeatureRow task grid", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -309,7 +309,7 @@ describe("FeatureRow feature label", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -330,7 +330,7 @@ describe("FeatureRow feature label", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -361,7 +361,7 @@ describe("FeatureRow segment bar equal-width", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -387,7 +387,7 @@ describe("FeatureRow segment bar equal-width", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -403,7 +403,7 @@ describe("TaskCard", () => {
       React.createElement(TaskCard, {
         featureId: "auth-system",
         featureTitle: "Authentication System",
-        onSelect: () => undefined,
+        onOpenTab: () => undefined,
         task: {
           id: "T3",
           title: "JWT verification",
