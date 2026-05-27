@@ -76,6 +76,24 @@ export function saveFeatureStatusFilter(statuses: string[]): void {
   }
 }
 
+export function clearStatusFilter(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(TASK_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function clearFeatureStatusFilter(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(FEATURE_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
 export type BoardMode = "task" | "feature";
 
 export function getDefaultBoardMode(): BoardMode {
@@ -100,6 +118,15 @@ export function saveBoardMode(mode: BoardMode): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.setItem(BOARD_MODE_STORAGE_KEY, JSON.stringify(mode));
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export function clearBoardMode(): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(BOARD_MODE_STORAGE_KEY);
   } catch {
     // Ignore storage failures.
   }
