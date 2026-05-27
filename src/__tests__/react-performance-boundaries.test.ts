@@ -47,8 +47,6 @@ describe("React performance boundaries", () => {
     const boardRoute = readSource("src/app/board/page.tsx");
 
     // T1: detail modal mounts should no longer be imported on the board route
-    expect(boardRoute).not.toContain("TaskDetailSheetMount");
-    expect(boardRoute).not.toContain("FeatureDetailSheetMount");
     expect(boardRoute).toContain(
       "@/features/board/components/KanbanBoard/KanbanBoard.context",
     );

@@ -214,7 +214,7 @@ export default function BoardQATestPage() {
               feature={f}
               isExpanded={false}
               onToggle={() => {}}
-              onSelectTask={() => {}}
+              onOpenTaskTab={() => {}}
             />
           ))}
         </div>
@@ -230,7 +230,6 @@ export default function BoardQATestPage() {
                 task={t}
                 featureId="feat-1"
                 featureTitle="Feature"
-                onSelect={() => {}}
                 onOpenTab={() => {}}
               />
             </div>

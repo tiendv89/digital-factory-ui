@@ -536,11 +536,9 @@ describe("WorkspaceTabBar", () => {
 
 describe("TaskCard — click behavior", () => {
   const task = makeParsedTask({ id: "T7", title: "OAuth token refresh", status: "ready" });
-  const onSelect = vi.fn();
   const onOpenTab = vi.fn();
 
   beforeEach(() => {
-    onSelect.mockClear();
     onOpenTab.mockClear();
   });
 
@@ -550,7 +548,6 @@ describe("TaskCard — click behavior", () => {
         task,
         featureId: "auth",
         featureTitle: "Authentication",
-        onSelect,
         onOpenTab,
       }),
     );
@@ -563,7 +560,6 @@ describe("TaskCard — click behavior", () => {
         task,
         featureId: "auth",
         featureTitle: "Authentication",
-        onSelect,
         onOpenTab,
       }),
     );
@@ -576,24 +572,21 @@ describe("TaskCard — click behavior", () => {
         task,
         featureId: "auth",
         featureTitle: "Authentication",
-        onSelect,
         onOpenTab,
       }),
     );
     expect(html).toContain('role="button"');
   });
 
-  it("does not call onSelect or onOpenTab during rendering", () => {
+  it("does not call onOpenTab during rendering", () => {
     renderToStaticMarkup(
       React.createElement(TaskCard, {
         task,
         featureId: "auth",
         featureTitle: "Authentication",
-        onSelect,
         onOpenTab,
       }),
     );
-    expect(onSelect).not.toHaveBeenCalled();
     expect(onOpenTab).not.toHaveBeenCalled();
   });
 });

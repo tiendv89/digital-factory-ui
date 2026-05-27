@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { tokenizeText } from "../lib/url-tokenizer";
+import { tokenizeText, type TextToken } from "../lib/url-tokenizer";
 
 describe("tokenizeText", () => {
   it("returns a single text token for plain text with no URLs", () => {
@@ -67,8 +67,12 @@ describe("tokenizeText", () => {
 
   it("preserves surrounding text exactly around URL", () => {
     const tokens = tokenizeText("Before https://example.com/path after");
-    const textBefore = tokens.find((t) => t.type === "text" && t.value.includes("Before"));
-    const textAfter = tokens.find((t) => t.type === "text" && t.value.includes("after"));
+    const textBefore = tokens.find(
+      (t): t is TextToken => t.type === "text" && "value" in t && (t as TextToken).value.includes("Before")
+    );
+    const textAfter = tokens.find(
+      (t): t is TextToken => t.type === "text" && "value" in t && (t as TextToken).value.includes("after")
+    );
     expect(textBefore?.value).toBe("Before");
     expect(textAfter?.value).toBe("after");
   });

@@ -88,16 +88,6 @@ vi.mock("@/features/board/components/TaskTrackingPanel/TaskTrackingPanel", () =>
     React.createElement("aside", { "data-task-tracking-panel": true }),
 }));
 
-vi.mock("@/features/board/components/FeatureDetailSheet/FeatureDetailSheetMount", () => ({
-  FeatureDetailSheetMount: () =>
-    React.createElement("div", { "data-feature-detail-sheet": true }),
-}));
-
-vi.mock("@/features/tasks/components/TaskDetailSheet/TaskDetailSheetMount", () => ({
-  TaskDetailSheetMount: () =>
-    React.createElement("div", { "data-task-detail-sheet": true }),
-}));
-
 vi.mock("@/features/board/components/FeatureTabView/FeatureTabView", () => ({
   FeatureTabView: () =>
     React.createElement("div", { "data-feature-tab-view": true }),

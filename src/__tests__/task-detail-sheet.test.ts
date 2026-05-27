@@ -4,13 +4,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ParsedTask } from "../services/yaml-parser";
 import type { TaskDetail } from "../services/workflow-backend/types";
 import { TaskDetailSheet } from "../features/tasks/components/TaskDetailSheet/TaskDetailSheet";
-import { TaskDetailSheetMount } from "../features/tasks/components/TaskDetailSheet/TaskDetailSheetMount";
 
 const mockUseFeatureTask = vi.hoisted(() => vi.fn());
 
 const mockBoardContext = vi.hoisted(() => ({
-  selectedTask: null as unknown,
-  setSelectedTask: vi.fn(),
   workspaceDetail: {
     id: "ws-1",
     name: "digital-factory-ui",
@@ -76,12 +73,6 @@ const taskWithWorkspacePrOnly: ParsedTask = {
 };
 
 beforeEach(() => {
-  mockBoardContext.selectedTask = {
-    task,
-    featureId: "dashboard",
-    featureTitle: "Dashboard",
-  };
-  mockBoardContext.setSelectedTask.mockReset();
   mockUseFeatureTask.mockReset();
   mockUseFeatureTask.mockReturnValue({
     task: null,
@@ -250,98 +241,3 @@ describe("TaskDetailSheet", () => {
   });
 });
 
-describe("TaskDetailSheetMount", () => {
-  it("derives repository and next action from board context", () => {
-    const html = renderToStaticMarkup(
-      React.createElement(TaskDetailSheetMount),
-    );
-
-    expect(html).toContain("tiendv89/digital-factory-ui");
-    expect(html).toContain("https://github.com/tiendv89/digital-factory-ui");
-    expect(html).toContain("Human approves or rejects");
-    expect(html).toContain("Dashboard");
-    expect(html).toContain("https://example.com/workspace/pr/5");
-    expect(mockBoardContext.setSelectedTask).not.toHaveBeenCalled();
-  });
-
-  it("requests feature-scoped task detail from the backend by workspace, feature, and task ids", () => {
-    renderToStaticMarkup(React.createElement(TaskDetailSheetMount));
-
-    expect(mockUseFeatureTask).toHaveBeenCalledWith(
-      "ws-1",
-      "feat-uuid-5",
-      "task-uuid-5",
-    );
-  });
-
-  it("renders backend task detail when the detail request resolves", () => {
-    const backendTask: TaskDetail = {
-      id: "task-uuid-5",
-      task_id: "task-uuid-5",
-      task_name: "T5",
-      feature_id: "feat-uuid-5",
-      feature_name: "Backend Feature",
-      title: "Backend Task Detail",
-      status: "ready",
-      repo: "tiendv89/digital-factory-ui",
-      branch: "feature/backend-task-detail-T5",
-      is_blocked: false,
-      pr: null,
-      workspace_pr: null,
-      next_action: "Backend next action",
-      blocked_reason: "",
-      workspace_id: "ws-1",
-      depends_on: ["T9"],
-      execution: {
-        actor_type: "agent",
-        last_updated_at: "2026-05-20T10:00:00Z",
-      },
-      pr_refs: [],
-      activity: [
-        {
-          action: "done",
-          scope: "task",
-          actor: "human@example.com",
-          occurred_at: "2026-05-20T12:00:00Z",
-          note: "Task approved from backend activity",
-          feature_id: "feat-uuid-5",
-          task_id: "task-uuid-5",
-        },
-        {
-          action: "started",
-          scope: "task",
-          actor: "agent@example.com",
-          occurred_at: "2026-05-20T10:30:00Z",
-          note: "Started from backend activity",
-          feature_id: "feat-uuid-5",
-          task_id: "task-uuid-5",
-        },
-      ],
-    };
-    mockUseFeatureTask.mockReturnValue({
-      task: backendTask,
-      loading: false,
-      error: null,
-      reload: vi.fn(),
-    });
-
-    const html = renderToStaticMarkup(
-      React.createElement(TaskDetailSheetMount),
-    );
-
-    expect(html).toContain("Backend Task Detail");
-    expect(html).toContain("Backend Feature");
-    expect(html).toContain("Backend next action");
-    expect(html).toContain("T9");
-    expect(html.match(/data-task-timeline-entry/g) ?? []).toHaveLength(2);
-    expect(html).toContain("Task approved from backend activity");
-    expect(html).toContain("Started from backend activity");
-    expect(html).toContain("by human@example.com");
-
-    const newerActivityIndex = html.indexOf("Task approved from backend activity");
-    const olderActivityIndex = html.indexOf("Started from backend activity");
-    expect(newerActivityIndex).toBeGreaterThan(-1);
-    expect(olderActivityIndex).toBeGreaterThan(-1);
-    expect(newerActivityIndex).toBeLessThan(olderActivityIndex);
-  });
-});

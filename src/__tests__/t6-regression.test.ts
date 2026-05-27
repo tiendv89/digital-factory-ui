@@ -457,7 +457,6 @@ describe("task single-click opens the Task tab", () => {
         task,
         featureId: "auth-feature",
         featureTitle: "Auth Feature",
-        onSelect: vi.fn(),
         onOpenTab: onOpenTaskTab,
       }),
     );
@@ -476,7 +475,6 @@ describe("task single-click opens the Task tab", () => {
         task,
         featureId: "pagination-feature",
         featureTitle: "Pagination Feature",
-        onSelect: vi.fn(),
         onOpenTab: vi.fn(),
       }),
     );
@@ -493,7 +491,6 @@ describe("task single-click opens the Task tab", () => {
         task,
         featureId: "qa-feature",
         featureTitle: "QA Feature",
-        onSelect: vi.fn(),
         onOpenTab: vi.fn(),
       }),
     );
@@ -825,7 +822,7 @@ describe("status regression: Feature row renders lifecycle status", () => {
           feature,
           isExpanded: false,
           onToggle: () => undefined,
-          onSelectTask: () => undefined,
+          onOpenTaskTab: () => undefined,
         }),
       );
       expect(html).toContain(label);
@@ -849,7 +846,7 @@ describe("status regression: Feature row renders lifecycle status", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
     expect(html).toContain("Blocked");
