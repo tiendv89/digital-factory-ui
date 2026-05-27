@@ -28,11 +28,12 @@ const makeFeature = (
 });
 
 describe("groupTrackedTasks", () => {
-  it("returns four sections in product order regardless of input", () => {
+  it("returns five sections in product order regardless of input", () => {
     const sections = groupTrackedTasks([]);
     expect(sections.map((s) => s.status)).toEqual([
       "blocked",
       "in_progress",
+      "in_reviewing",
       "in_review",
       "ready",
     ]);

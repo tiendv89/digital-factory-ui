@@ -122,7 +122,7 @@ describe("TaskTrackingPanel — companion panel", () => {
   it("starts all sections expanded by default", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
     const expandedMatches = [...html.matchAll(/aria-expanded="true"/g)];
-    expect(expandedMatches.length).toBe(4);
+    expect(expandedMatches.length).toBe(5);
   });
 
   it("shows task cards inside sections when tasks exist", () => {
@@ -468,11 +468,12 @@ describe("groupTrackedTasks — filtering", () => {
     expect(total).toBe(3);
   });
 
-  it("returns sections in product order: blocked, in_progress, in_review, ready", () => {
+  it("returns sections in product order: blocked, in_progress, in_reviewing, in_review, ready", () => {
     const sections = groupTrackedTasks(mockData.features);
     expect(sections[0].status).toBe("blocked");
     expect(sections[1].status).toBe("in_progress");
-    expect(sections[2].status).toBe("in_review");
-    expect(sections[3].status).toBe("ready");
+    expect(sections[2].status).toBe("in_reviewing");
+    expect(sections[3].status).toBe("in_review");
+    expect(sections[4].status).toBe("ready");
   });
 });
