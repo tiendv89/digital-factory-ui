@@ -342,8 +342,8 @@ describe("buildImportLocalSummary — import flow", () => {
 // ─── Section 5: Sidebar active-task query independence ────────────────────────
 
 describe("SIDEBAR_TASK_PARAMS — independent from other query builders", () => {
-  it("uses exactly the documented active statuses", () => {
-    expect(SIDEBAR_TASK_PARAMS.get("status")).toBe("in_progress,in_review,ready");
+  it("uses exactly the documented active statuses including blocked", () => {
+    expect(SIDEBAR_TASK_PARAMS.get("status")).toBe("blocked,in_progress,in_review,ready");
   });
 
   it("uses task_id_asc sort", () => {

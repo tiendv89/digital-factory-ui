@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  AlertOctagon,
   Check,
   ChevronDown,
   ChevronRight,
@@ -16,6 +17,11 @@ const STATUS_ICON_STYLE: Record<
   TrackedStatus,
   { icon: LucideIcon; boxClass: string; iconClass: string }
 > = {
+  blocked: {
+    icon: AlertOctagon,
+    boxClass: "bg-danger-bg",
+    iconClass: "text-danger",
+  },
   in_progress: {
     icon: Zap,
     boxClass: "bg-warning-bg",

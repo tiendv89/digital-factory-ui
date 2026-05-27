@@ -84,8 +84,8 @@ describe("buildTaskParams", () => {
 });
 
 describe("SIDEBAR_TASK_PARAMS", () => {
-  it("sets status to 'in_progress,in_review,ready'", () => {
-    expect(SIDEBAR_TASK_PARAMS.get("status")).toBe("in_progress,in_review,ready");
+  it("sets status to 'blocked,in_progress,in_review,ready'", () => {
+    expect(SIDEBAR_TASK_PARAMS.get("status")).toBe("blocked,in_progress,in_review,ready");
   });
 
   it("sets sort to 'task_id_asc'", () => {

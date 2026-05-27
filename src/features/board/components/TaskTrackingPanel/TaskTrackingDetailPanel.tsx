@@ -16,6 +16,12 @@ type TaskTrackingDetailPanelProps = {
 };
 
 const DETAIL_COPY = {
+  blocked: {
+    title: "Blocked",
+    metric: "Blocked time",
+    empty: "No blocked tasks",
+    secondary: "Blocked reason",
+  },
   in_review: {
     title: "In Review",
     metric: "Review time",
@@ -40,6 +46,10 @@ const DETAIL_COPY = {
 >;
 
 function getSecondaryValue(status: TrackedStatus, item: TrackedTaskItem): string {
+  if (status === "blocked") {
+    return item.task.blockedReason || "Unknown";
+  }
+
   if (status === "ready") {
     return item.task.dependsOn.length > 0
       ? item.task.dependsOn.join(", ")

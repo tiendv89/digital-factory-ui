@@ -9,6 +9,7 @@ import { TaskTrackingSection } from "./TaskTrackingSection";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 
 const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
+  blocked: true,
   in_progress: true,
   in_review: true,
   ready: true,
