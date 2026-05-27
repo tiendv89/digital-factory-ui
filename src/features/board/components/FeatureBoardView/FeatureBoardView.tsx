@@ -103,6 +103,7 @@ export function FeatureBoardView() {
     featureSearchError,
     setFeaturePage,
     featurePagination,
+    setFeatureLimit,
   } = useBoardContext();
 
   // Use backend search results when a search or filter is active; otherwise
@@ -233,6 +234,7 @@ export function FeatureBoardView() {
         <PaginationControls
           pageInfo={featurePagination}
           onPageChange={setFeaturePage}
+          onLimitChange={setFeatureLimit}
         />
       )}
     </div>

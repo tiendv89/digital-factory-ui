@@ -67,6 +67,7 @@ export function TaskBoardView() {
     openTaskTabNewSession,
     setTaskPage,
     taskPagination,
+    setTaskLimit,
   } = useBoardContext();
 
   // Build a lookup of real feature lifecycle status from the already-loaded
@@ -181,6 +182,7 @@ export function TaskBoardView() {
         <PaginationControls
           pageInfo={taskPagination}
           onPageChange={setTaskPage}
+          onLimitChange={setTaskLimit}
         />
       )}
     </div>
