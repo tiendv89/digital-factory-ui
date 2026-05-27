@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock3,
+  Eye,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -26,6 +27,11 @@ const STATUS_ICON_STYLE: Record<
     icon: Zap,
     boxClass: "bg-warning-bg",
     iconClass: "text-warning",
+  },
+  in_reviewing: {
+    icon: Eye,
+    boxClass: "bg-info-bg",
+    iconClass: "text-info",
   },
   in_review: {
     icon: Clock3,

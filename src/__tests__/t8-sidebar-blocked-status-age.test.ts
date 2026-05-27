@@ -137,8 +137,8 @@ describe("TRACKED_SECTIONS — includes blocked at the top", () => {
     expect(TRACKED_SECTIONS[0].label).toBe("BLOCKED");
   });
 
-  it("contains 4 sections total", () => {
-    expect(TRACKED_SECTIONS).toHaveLength(4);
+  it("contains 5 sections total", () => {
+    expect(TRACKED_SECTIONS).toHaveLength(5);
   });
 });
 
