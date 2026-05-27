@@ -28,9 +28,10 @@ const makeFeature = (
 });
 
 describe("groupTrackedTasks", () => {
-  it("returns three sections in product order regardless of input", () => {
+  it("returns four sections in product order regardless of input", () => {
     const sections = groupTrackedTasks([]);
     expect(sections.map((s) => s.status)).toEqual([
+      "blocked",
       "in_progress",
       "in_review",
       "ready",
@@ -81,12 +82,25 @@ describe("groupTrackedTasks", () => {
       makeTask("T1", "todo"),
       makeTask("T2", "done"),
       makeTask("T3", "cancelled"),
-      makeTask("T4", "blocked"),
     ]);
     const sections = groupTrackedTasks([f]);
     for (const section of sections) {
       expect(section.items).toEqual([]);
     }
+  });
+
+  it("groups blocked tasks into the blocked section", () => {
+    const f = makeFeature("alpha", [
+      makeTask("T1", "blocked", "Stuck task"),
+      makeTask("T2", "in_progress", "Active task"),
+    ]);
+    const sections = groupTrackedTasks([f]);
+    const blocked = sections.find((s) => s.status === "blocked")!;
+    const inProgress = sections.find((s) => s.status === "in_progress")!;
+    expect(blocked.items).toHaveLength(1);
+    expect(blocked.items[0].task.id).toBe("T1");
+    expect(inProgress.items).toHaveLength(1);
+    expect(inProgress.items[0].task.id).toBe("T2");
   });
 
   it("preserves the feature reference on each item", () => {

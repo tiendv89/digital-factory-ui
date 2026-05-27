@@ -7,6 +7,7 @@ import {
 } from "./TaskTrackingPanel.types";
 
 const SIDEBAR_STATUSES = new Set<TrackedStatus>([
+  "blocked",
   "in_progress",
   "in_review",
   "ready",
