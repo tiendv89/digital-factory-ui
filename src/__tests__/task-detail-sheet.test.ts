@@ -128,6 +128,35 @@ describe("TaskDetailSheet", () => {
     expect(html).toContain("border border-border");
   });
 
+  it("renders sections in the correct order: Pull Requests, Details, Execution, Last Updated, Activity Timeline", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(TaskDetailSheet, {
+        task,
+        featureTitle: "Dashboard",
+        repository: "tiendv89/digital-factory-ui",
+        nextAction: "Human approves or rejects",
+        onClose: () => undefined,
+      }),
+    );
+
+    const pullRequestsIndex = html.indexOf("Pull Requests");
+    const detailsIndex = html.indexOf(">Details<");
+    const executionIndex = html.indexOf(">Execution<");
+    const lastUpdatedIndex = html.indexOf("Last Updated");
+    const activityTimelineIndex = html.indexOf("Activity Timeline");
+
+    expect(pullRequestsIndex).toBeGreaterThan(-1);
+    expect(detailsIndex).toBeGreaterThan(-1);
+    expect(executionIndex).toBeGreaterThan(-1);
+    expect(lastUpdatedIndex).toBeGreaterThan(-1);
+    expect(activityTimelineIndex).toBeGreaterThan(-1);
+
+    expect(pullRequestsIndex).toBeLessThan(detailsIndex);
+    expect(detailsIndex).toBeLessThan(executionIndex);
+    expect(executionIndex).toBeLessThan(lastUpdatedIndex);
+    expect(lastUpdatedIndex).toBeLessThan(activityTimelineIndex);
+  });
+
   it("renders activity timeline newest first", () => {
     const html = renderToStaticMarkup(
       React.createElement(TaskDetailSheet, {
