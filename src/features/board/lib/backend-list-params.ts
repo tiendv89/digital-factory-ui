@@ -39,8 +39,8 @@ export function buildBoardTaskParams(
 }
 
 /**
- * Returns true when search query or status filter has changed in a way that
- * should reset the page counter to 1.
+ * Returns true when search query, status filter, sort, or limit has changed
+ * in a way that should reset the page counter to 1.
  *
  * Page-only changes (pagination navigation) must not trigger a reset.
  */
@@ -51,7 +51,8 @@ export function shouldResetPage(
   return (
     normalizeQuery(prev.title) !== normalizeQuery(next.title) ||
     normalizeStatus(prev.status) !== normalizeStatus(next.status) ||
-    (prev.sort ?? BOARD_DEFAULT_SORT) !== (next.sort ?? BOARD_DEFAULT_SORT)
+    (prev.sort ?? BOARD_DEFAULT_SORT) !== (next.sort ?? BOARD_DEFAULT_SORT) ||
+    (prev.limit ?? BOARD_DEFAULT_LIMIT) !== (next.limit ?? BOARD_DEFAULT_LIMIT)
   );
 }
 
