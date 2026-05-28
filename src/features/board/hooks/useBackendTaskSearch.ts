@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   searchWorkspaceTasksPage,
   buildTaskParams,
@@ -9,8 +9,7 @@ import {
 import { adaptTaskSummariesToFeatures } from "@/features/workspaces/lib/workspaceAdapter";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import type { BoardLoadError, PaginationMeta } from "../types";
-
-const DEBOUNCE_MS = 300;
+import { workspaceKeys } from "@/lib/query-keys";
 
 function isEmptyParams(params: TaskSearchParams): boolean {
   return !params.task_id && !params.title && !params.status;
@@ -29,61 +28,46 @@ export function useBackendTaskSearch(
   featureStatuses?: ReadonlyMap<string, string>,
 ): UseBackendTaskSearchResult {
   const { task_id, title, status, page, limit, sort } = params;
-  const [results, setResults] = useState<ParsedFeature[] | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<BoardLoadError | null>(null);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
-  const requestIdRef = useRef(0);
+  const searchParams = { task_id, title, status, page, limit, sort };
+  const active = Boolean(workspaceId) && !isEmptyParams(searchParams);
 
-  useEffect(() => {
-    const searchParams = { task_id, title, status, page, limit, sort };
+  const { data, isFetching, error } = useQuery({
+    queryKey: workspaceKeys.tasks(workspaceId ?? "", searchParams),
+    queryFn: async () => {
+      const paged = await searchWorkspaceTasksPage(
+        workspaceId!,
+        buildTaskParams(searchParams),
+      );
+      return paged;
+    },
+    enabled: active,
+    placeholderData: (prev) => prev,
+  });
 
-    if (!workspaceId || isEmptyParams(searchParams)) {
-      setResults(null);
-      setSearching(false);
-      setSearchError(null);
-      setPagination(null);
-      return;
-    }
+  if (!active) {
+    return { results: null, searching: false, searchError: null, pagination: null };
+  }
 
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      const id = ++requestIdRef.current;
-      setSearching(true);
-      setSearchError(null);
-
-      try {
-        const paged = await searchWorkspaceTasksPage(
-          workspaceId,
-          buildTaskParams(searchParams),
-        );
-        if (cancelled || requestIdRef.current !== id) return;
-        setResults(adaptTaskSummariesToFeatures(paged.items, featureStatuses));
-        setPagination({
-          total: paged.total,
-          page: paged.page,
-          limit: paged.limit,
-        });
-        setSearching(false);
-      } catch (err: unknown) {
-        if (cancelled || requestIdRef.current !== id) return;
-        const e = err as { code?: string; message?: string; retryable?: boolean };
-        setSearchError({
-          kind: "network_error",
-          message: e.message ?? "Task search failed",
-          retryable: e.retryable,
-        });
-        setResults([]);
-        setPagination(null);
-        setSearching(false);
-      }
-    }, DEBOUNCE_MS);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
+  if (error) {
+    const e = error as { code?: string; message?: string; retryable?: boolean };
+    return {
+      results: [],
+      searching: false,
+      searchError: {
+        kind: "network_error",
+        message: e.message ?? "Task search failed",
+        retryable: e.retryable,
+      },
+      pagination: null,
     };
-  }, [workspaceId, task_id, title, status, page, limit, sort]);
+  }
 
-  return { results, searching, searchError, pagination };
+  return {
+    results: data ? adaptTaskSummariesToFeatures(data.items, featureStatuses) : null,
+    searching: isFetching && !data,
+    searchError: null,
+    pagination: data
+      ? { total: data.total, page: data.page, limit: data.limit }
+      : null,
+  };
 }

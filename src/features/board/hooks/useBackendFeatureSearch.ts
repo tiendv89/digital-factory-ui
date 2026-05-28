@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   searchFeaturesPage,
   buildFeatureParams,
@@ -9,8 +9,7 @@ import {
 import { adaptFeatureSummaries } from "@/features/workspaces/lib/workspaceAdapter";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import type { BoardLoadError, PaginationMeta } from "../types";
-
-const DEBOUNCE_MS = 300;
+import { workspaceKeys } from "@/lib/query-keys";
 
 function isEmptyParams(params: FeatureSearchParams): boolean {
   return !params.title && !params.status;
@@ -28,61 +27,46 @@ export function useBackendFeatureSearch(
   params: FeatureSearchParams,
 ): UseBackendFeatureSearchResult {
   const { title, status, page, limit, sort } = params;
-  const [results, setResults] = useState<ParsedFeature[] | null>(null);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<BoardLoadError | null>(null);
-  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
-  const requestIdRef = useRef(0);
+  const searchParams = { title, status, page, limit, sort };
+  const active = Boolean(workspaceId) && !isEmptyParams(searchParams);
 
-  useEffect(() => {
-    const searchParams = { title, status, page, limit, sort };
+  const { data, isFetching, error } = useQuery({
+    queryKey: workspaceKeys.features(workspaceId ?? "", searchParams),
+    queryFn: async () => {
+      const paged = await searchFeaturesPage(
+        workspaceId!,
+        buildFeatureParams(searchParams),
+      );
+      return paged;
+    },
+    enabled: active,
+    placeholderData: (prev) => prev,
+  });
 
-    if (!workspaceId || isEmptyParams(searchParams)) {
-      setResults(null);
-      setSearching(false);
-      setSearchError(null);
-      setPagination(null);
-      return;
-    }
+  if (!active) {
+    return { results: null, searching: false, searchError: null, pagination: null };
+  }
 
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      const id = ++requestIdRef.current;
-      setSearching(true);
-      setSearchError(null);
-
-      try {
-        const paged = await searchFeaturesPage(
-          workspaceId,
-          buildFeatureParams(searchParams),
-        );
-        if (cancelled || requestIdRef.current !== id) return;
-        setResults(adaptFeatureSummaries(paged.items));
-        setPagination({
-          total: paged.total,
-          page: paged.page,
-          limit: paged.limit,
-        });
-        setSearching(false);
-      } catch (err: unknown) {
-        if (cancelled || requestIdRef.current !== id) return;
-        const e = err as { code?: string; message?: string; retryable?: boolean };
-        setSearchError({
-          kind: "network_error",
-          message: e.message ?? "Feature search failed",
-          retryable: e.retryable,
-        });
-        setResults([]);
-        setPagination(null);
-        setSearching(false);
-      }
-    }, DEBOUNCE_MS);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
+  if (error) {
+    const e = error as { code?: string; message?: string; retryable?: boolean };
+    return {
+      results: [],
+      searching: false,
+      searchError: {
+        kind: "network_error",
+        message: e.message ?? "Feature search failed",
+        retryable: e.retryable,
+      },
+      pagination: null,
     };
-  }, [workspaceId, title, status, page, limit, sort]);
+  }
 
-  return { results, searching, searchError, pagination };
+  return {
+    results: data ? adaptFeatureSummaries(data.items) : null,
+    searching: isFetching && !data,
+    searchError: null,
+    pagination: data
+      ? { total: data.total, page: data.page, limit: data.limit }
+      : null,
+  };
 }

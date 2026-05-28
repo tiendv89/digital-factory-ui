@@ -45,6 +45,8 @@ import {
   clearFeatureStatusFilter,
   clearBoardMode,
 } from "@/features/board/lib/status-filter-store";
+import { useQueryClient } from "@tanstack/react-query";
+import { workspaceKeys } from "@/lib/query-keys";
 
 export type TaskTabEntry = {
   sessionId: string;
@@ -125,6 +127,7 @@ const WorkspaceActionsContext =
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [summaries, setSummaries] = useState<LocalWorkspaceSummary[]>(() =>
     getLocalWorkspaceSummaries(),
   );
@@ -308,6 +311,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const detail = await apiSyncWorkspace(selectedWorkspaceId);
       setActiveWorkspace(detail);
+      // Update board detail cache immediately with fresh sync data
+      queryClient.setQueryData(workspaceKeys.detail(selectedWorkspaceId), detail);
+      // Invalidate sidebar tasks so they refetch in the background
+      queryClient.invalidateQueries({
+        queryKey: ["workspace", selectedWorkspaceId, "sidebar-tasks"],
+      });
     } catch (err) {
       const apiError = err as ApiError;
       if (isWorkspaceNotFound(apiError)) {
@@ -319,7 +328,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setSyncingWorkspace(false);
     }
-  }, [handleMissingWorkspace, isWorkspaceNotFound, selectedWorkspaceId]);
+  }, [handleMissingWorkspace, isWorkspaceNotFound, queryClient, selectedWorkspaceId]);
 
   const clearSyncError = useCallback(() => {
     setSyncError(null);

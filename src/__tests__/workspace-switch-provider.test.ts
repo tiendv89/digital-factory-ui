@@ -9,6 +9,7 @@
 
 import React from "react";
 import { renderHook, act } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // ─── Mocks (hoisted before any real imports) ────────────────────────────────
@@ -67,7 +68,12 @@ function seedLocalStorage() {
 // ─── Test wrapper ────────────────────────────────────────────────────────────
 
 function wrapper({ children }: { children: React.ReactNode }) {
-  return React.createElement(WorkspaceProvider, null, children);
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return React.createElement(
+    QueryClientProvider,
+    { client: queryClient },
+    React.createElement(WorkspaceProvider, null, children),
+  );
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
