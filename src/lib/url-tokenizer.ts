@@ -24,41 +24,40 @@ function trimTrailingPunctuation(s: string): string {
   return s.slice(0, end);
 }
 
-function pushText(tokens: Token[], value: string): void {
-  const v = value.trim();
-  if (v) tokens.push({ type: "text", value: v });
-}
-
+// Regex-based tokenizer: preserves original text slices (including surrounding
+// spaces) so that adjacent text and link tokens render without losing whitespace.
 export function tokenizeText(text: string): Token[] {
-  const words = text.split(" ");
+  const URL_REGEX = /https?:\/\/\S+/g;
   const tokens: Token[] = [];
-  const pendingWords: string[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
 
-  for (const word of words) {
-    if (word.startsWith("http://") || word.startsWith("https://")) {
-      const trimmed = trimTrailingPunctuation(word);
-      const trailing = word.slice(trimmed.length);
+  while ((match = URL_REGEX.exec(text)) !== null) {
+    const rawUrl = match[0];
+    const trimmedUrl = trimTrailingPunctuation(rawUrl);
+    const trailing = rawUrl.slice(trimmedUrl.length);
+    const start = match.index;
+    const end = start + rawUrl.length;
 
-      if (isValidUrl(trimmed)) {
-        if (pendingWords.length > 0) {
-          pushText(tokens, pendingWords.join(" "));
-          pendingWords.length = 0;
-        }
-        tokens.push({ type: "link", href: trimmed, label: trimmed });
-        if (trailing) {
-          pendingWords.push(trailing);
-        }
-      } else {
-        pendingWords.push(word);
-      }
-    } else if (word !== "") {
-      pendingWords.push(word);
+    if (start > lastIndex) {
+      tokens.push({ type: "text", value: text.slice(lastIndex, start) });
     }
+
+    if (isValidUrl(trimmedUrl)) {
+      tokens.push({ type: "link", href: trimmedUrl, label: trimmedUrl });
+      if (trailing) {
+        tokens.push({ type: "text", value: trailing });
+      }
+    } else {
+      tokens.push({ type: "text", value: rawUrl });
+    }
+
+    lastIndex = end;
   }
 
-  if (pendingWords.length > 0) {
-    pushText(tokens, pendingWords.join(" "));
+  if (lastIndex < text.length) {
+    tokens.push({ type: "text", value: text.slice(lastIndex) });
   }
 
-  return tokens;
+  return tokens.filter((t) => t.type !== "text" || (t as TextToken).value !== "");
 }

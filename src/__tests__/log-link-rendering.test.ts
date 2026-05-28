@@ -103,6 +103,7 @@ function makeTaskDetailWithActivityNote(note: string): TaskDetail {
     activity: [
       {
         action: "in_review",
+        scope: "task",
         actor: "test@example.com",
         occurred_at: "2026-05-09T13:02:00Z",
         note,
