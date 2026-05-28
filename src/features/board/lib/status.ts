@@ -33,6 +33,7 @@ export const STATUS_COLUMNS: StatusColumn[] = [
   { key: "todo", label: "Todo", color: "#3274b4" },
   { key: "ready", label: "Ready", color: "#6e6de7" },
   { key: "in_progress", label: "In Progress", color: "#e08500" },
+  { key: "in_reviewing", label: "In Reviewing", color: "#b45fbd" },
   { key: "blocked", label: "Blocked", color: "#e62a34" },
   { key: "in_review", label: "In Review", color: "#8e67cb" },
   { key: "done", label: "Done", color: "#009252" },
@@ -47,6 +48,7 @@ export const NEXT_ACTIONS: Record<string, string> = {
   todo: "Auto-ready when last dependency is done",
   ready: "Start implementation",
   in_progress: "Waiting for result",
+  in_reviewing: "Agent is reviewing the result",
   blocked: "Human resolves",
   in_review: "Human approves or rejects",
   done: "",
@@ -123,6 +125,7 @@ export function getFeatureStatusColor(status: string): string {
 
 const FEATURE_NEXT_ACTION_PRIORITY: TaskStatus[] = [
   "blocked",
+  "in_reviewing",
   "in_review",
   "in_progress",
   "ready",
