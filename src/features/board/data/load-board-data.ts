@@ -12,6 +12,7 @@ import {
   type ParsedFeature,
   type ParsedTask,
 } from "@/services/yaml-parser";
+import { normalizeFeatureLifecycleStatus } from "@/features/workspaces/lib/workspaceAdapter";
 import type { BoardLoadError } from "../types";
 
 export type BoardPullRequest = GitHubPullRequest;
@@ -76,7 +77,9 @@ async function loadFeature(
   let title = featureId;
   if (statusRaw) {
     const parsed = parseFeatureStatus(statusRaw, featureId);
-    if (parsed.feature_status) featureStatus = parsed.feature_status;
+    if (parsed.feature_status) {
+      featureStatus = normalizeFeatureLifecycleStatus(parsed.feature_status);
+    }
     if (parsed.title) title = parsed.title;
   }
 

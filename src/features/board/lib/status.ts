@@ -94,8 +94,27 @@ export const FEATURE_STATUS_OPTIONS: FeatureStatusOption[] = [
   { key: "cancelled", label: "Cancelled", color: "#5c636e" },
 ];
 
+const VALID_FEATURE_STATUSES = new Set<string>([
+  "in_design",
+  "in_tdd",
+  "ready_for_implementation",
+  "in_implementation",
+  "in_handoff",
+  "done",
+  "blocked",
+  "cancelled",
+]);
+
+export function isValidFeatureStatus(status: string): status is FeatureStatus {
+  return VALID_FEATURE_STATUSES.has(status);
+}
+
+export function normalizeFeatureStatus(status: string): FeatureStatus {
+  return isValidFeatureStatus(status) ? status : "in_design";
+}
+
 export function getFeatureStatusLabel(status: string): string {
-  return FEATURE_STATUS_LABELS[status] ?? status;
+  return FEATURE_STATUS_LABELS[status] ?? "Unknown";
 }
 
 export function getFeatureStatusColor(status: string): string {

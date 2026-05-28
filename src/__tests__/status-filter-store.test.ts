@@ -3,6 +3,13 @@ import {
   getDefaultStatusFilter,
   getStoredStatusFilter,
   saveStatusFilter,
+  getStoredFeatureStatusFilter,
+  saveFeatureStatusFilter,
+  clearStatusFilter,
+  clearFeatureStatusFilter,
+  getStoredBoardMode,
+  saveBoardMode,
+  clearBoardMode,
 } from "../features/board/lib/status-filter-store";
 import { STATUS_COLUMNS } from "../features/board/lib/status";
 
@@ -96,5 +103,49 @@ describe("saveStatusFilter", () => {
     saveStatusFilter(["todo"]);
     saveStatusFilter(["done", "cancelled"]);
     expect(getStoredStatusFilter()).toEqual(["done", "cancelled"]);
+  });
+});
+
+// ─── clear helpers ───────────────────────────────────────────────────────
+
+describe("clearStatusFilter", () => {
+  it("removes a previously saved status filter", () => {
+    saveStatusFilter(["todo", "ready"]);
+    expect(getStoredStatusFilter()).not.toBeNull();
+    clearStatusFilter();
+    expect(getStoredStatusFilter()).toBeNull();
+  });
+
+  it("is a no-op when nothing is stored", () => {
+    expect(() => clearStatusFilter()).not.toThrow();
+    expect(getStoredStatusFilter()).toBeNull();
+  });
+});
+
+describe("clearFeatureStatusFilter", () => {
+  it("removes a previously saved feature status filter", () => {
+    saveFeatureStatusFilter(["in_design", "in_tdd"]);
+    expect(getStoredFeatureStatusFilter()).not.toBeNull();
+    clearFeatureStatusFilter();
+    expect(getStoredFeatureStatusFilter()).toBeNull();
+  });
+
+  it("is a no-op when nothing is stored", () => {
+    expect(() => clearFeatureStatusFilter()).not.toThrow();
+    expect(getStoredFeatureStatusFilter()).toBeNull();
+  });
+});
+
+describe("clearBoardMode", () => {
+  it("removes a previously saved board mode", () => {
+    saveBoardMode("feature");
+    expect(getStoredBoardMode()).toBe("feature");
+    clearBoardMode();
+    expect(getStoredBoardMode()).toBeNull();
+  });
+
+  it("is a no-op when nothing is stored", () => {
+    expect(() => clearBoardMode()).not.toThrow();
+    expect(getStoredBoardMode()).toBeNull();
   });
 });

@@ -26,6 +26,7 @@ export type UseBackendTaskSearchResult = {
 export function useBackendTaskSearch(
   workspaceId: string | null,
   params: TaskSearchParams,
+  featureStatuses?: ReadonlyMap<string, string>,
 ): UseBackendTaskSearchResult {
   const { task_id, title, status, page, limit, sort } = params;
   const [results, setResults] = useState<ParsedFeature[] | null>(null);
@@ -57,7 +58,7 @@ export function useBackendTaskSearch(
           buildTaskParams(searchParams),
         );
         if (cancelled || requestIdRef.current !== id) return;
-        setResults(adaptTaskSummariesToFeatures(paged.items));
+        setResults(adaptTaskSummariesToFeatures(paged.items, featureStatuses));
         setPagination({
           total: paged.total,
           page: paged.page,

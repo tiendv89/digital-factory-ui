@@ -162,7 +162,7 @@ describe("auto-refresh interval stability", () => {
 // Sidebar task click — setSelectedTask receives correct shape
 // ---------------------------------------------------------------------------
 
-const mockSetSelectedTask = vi.fn();
+const mockOpenTaskTab = vi.fn();
 
 vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
   useBoardContext: () => ({
@@ -177,7 +177,6 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
         ],
       },
     ],
-    setSelectedTask: mockSetSelectedTask,
     searchQuery: "",
     activeFilters: { statuses: [] },
   }),
@@ -197,8 +196,7 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
         ],
       },
     ],
-    setSelectedTask: mockSetSelectedTask,
-    openTaskTab: vi.fn(),
+    openTaskTab: mockOpenTaskTab,
     openTaskTabNewSession: vi.fn(),
   }),
 }));
@@ -206,9 +204,9 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
 import { TaskTrackingPanel } from "../features/board/components/TaskTrackingPanel";
 import { TaskTrackingItem } from "../features/board/components/TaskTrackingPanel/TaskTrackingItem";
 
-describe("sidebar task click — sets selected task with correct shape", () => {
+describe("sidebar task click — opens task tab via single click", () => {
   beforeEach(() => {
-    mockSetSelectedTask.mockClear();
+    mockOpenTaskTab.mockClear();
   });
 
   it("TaskTrackingItem calls onSelect with the task and feature", () => {

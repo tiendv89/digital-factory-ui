@@ -2,6 +2,7 @@
 
 import { getNextAction } from "@/features/board/lib/status";
 import { createSingleDoubleClickController } from "@/lib/click-intent";
+import { computeStatusAge } from "@/lib/time";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import { ArrowRight, Bot, Layers } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -30,6 +31,8 @@ export function TaskTrackingItem({
   const actorLabel = task.execution?.actor_type
     ? (ACTOR_TYPE_LABEL[task.execution.actor_type] ?? task.execution.actor_type)
     : null;
+
+  const statusAge = computeStatusAge(task);
 
   const priorityLabel = task.priority?.trim()
     ? task.priority.trim().toUpperCase()
@@ -133,6 +136,14 @@ export function TaskTrackingItem({
           <Layers className="h-2.5 w-2.5 shrink-0 text-text-secondary" />
           <span className="truncate">{feature.title || feature.id}</span>
         </span>
+        {statusAge !== "—" && (
+          <span
+            aria-label={`Status age: ${statusAge}`}
+            className="border border-border bg-surface px-1.5 font-mono font-bold text-text-primary"
+          >
+            {statusAge}
+          </span>
+        )}
         {priorityLabel && (
           <span className="bg-chip-bg px-1.5 font-mono text-text-secondary">
             {priorityLabel}

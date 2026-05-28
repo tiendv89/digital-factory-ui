@@ -37,15 +37,13 @@ import {
   saveStatusFilter,
 } from "../../lib/status-filter-store";
 import {
+  isAllStatusFilterSelected,
+  isAllFeatureStatusFilterSelected,
+} from "../../lib/status-filter";
+import {
   BOARD_DEFAULT_LIMIT,
   BOARD_DEFAULT_SORT,
 } from "../../lib/backend-list-params";
-
-export type SelectedTask = {
-  task: ParsedTask;
-  featureId: string;
-  featureTitle: string;
-} | null;
 
 export type BoardContextValue = {
   workspaceDetail: WorkspaceDetail;
@@ -85,10 +83,6 @@ export type BoardContextValue = {
 
   expandedFeatureIds: Set<string>;
   toggleFeature: (featureId: string) => void;
-  selectedTask: SelectedTask;
-  setSelectedTask: (task: SelectedTask) => void;
-  selectedFeature: ParsedFeature | null;
-  setSelectedFeature: (feature: ParsedFeature | null) => void;
 
   // Backend search results (null = use workspace detail)
   backendTaskResults: ParsedFeature[] | null;
@@ -105,12 +99,24 @@ export type BoardContextValue = {
   setFeaturePage: (page: number) => void;
   taskPagination: PaginationMeta | null;
   featurePagination: PaginationMeta | null;
+
+  // Sort state per mode
+  taskSort: string;
+  setTaskSort: (sort: string) => void;
+  featureSort: string;
+  setFeatureSort: (sort: string) => void;
+
+  // Page size (limit) state per mode
+  taskLimit: number;
+  setTaskLimit: (limit: number) => void;
+  featureLimit: number;
+  setFeatureLimit: (limit: number) => void;
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);
 export type BoardTrackingContextValue = Pick<
   BoardContextValue,
-  "trackedFeatures" | "setSelectedTask" | "openTaskTab" | "openTaskTabNewSession"
+  "trackedFeatures" | "openTaskTab" | "openTaskTabNewSession"
 >;
 
 const BoardTrackingContext = createContext<BoardTrackingContextValue | null>(
@@ -161,96 +167,138 @@ export function BoardProvider({
   const [expandedFeatureIds, setExpandedFeatureIds] = useState<Set<string>>(
     () => new Set(),
   );
-  const [selectedTask, setSelectedTask] = useState<SelectedTask>(null);
-  const [selectedFeature, setSelectedFeature] = useState<ParsedFeature | null>(
-    null,
-  );
   const [taskPage, setTaskPage] = useState(1);
   const [featurePage, setFeaturePage] = useState(1);
+  const [taskSort, setTaskSort] = useState(BOARD_DEFAULT_SORT);
+  const [featureSort, setFeatureSort] = useState(BOARD_DEFAULT_SORT);
+  const [taskLimit, setTaskLimit] = useState(BOARD_DEFAULT_LIMIT);
+  const [featureLimit, setFeatureLimit] = useState(BOARD_DEFAULT_LIMIT);
+
+  // Build a map of feature backend ID -> feature lifecycle status from the
+  // already-loaded features array.  Passed to useBackendTaskSearch so
+  // adaptTaskSummariesToFeatures can set the correct feature lifecycle status
+  // on each ParsedFeature instead of falling back to a task-derived value.
+  const featureStatusMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of features) {
+      if (f.backendId && f.featureStatus) {
+        map.set(f.backendId, f.featureStatus);
+      }
+    }
+    return map as ReadonlyMap<string, string>;
+  }, [features]);
 
   // Backend search hooks
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
   const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
   const trimmedTaskQuery = deferredTaskSearchQuery.trim();
-  const taskSearchActive = boardMode === "task" && trimmedTaskQuery.length > 0;
 
-  // Reset page to 1 when search query or filters change
+  // Backend search is active when either search text is present OR the status
+  // filter is a non-default subset (not all statuses selected).  When every
+  // status is selected there is no effective filter, so we fall back to the
+  // workspace root payload.
+  const taskStatusFilterActive =
+    taskActiveFilters.statuses.length > 0 &&
+    !isAllStatusFilterSelected(taskActiveFilters.statuses);
+  const taskSearchActive =
+    boardMode === "task" &&
+    (trimmedTaskQuery.length > 0 || taskStatusFilterActive);
+
+  // Reset page to 1 when search query, filters, sort, or limit change
   const prevTaskQueryRef = useRef(trimmedTaskQuery);
   const prevTaskStatusRef = useRef(
     taskActiveFilters.statuses.join(","),
   );
+  const prevTaskSortRef = useRef(taskSort);
+  const prevTaskLimitRef = useRef(taskLimit);
   useEffect(() => {
     const currentStatus = taskActiveFilters.statuses.join(",");
     if (
       trimmedTaskQuery !== prevTaskQueryRef.current ||
-      currentStatus !== prevTaskStatusRef.current
+      currentStatus !== prevTaskStatusRef.current ||
+      taskSort !== prevTaskSortRef.current ||
+      taskLimit !== prevTaskLimitRef.current
     ) {
       setTaskPage(1);
     }
     prevTaskQueryRef.current = trimmedTaskQuery;
     prevTaskStatusRef.current = currentStatus;
-  }, [trimmedTaskQuery, taskActiveFilters.statuses]);
+    prevTaskSortRef.current = taskSort;
+    prevTaskLimitRef.current = taskLimit;
+  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskSort, taskLimit]);
 
   const taskSearchParams = useMemo(() => {
     if (!taskSearchActive) return {};
 
-    const status =
-      taskActiveFilters.statuses.length > 0
-        ? taskActiveFilters.statuses.join(",")
-        : undefined;
+    const status = taskStatusFilterActive
+      ? taskActiveFilters.statuses.join(",")
+      : undefined;
 
     return {
-      title: trimmedTaskQuery,
+      title: trimmedTaskQuery || undefined,
       status,
       page: taskPage,
-      limit: BOARD_DEFAULT_LIMIT,
-      sort: BOARD_DEFAULT_SORT,
+      limit: taskLimit,
+      sort: taskSort,
     };
-  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskSearchActive]);
+  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskSearchActive, taskStatusFilterActive, taskSort, taskLimit]);
 
   const {
     results: backendTaskResults,
     searching: taskSearching,
     searchError: taskSearchError,
     pagination: taskPagination,
-  } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams);
+  } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams, featureStatusMap);
 
   const trimmedFeatureQuery = deferredFeatureSearchQuery.trim();
+
+  // Feature-mode backend search activates when search text is present OR the
+  // status filter is a non-default subset.  All-feature-statuses-selected
+  // means no effective filter — fall back to the workspace root payload.
+  const featureStatusFilterActive =
+    featureActiveFilters.statuses.length > 0 &&
+    !isAllFeatureStatusFilterSelected(featureActiveFilters.statuses);
   const featureSearchActive =
-    boardMode === "feature" && trimmedFeatureQuery.length > 0;
+    boardMode === "feature" &&
+    (trimmedFeatureQuery.length > 0 || featureStatusFilterActive);
 
   const prevFeatureQueryRef = useRef(trimmedFeatureQuery);
   const prevFeatureStatusRef = useRef(
     featureActiveFilters.statuses.join(","),
   );
+  const prevFeatureSortRef = useRef(featureSort);
+  const prevFeatureLimitRef = useRef(featureLimit);
   useEffect(() => {
     const currentStatus = featureActiveFilters.statuses.join(",");
     if (
       trimmedFeatureQuery !== prevFeatureQueryRef.current ||
-      currentStatus !== prevFeatureStatusRef.current
+      currentStatus !== prevFeatureStatusRef.current ||
+      featureSort !== prevFeatureSortRef.current ||
+      featureLimit !== prevFeatureLimitRef.current
     ) {
       setFeaturePage(1);
     }
     prevFeatureQueryRef.current = trimmedFeatureQuery;
     prevFeatureStatusRef.current = currentStatus;
-  }, [trimmedFeatureQuery, featureActiveFilters.statuses]);
+    prevFeatureSortRef.current = featureSort;
+    prevFeatureLimitRef.current = featureLimit;
+  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featureSort, featureLimit]);
 
   const featureSearchParams = useMemo(() => {
     if (!featureSearchActive) return {};
 
-    const status =
-      featureActiveFilters.statuses.length > 0
-        ? featureActiveFilters.statuses.join(",")
-        : undefined;
+    const status = featureStatusFilterActive
+      ? featureActiveFilters.statuses.join(",")
+      : undefined;
 
     return {
-      title: trimmedFeatureQuery,
+      title: trimmedFeatureQuery || undefined,
       status,
       page: featurePage,
-      limit: BOARD_DEFAULT_LIMIT,
-      sort: BOARD_DEFAULT_SORT,
+      limit: featureLimit,
+      sort: featureSort,
     };
-  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featurePage, featureSearchActive]);
+  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featurePage, featureSearchActive, featureStatusFilterActive, featureSort, featureLimit]);
 
   const {
     results: backendFeatureResults,
@@ -414,10 +462,6 @@ export function BoardProvider({
 
       expandedFeatureIds,
       toggleFeature,
-      selectedTask,
-      setSelectedTask,
-      selectedFeature,
-      setSelectedFeature,
 
       backendTaskResults,
       backendFeatureResults,
@@ -436,6 +480,15 @@ export function BoardProvider({
       setFeaturePage,
       taskPagination,
       featurePagination,
+
+      taskSort,
+      setTaskSort,
+      featureSort,
+      setFeatureSort,
+      taskLimit,
+      setTaskLimit,
+      featureLimit,
+      setFeatureLimit,
     }),
     [
       workspaceDetail,
@@ -457,8 +510,6 @@ export function BoardProvider({
       handleSetFeatureActiveFilters,
       expandedFeatureIds,
       toggleFeature,
-      selectedTask,
-      selectedFeature,
       backendTaskResults,
       backendFeatureResults,
       taskSearching,
@@ -474,13 +525,17 @@ export function BoardProvider({
       featurePage,
       taskPagination,
       featurePagination,
+
+      taskSort,
+      featureSort,
+      taskLimit,
+      featureLimit,
     ],
   );
 
   const trackingValue = useMemo<BoardTrackingContextValue>(
     () => ({
       trackedFeatures,
-      setSelectedTask,
       openTaskTab,
       openTaskTabNewSession,
     }),

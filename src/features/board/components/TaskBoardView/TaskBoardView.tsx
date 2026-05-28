@@ -1,14 +1,10 @@
 "use client";
 
-import { useDeferredValue, useMemo } from "react";
+import { useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureRow } from "../FeatureRow";
 import { PaginationControls } from "../PaginationControls";
 import { STATUS_COLUMNS } from "../../lib/status";
-import {
-  matchesTaskModeSearch,
-  matchesTaskModeStatusFilter,
-} from "../../lib/filter";
 import {
   AccessDeniedState,
   EmptyBoardState,
@@ -62,11 +58,8 @@ export function TaskBoardView() {
     features,
     loading,
     error,
-    taskSearchQuery,
-    taskActiveFilters,
     expandedFeatureIds,
     toggleFeature,
-    setSelectedTask,
     backendTaskResults,
     taskSearching,
     taskSearchError,
@@ -74,45 +67,20 @@ export function TaskBoardView() {
     openTaskTabNewSession,
     setTaskPage,
     taskPagination,
+    setTaskLimit,
   } = useBoardContext();
-  const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
 
-  // Build a lookup of real feature lifecycle status from the already-loaded
-  // features array (which carries backend FeatureSummary.status).  When
-  // backend task search results are active, enrich them with this lifecycle
-  // status so task-mode feature rows show the real feature status instead of
-  // a task-derived proxy.
-  const featureStatusMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const f of features) {
-      if (f.id && f.featureStatus) {
-        map.set(f.id, f.featureStatus);
-      }
-    }
-    return map;
-  }, [features]);
-
-  // Use backend search results when a search is active; otherwise filter client-side
+  // Use backend search results when a search or filter is active; otherwise
+  // show all features from the workspace root payload without local filtering.
+  // Feature lifecycle status on each ParsedFeature is already set by
+  // adaptTaskSummariesToFeatures from the featureStatusMap passed through
+  // useBackendTaskSearch.
   const visibleFeatures = useMemo<ParsedFeature[]>(() => {
     if (backendTaskResults != null) {
-      // Enrich backend results with real feature lifecycle status when available
-      return backendTaskResults.map((f) => ({
-        ...f,
-        featureStatus: featureStatusMap.get(f.id) ?? f.featureStatus,
-      }));
+      return backendTaskResults;
     }
-    return features.filter(
-      (f) =>
-        matchesTaskModeSearch(f, deferredTaskSearchQuery) &&
-        matchesTaskModeStatusFilter(f, taskActiveFilters.statuses),
-    );
-  }, [
-    features,
-    backendTaskResults,
-    featureStatusMap,
-    deferredTaskSearchQuery,
-    taskActiveFilters,
-  ]);
+    return features;
+  }, [features, backendTaskResults]);
 
   const columnCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -186,7 +154,6 @@ export function TaskBoardView() {
                   feature={feature}
                   isExpanded={expandedFeatureIds.has(feature.id)}
                   onToggle={() => toggleFeature(feature.id)}
-                  onSelectTask={setSelectedTask}
                   onOpenTaskTab={openTaskTab}
                   onOpenTaskTabNewSession={openTaskTabNewSession}
                 />
@@ -199,6 +166,7 @@ export function TaskBoardView() {
         <PaginationControls
           pageInfo={taskPagination}
           onPageChange={setTaskPage}
+          onLimitChange={setTaskLimit}
         />
       )}
     </div>

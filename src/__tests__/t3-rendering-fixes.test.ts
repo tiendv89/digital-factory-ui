@@ -54,7 +54,7 @@ describe("task-mode feature lifecycle status", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
     // The FeatureRow in task mode should show the real feature status label
@@ -72,7 +72,7 @@ describe("task-mode feature lifecycle status", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
     expect(html).toContain("Done");
@@ -89,7 +89,7 @@ describe("task-mode feature lifecycle status", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
     expect(html).toContain("Blocked");
@@ -106,7 +106,7 @@ describe("task-mode feature lifecycle status", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
     expect(html).toContain("In Design");
@@ -129,7 +129,7 @@ describe("task-mode feature lifecycle status", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
     // Must show lifecycle status "Done", not task-derived status.

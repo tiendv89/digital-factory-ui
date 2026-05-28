@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { LogEntry, ParsedTask } from "@/services/yaml-parser";
 import { formatTimestamp } from "@/lib/time";
+import { tokenizeText } from "@/lib/url-tokenizer";
 import {
   formatStatusLabel,
   getStatusStyle,
@@ -119,6 +120,7 @@ function TaskDetailContents({
 }: ContentsProps) {
   const statusStyle = getStatusStyle(task.status);
   const lastUpdatedAt = task.execution?.last_updated_at;
+  const actorType = task.execution?.actor_type;
 
   return (
     <>
@@ -131,13 +133,14 @@ function TaskDetailContents({
         descId={descId}
       />
       <div className="flex-1 overflow-y-auto px-6 py-5">
+        <PullRequestsSection task={task} />
         <MetadataSection
           task={task}
           repository={repository}
           nextAction={nextAction}
-          lastUpdatedAt={lastUpdatedAt}
         />
-        <PullRequestsSection task={task} />
+        <ExecutionSection actorType={actorType} />
+        <LastUpdatedSection lastUpdatedAt={lastUpdatedAt} />
         <TimelineSection log={task.log} />
       </div>
     </>
@@ -206,19 +209,17 @@ function MetadataSection({
   task,
   repository,
   nextAction,
-  lastUpdatedAt,
 }: {
   task: ParsedTask;
   repository: string | undefined;
   nextAction: string | undefined;
-  lastUpdatedAt: string | undefined;
 }) {
-  const actorType = task.execution?.actor_type;
-  const ActorIcon = actorType === "agent" ? Bot : User;
   const repositoryUrl = repository ? `https://github.com/${repository}` : null;
 
   return (
-    <section className="grid grid-cols-2 gap-x-6 gap-y-5 pb-2">
+    <section className="mt-6 border-t border-border pt-5">
+      <h3 className="mb-3 text-sm font-semibold text-text-primary">Details</h3>
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5 pb-2">
       <MetaField
         icon={<Layers className="h-4 w-4" aria-hidden="true" />}
         label="Repository"
@@ -263,22 +264,6 @@ function MetadataSection({
         ) : (
           <NoneValue />
         )}
-      </MetaField>
-
-      <MetaField
-        icon={<ActorIcon className="h-4 w-4" aria-hidden="true" />}
-        label="Executed By"
-      >
-        <div className="flex flex-col">
-          <span className="capitalize text-text-primary">
-            {actorType ?? "—"}
-          </span>
-          {lastUpdatedAt ? (
-            <span className="mt-1 text-xs text-text-muted">
-              {formatTimestamp(lastUpdatedAt)}
-            </span>
-          ) : null}
-        </div>
       </MetaField>
 
       <MetaField label="Depends On" fullWidth>
@@ -329,6 +314,7 @@ function MetadataSection({
           <NoneValue />
         )}
       </MetaField>
+    </div>
     </section>
   );
 }
@@ -364,7 +350,7 @@ function PullRequestsSection({ task }: { task: ParsedTask }) {
   const repoPrUrl = task.pr?.url ?? task.workspace_pr?.url ?? undefined;
 
   return (
-    <section className="mt-6 border-t border-border pt-5">
+    <section className="pb-2">
       <h3 className="mb-3 text-sm font-semibold text-text-primary">
         Pull Requests
       </h3>
@@ -428,6 +414,49 @@ function PullRequestCard({
         />
       </div>
     </a>
+  );
+}
+
+function ExecutionSection({
+  actorType,
+}: {
+  actorType: string | undefined;
+}) {
+  const ActorIcon = actorType === "agent" ? Bot : User;
+
+  return (
+    <section className="mt-6 border-t border-border pt-5">
+      <h3 className="mb-3 text-sm font-semibold text-text-primary">
+        Execution
+      </h3>
+      <div className="flex items-center gap-2">
+        <ActorIcon className="h-4 w-4" aria-hidden="true" />
+        <span className="capitalize text-sm text-text-primary">
+          {actorType ?? "\u2014"}
+        </span>
+      </div>
+    </section>
+  );
+}
+
+function LastUpdatedSection({
+  lastUpdatedAt,
+}: {
+  lastUpdatedAt: string | undefined;
+}) {
+  return (
+    <section className="mt-6 border-t border-border pt-5">
+      <h3 className="mb-3 text-sm font-semibold text-text-primary">
+        Last Updated
+      </h3>
+      {lastUpdatedAt ? (
+        <p className="text-sm text-text-primary">
+          {formatTimestamp(lastUpdatedAt)}
+        </p>
+      ) : (
+        <p className="text-sm italic text-text-muted">\u2014</p>
+      )}
+    </section>
   );
 }
 
@@ -513,10 +542,36 @@ function TimelineEntry({
         </div>
         <span className="text-xs text-text-muted">by {entry.by}</span>
         {entry.note ? (
-          <p className="mt-1 text-sm text-text-secondary">{entry.note}</p>
+          <p className="mt-1 text-sm text-text-secondary">
+            <TimelineNoteText text={entry.note} />
+          </p>
         ) : null}
       </div>
     </li>
+  );
+}
+
+function TimelineNoteText({ text }: { text: string }) {
+  const tokens = tokenizeText(text);
+  return (
+    <>
+      {tokens.map((token, i) =>
+        token.type === "link" ? (
+          <a
+            key={i}
+            href={token.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:opacity-80"
+            data-timeline-link
+          >
+            {token.label}
+          </a>
+        ) : (
+          <span key={i}>{token.value}</span>
+        ),
+      )}
+    </>
   );
 }
 

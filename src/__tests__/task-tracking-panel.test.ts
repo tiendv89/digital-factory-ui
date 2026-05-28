@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ActiveFilters } from "../features/board/types";
 import type { ParsedFeature } from "../services/yaml-parser";
 
-const mockSetSelectedTask = vi.fn();
+const mockOpenTaskTab = vi.fn();
 
 const mockData = vi.hoisted(() => {
   const features: ParsedFeature[] = [
@@ -68,14 +68,12 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
   useBoardContext: () => ({
     features: mockData.context.features,
     trackedFeatures: mockData.context.trackedFeatures,
-    setSelectedTask: mockSetSelectedTask,
     searchQuery: mockData.context.searchQuery,
     activeFilters: mockData.context.activeFilters,
   }),
   useBoardTrackingContext: () => ({
     trackedFeatures: mockData.context.trackedFeatures,
-    setSelectedTask: mockSetSelectedTask,
-    openTaskTab: vi.fn(),
+    openTaskTab: mockOpenTaskTab,
     openTaskTabNewSession: vi.fn(),
   }),
 }));
@@ -91,7 +89,7 @@ describe("TaskTrackingPanel — companion panel", () => {
     mockData.context.trackedFeatures = mockData.features;
     mockData.context.searchQuery = "";
     mockData.context.activeFilters = { statuses: [] };
-    mockSetSelectedTask.mockClear();
+    mockOpenTaskTab.mockClear();
   });
 
   it("renders the compact sidebar header without helper copy", () => {
@@ -102,18 +100,21 @@ describe("TaskTrackingPanel — companion panel", () => {
     );
   });
 
-  it("renders all 3 status sections", () => {
+  it("renders all 4 status sections including blocked", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
+    expect(html).toContain("BLOCKED");
     expect(html).toContain("IN PROGRESS");
     expect(html).toContain("IN REVIEW");
     expect(html).toContain("READY");
   });
 
-  it("renders sections in product order: IN PROGRESS, IN REVIEW, READY", () => {
+  it("renders sections in product order: BLOCKED, IN PROGRESS, IN REVIEW, READY", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
+    const blockedIdx = html.indexOf("BLOCKED");
     const inProgressIdx = html.indexOf("IN PROGRESS");
     const inReviewIdx = html.indexOf("IN REVIEW");
     const readyIdx = html.indexOf("READY");
+    expect(blockedIdx).toBeLessThan(inProgressIdx);
     expect(inProgressIdx).toBeLessThan(inReviewIdx);
     expect(inReviewIdx).toBeLessThan(readyIdx);
   });
@@ -121,7 +122,7 @@ describe("TaskTrackingPanel — companion panel", () => {
   it("starts all sections expanded by default", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
     const expandedMatches = [...html.matchAll(/aria-expanded="true"/g)];
-    expect(expandedMatches.length).toBe(3);
+    expect(expandedMatches.length).toBe(5);
   });
 
   it("shows task cards inside sections when tasks exist", () => {
@@ -148,10 +149,58 @@ describe("TaskTrackingPanel — companion panel", () => {
     expect(html).toContain('aria-label="Task T2"');
   });
 
-  it("does not show tasks with statuses outside the 3 tracked statuses", () => {
+  it("does not show tasks with statuses outside the 4 tracked statuses", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
     expect(html).not.toContain("Setup OAuth providers");
     expect(html).not.toContain("Orphaned task");
+  });
+
+  it("renders a status age badge for tasks with log timestamps", () => {
+    mockData.context.trackedFeatures = [
+      {
+        id: "auth",
+        title: "Auth",
+        featureStatus: "in_implementation",
+        tasks: [
+          {
+            id: "T10",
+            title: "Task with age",
+            status: "in_progress",
+            dependsOn: [],
+            log: [
+              {
+                action: "started",
+                by: "u@e.com",
+                at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+              },
+            ],
+          },
+        ],
+      },
+    ];
+    const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
+    expect(html).toContain('aria-label="Status age:');
+    expect(html).toContain("3h");
+  });
+
+  it("does not render a status age badge when no timestamp is available", () => {
+    mockData.context.trackedFeatures = [
+      {
+        id: "auth",
+        title: "Auth",
+        featureStatus: "in_implementation",
+        tasks: [
+          {
+            id: "T11",
+            title: "Task without age",
+            status: "ready",
+            dependsOn: [],
+          },
+        ],
+      },
+    ];
+    const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
+    expect(html).not.toContain('aria-label="Status age:');
   });
 
   it("shows actor type badge when available", () => {
@@ -419,10 +468,12 @@ describe("groupTrackedTasks — filtering", () => {
     expect(total).toBe(3);
   });
 
-  it("returns sections in product order: in_progress, in_review, ready", () => {
+  it("returns sections in product order: blocked, in_progress, in_reviewing, in_review, ready", () => {
     const sections = groupTrackedTasks(mockData.features);
-    expect(sections[0].status).toBe("in_progress");
-    expect(sections[1].status).toBe("in_review");
-    expect(sections[2].status).toBe("ready");
+    expect(sections[0].status).toBe("blocked");
+    expect(sections[1].status).toBe("in_progress");
+    expect(sections[2].status).toBe("in_reviewing");
+    expect(sections[3].status).toBe("in_review");
+    expect(sections[4].status).toBe("ready");
   });
 });

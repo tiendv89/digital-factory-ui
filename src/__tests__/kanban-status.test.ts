@@ -124,10 +124,8 @@ describe("getFeatureStatusLabel", () => {
     expect(getFeatureStatusLabel("done")).toBe("Done");
   });
 
-  it("falls back to the raw status string for unknown values", () => {
-    expect(getFeatureStatusLabel("some_unknown_state")).toBe(
-      "some_unknown_state",
-    );
+  it("returns 'Unknown' for unrecognized statuses", () => {
+    expect(getFeatureStatusLabel("some_unknown_state")).toBe("Unknown");
   });
 });
 
@@ -158,7 +156,7 @@ describe("FeatureRow task grid", () => {
         feature,
         isExpanded: true,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -208,7 +206,7 @@ describe("FeatureRow task grid", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -249,7 +247,7 @@ describe("FeatureRow task grid", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -287,7 +285,7 @@ describe("FeatureRow task grid", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -311,7 +309,7 @@ describe("FeatureRow feature label", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -332,7 +330,7 @@ describe("FeatureRow feature label", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -363,7 +361,7 @@ describe("FeatureRow segment bar equal-width", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -389,7 +387,7 @@ describe("FeatureRow segment bar equal-width", () => {
         feature,
         isExpanded: false,
         onToggle: () => undefined,
-        onSelectTask: () => undefined,
+        onOpenTaskTab: () => undefined,
       }),
     );
 
@@ -405,7 +403,7 @@ describe("TaskCard", () => {
       React.createElement(TaskCard, {
         featureId: "auth-system",
         featureTitle: "Authentication System",
-        onSelect: () => undefined,
+        onOpenTab: () => undefined,
         task: {
           id: "T3",
           title: "JWT verification",

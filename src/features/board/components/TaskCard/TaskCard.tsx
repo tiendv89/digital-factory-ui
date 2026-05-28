@@ -3,14 +3,12 @@
 import { ArrowRight } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import type { ParsedTask } from "@/services/yaml-parser";
-import type { SelectedTask } from "../KanbanBoard/KanbanBoard.context";
 import { getNextAction } from "../../lib/status";
 
 type TaskCardProps = {
   task: ParsedTask;
   featureId: string;
   featureTitle: string;
-  onSelect: (task: SelectedTask) => void;
   onOpenTab?: (task: ParsedTask) => void;
   onOpenNewTab?: (task: ParsedTask) => void;
 };
@@ -19,7 +17,6 @@ export function TaskCard({
   task,
   featureId,
   featureTitle,
-  onSelect,
   onOpenTab,
   onOpenNewTab,
 }: TaskCardProps) {
@@ -58,11 +55,7 @@ export function TaskCard({
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      if (onOpenTab) {
-        onOpenTab(task);
-      } else {
-        onSelect({ task, featureId, featureTitle });
-      }
+      onOpenTab?.(task);
     }
   }
 
@@ -82,11 +75,7 @@ export function TaskCard({
   }
 
   function handleClick() {
-    if (onOpenTab) {
-      onOpenTab(task);
-    } else {
-      onSelect({ task, featureId, featureTitle });
-    }
+    onOpenTab?.(task);
   }
 
   return (

@@ -1,6 +1,11 @@
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 
-export type TrackedStatus = "in_progress" | "ready" | "in_review";
+export type TrackedStatus =
+  | "blocked"
+  | "in_progress"
+  | "in_reviewing"
+  | "in_review"
+  | "ready";
 
 export type PanelSelection = "kanban_board" | TrackedStatus;
 
@@ -19,7 +24,9 @@ export const TRACKED_SECTIONS: ReadonlyArray<{
   status: TrackedStatus;
   label: string;
 }> = [
+  { status: "blocked", label: "BLOCKED" },
   { status: "in_progress", label: "IN PROGRESS" },
+  { status: "in_reviewing", label: "IN REVIEWING" },
   { status: "in_review", label: "IN REVIEW" },
   { status: "ready", label: "READY" },
 ];

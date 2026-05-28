@@ -43,7 +43,7 @@ export function buildTaskParams(params: TaskSearchParams): URLSearchParams {
 }
 
 export const SIDEBAR_TASK_PARAMS: URLSearchParams = buildTaskParams({
-  status: ["in_progress", "in_review", "ready"],
+  status: ["blocked", "in_progress", "in_reviewing", "in_review", "ready"],
   sort: "task_id_asc",
   page: 1,
   limit: 50,

@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  AlertOctagon,
   Check,
   ChevronDown,
   ChevronRight,
   Clock3,
+  Eye,
   Zap,
   type LucideIcon,
 } from "lucide-react";
@@ -16,10 +18,20 @@ const STATUS_ICON_STYLE: Record<
   TrackedStatus,
   { icon: LucideIcon; boxClass: string; iconClass: string }
 > = {
+  blocked: {
+    icon: AlertOctagon,
+    boxClass: "bg-danger-bg",
+    iconClass: "text-danger",
+  },
   in_progress: {
     icon: Zap,
     boxClass: "bg-warning-bg",
     iconClass: "text-warning",
+  },
+  in_reviewing: {
+    icon: Eye,
+    boxClass: "bg-info-bg",
+    iconClass: "text-info",
   },
   in_review: {
     icon: Clock3,

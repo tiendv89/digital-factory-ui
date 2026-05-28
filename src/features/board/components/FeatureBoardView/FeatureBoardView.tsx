@@ -1,18 +1,12 @@
 "use client";
 
-import { useDeferredValue, useMemo } from "react";
+import { useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureListRow } from "./FeatureListRow";
 import { PaginationControls } from "../PaginationControls";
-import type { ParsedFeature } from "@/services/yaml-parser";
-import {
-  matchesFeatureModeSearch,
-  matchesFeatureModeStatusFilter,
-} from "../../lib/filter";
 import {
   FEATURE_STATUS_OPTIONS,
-  getFeatureStatusColor,
-  getFeatureStatusLabel,
+  isValidFeatureStatus,
 } from "../../lib/status";
 import {
   AccessDeniedState,
@@ -30,23 +24,8 @@ type FeatureStatusColumn = {
   color: string;
 };
 
-function getFeatureStatusColumns(
-  features: ParsedFeature[],
-): FeatureStatusColumn[] {
-  const columns: FeatureStatusColumn[] = [...FEATURE_STATUS_OPTIONS];
-  const knownStatuses = new Set(columns.map((column) => column.key));
-
-  for (const feature of features) {
-    if (knownStatuses.has(feature.featureStatus)) continue;
-    knownStatuses.add(feature.featureStatus);
-    columns.push({
-      key: feature.featureStatus,
-      label: getFeatureStatusLabel(feature.featureStatus),
-      color: getFeatureStatusColor(feature.featureStatus),
-    });
-  }
-
-  return columns;
+function getFeatureStatusColumns(): FeatureStatusColumn[] {
+  return [...FEATURE_STATUS_OPTIONS];
 }
 
 function FeatureColumnHeader({
@@ -100,9 +79,6 @@ export function FeatureBoardView() {
     features,
     loading,
     error,
-    featureSearchQuery,
-    featureActiveFilters,
-    setSelectedFeature,
     openFeatureTab,
     openFeatureTabNewSession,
     backendFeatureResults,
@@ -110,28 +86,19 @@ export function FeatureBoardView() {
     featureSearchError,
     setFeaturePage,
     featurePagination,
+    setFeatureLimit,
   } = useBoardContext();
-  const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
 
-  // Use backend search results when a search is active; otherwise filter client-side
+  // Use backend search results when a search or filter is active; otherwise
+  // show all features from the workspace root payload without local filtering.
+  // Only features with valid lifecycle statuses are shown in Feature/Kanban mode —
+  // task-derived statuses (todo, ready, in_progress, in_review) are never columns.
   const visibleFeatures = useMemo(() => {
-    if (backendFeatureResults != null) return backendFeatureResults;
-    return features.filter(
-      (f) =>
-        matchesFeatureModeSearch(f, deferredFeatureSearchQuery) &&
-        matchesFeatureModeStatusFilter(f, featureActiveFilters.statuses),
-    );
-  }, [
-    features,
-    backendFeatureResults,
-    deferredFeatureSearchQuery,
-    featureActiveFilters,
-  ]);
+    const source = backendFeatureResults != null ? backendFeatureResults : features;
+    return source.filter((f) => isValidFeatureStatus(f.featureStatus));
+  }, [features, backendFeatureResults]);
 
-  const featureStatusColumns = useMemo(
-    () => getFeatureStatusColumns(visibleFeatures),
-    [visibleFeatures],
-  );
+  const featureStatusColumns = useMemo(() => getFeatureStatusColumns(), []);
 
   const featureStatusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -249,6 +216,7 @@ export function FeatureBoardView() {
         <PaginationControls
           pageInfo={featurePagination}
           onPageChange={setFeaturePage}
+          onLimitChange={setFeatureLimit}
         />
       )}
     </div>

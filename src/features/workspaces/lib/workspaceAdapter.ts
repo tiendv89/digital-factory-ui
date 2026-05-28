@@ -71,26 +71,35 @@ function findRepositoryPullRequestRef(
   return (task.pr_refs ?? []).find((ref) => ref.url !== workspacePr?.url);
 }
 
-function deriveFeatureStatusFromTasks(
-  tasks: Array<{ status: string }>,
-): string {
-  if (tasks.length === 0) return "unknown";
+/** Feature lifecycle statuses that are valid for feature-level display. */
+export const FEATURE_LIFECYCLE_STATUSES = [
+  "in_design",
+  "in_tdd",
+  "ready_for_implementation",
+  "in_implementation",
+  "in_handoff",
+  "done",
+  "blocked",
+  "cancelled",
+] as const;
 
-  const statuses = tasks.map((task) => task.status);
-  const allDone = statuses.every((status) => status === "done");
-  if (allDone) return "done";
+export type FeatureLifecycleStatus =
+  (typeof FEATURE_LIFECYCLE_STATUSES)[number];
 
-  const allCancelled = statuses.every((status) => status === "cancelled");
-  if (allCancelled) return "cancelled";
+const FEATURE_LIFECYCLE_STATUS_SET: ReadonlySet<string> = new Set(
+  FEATURE_LIFECYCLE_STATUSES,
+);
 
-  if (statuses.includes("blocked")) return "blocked";
-  if (statuses.includes("in_progress") || statuses.includes("in_review")) {
-    return "in_implementation";
-  }
-  if (statuses.includes("ready")) return "ready_for_implementation";
-  if (statuses.includes("todo")) return "in_design";
+export function isFeatureLifecycleStatus(
+  value: string,
+): value is FeatureLifecycleStatus {
+  return FEATURE_LIFECYCLE_STATUS_SET.has(value);
+}
 
-  return "unknown";
+export function normalizeFeatureLifecycleStatus(
+  value: string,
+): FeatureLifecycleStatus | "unknown" {
+  return isFeatureLifecycleStatus(value) ? value : "unknown";
 }
 
 export function adaptTaskSummary(task: TaskSummary): ParsedTask {
@@ -147,7 +156,7 @@ export function adaptFeatureSummary(
   return {
     id: feature.feature_name,
     title: feature.title,
-    featureStatus: feature.status,
+    featureStatus: normalizeFeatureLifecycleStatus(feature.status),
     tasks: featureTasks,
     backendId: feature.id,
     currentStage: feature.current_stage,
@@ -160,8 +169,20 @@ export function adaptWorkspaceDetail(detail: WorkspaceDetail): ParsedFeature[] {
   return detail.features.map((f) => adaptFeatureSummary(f, detail.tasks));
 }
 
+/**
+ * Convert backend task search results into ParsedFeature objects.
+ *
+ * Feature lifecycle status is read from the optional {@link featureStatuses} map
+ * keyed by feature_id. When the map has an entry the status is normalized to a
+ * valid feature lifecycle value (or "unknown"). When the map is absent or does
+ * not contain the feature_id, `featureStatus` falls back to "unknown".
+ *
+ * Task lifecycle values (todo, ready, in_progress, in_review) are **never**
+ * used to derive a feature-level status.
+ */
 export function adaptTaskSummariesToFeatures(
   tasks: TaskSummary[],
+  featureStatuses?: ReadonlyMap<string, string>,
 ): ParsedFeature[] {
   const featureMap = new Map<
     string,
@@ -172,11 +193,12 @@ export function adaptTaskSummariesToFeatures(
   for (const task of tasks) {
     const featureKey = task.feature_id || task.feature_name || "unknown";
     if (!featureMap.has(featureKey)) {
+      const rawStatus = featureStatuses?.get(task.feature_id ?? "");
       featureMap.set(featureKey, {
         feature: {
           id: task.feature_name || featureKey,
           title: task.feature_name || featureKey,
-          featureStatus: "unknown",
+          featureStatus: normalizeFeatureLifecycleStatus(rawStatus ?? ""),
           tasks: [],
         },
         order: order++,
@@ -187,12 +209,7 @@ export function adaptTaskSummariesToFeatures(
 
   return [...featureMap.values()]
     .sort((a, b) => a.order - b.order)
-    .map((entry) => {
-      entry.feature.featureStatus = deriveFeatureStatusFromTasks(
-        entry.feature.tasks,
-      );
-      return entry.feature;
-    });
+    .map((entry) => entry.feature);
 }
 
 export function adaptFeatureSummaries(
@@ -201,7 +218,7 @@ export function adaptFeatureSummaries(
   return features.map((f) => ({
     id: f.feature_name,
     title: f.title,
-    featureStatus: f.status,
+    featureStatus: normalizeFeatureLifecycleStatus(f.status),
     tasks: [],
     backendId: f.id,
     currentStage: f.current_stage,
@@ -214,7 +231,7 @@ export function adaptFeatureDetail(feature: FeatureDetail): ParsedFeature {
   return {
     id: feature.feature_name,
     title: feature.title,
-    featureStatus: feature.status,
+    featureStatus: normalizeFeatureLifecycleStatus(feature.status),
     tasks: feature.tasks.map(adaptTaskSummary),
     activity: adaptFeatureActivity(feature),
     backendId: feature.id,

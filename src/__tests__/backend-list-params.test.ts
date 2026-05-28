@@ -57,10 +57,10 @@ describe("shouldResetPage", () => {
     expect(shouldResetPage({ ...base, page: 1 }, { ...base, page: 5 })).toBe(false);
   });
 
-  it("returns false when only limit changes", () => {
+  it("returns true when limit changes", () => {
     expect(
       shouldResetPage({ ...base, page: 1, limit: 50 }, { ...base, page: 1, limit: 100 }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("returns false when nothing changes", () => {

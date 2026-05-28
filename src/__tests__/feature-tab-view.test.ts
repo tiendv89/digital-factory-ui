@@ -1259,14 +1259,13 @@ describe("Tab-first click — TaskCard", () => {
           task,
           featureId: "feat-1",
           featureTitle: "My Feature",
-          onSelect: vi.fn(),
           onOpenTab: vi.fn(),
         }),
       ),
     ).not.toThrow();
   });
 
-  it("renders without error when onOpenTab is omitted (falls back to onSelect)", () => {
+  it("renders without error when onOpenNewTab is provided", () => {
     const task = makeParsedTask({ id: "T3", title: "Selection Task" });
     expect(() =>
       renderToStaticMarkup(
@@ -1274,7 +1273,7 @@ describe("Tab-first click — TaskCard", () => {
           task,
           featureId: "feat-1",
           featureTitle: "My Feature",
-          onSelect: vi.fn(),
+          onOpenNewTab: vi.fn(),
         }),
       ),
     ).not.toThrow();
@@ -1287,7 +1286,6 @@ describe("Tab-first click — TaskCard", () => {
         task,
         featureId: "feat-1",
         featureTitle: "My Feature",
-        onSelect: vi.fn(),
         onOpenTab: vi.fn(),
       }),
     );
