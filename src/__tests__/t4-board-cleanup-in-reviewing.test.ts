@@ -157,27 +157,19 @@ vi.mock("@/features/board/components/BoardHeader/BoardHeader", () => ({
     React.createElement("header", { "data-board-header": true }),
 }));
 
-vi.mock(
-  "@/features/board/components/KanbanBoard/KanbanBoard.context",
-  () => ({
-    BoardProvider: ({ children }: { children: React.ReactNode }) =>
-      React.createElement(
-        "div",
-        { "data-board-provider": true },
-        children,
-      ),
-    useBoardContext: () => mockBoardContextForBoardPage,
-    useBoardTrackingContext: () => ({
-      trackedFeatures: [],
-      openTaskTab: vi.fn(),
-      openTaskTabNewSession: vi.fn(),
-    }),
+vi.mock("@/features/board/components/KanbanBoard/KanbanBoard.context", () => ({
+  BoardProvider: ({ children }: { children: React.ReactNode }) =>
+    React.createElement("div", { "data-board-provider": true }, children),
+  useBoardContext: () => mockBoardContextForBoardPage,
+  useBoardTrackingContext: () => ({
+    trackedFeatures: [],
+    openTaskTab: vi.fn(),
+    openTaskTabNewSession: vi.fn(),
   }),
-);
+}));
 
 vi.mock("@/features/board/components/KanbanBoard/KanbanBoard", () => ({
-  KanbanBoard: () =>
-    React.createElement("div", { "data-kanban-board": true }),
+  KanbanBoard: () => React.createElement("div", { "data-kanban-board": true }),
 }));
 
 vi.mock(
@@ -314,8 +306,8 @@ describe("Feature Mode — Task Mode-only status exclusion", () => {
     // FeatureBoardView uses getFeatureStatusColumns() which maps
     // FEATURE_STATUS_OPTIONS directly.  Since FEATURE_STATUS_OPTIONS does not
     // contain in_reviewing, FeatureBoardView will never render it.
-    expect(
-      FEATURE_STATUS_OPTIONS.some((o) => o.key === "in_reviewing"),
-    ).toBe(false);
+    expect(FEATURE_STATUS_OPTIONS.some((o) => o.key === "in_reviewing")).toBe(
+      false,
+    );
   });
 });

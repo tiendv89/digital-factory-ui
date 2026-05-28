@@ -85,7 +85,9 @@ describe("getNextAction", () => {
   });
 
   it("maps status → workflow transition label from the task status diagram", () => {
-    expect(getNextAction("todo")).toBe("Auto-ready when last dependency is done");
+    expect(getNextAction("todo")).toBe(
+      "Auto-ready when last dependency is done",
+    );
     expect(getNextAction("ready")).toBe("Start implementation");
     expect(getNextAction("in_progress")).toBe("Waiting for result");
     expect(getNextAction("in_reviewing")).toBe("Agent is reviewing the result");
