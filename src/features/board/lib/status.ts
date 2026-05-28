@@ -2,6 +2,7 @@ export type TaskStatus =
   | "todo"
   | "ready"
   | "in_progress"
+  | "in_reviewing"
   | "blocked"
   | "in_review"
   | "done"
