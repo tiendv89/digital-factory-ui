@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getWorkspaceTask } from "@/services/workflow-backend/client";
 import type { TaskDetail, ApiError } from "@/services/workflow-backend/types";
+import { workspaceKeys } from "@/lib/query-keys";
 
 export type UseWorkspaceTaskResult = {
   task: TaskDetail | null;
@@ -15,45 +16,20 @@ export function useWorkspaceTask(
   workspaceId: string | null,
   taskId: string | null,
 ): UseWorkspaceTaskResult {
-  const [task, setTask] = useState<TaskDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [tick, setTick] = useState(0);
-  const requestId = useRef(0);
+  const enabled = Boolean(workspaceId && taskId);
 
-  const reload = useCallback(() => {
-    setTick((t) => t + 1);
-  }, []);
+  const { data, isFetching, error, refetch } = useQuery<TaskDetail, ApiError>({
+    queryKey: enabled
+      ? workspaceKeys.task(workspaceId!, taskId!)
+      : ["workspace-task-disabled"],
+    queryFn: () => getWorkspaceTask(workspaceId!, taskId!),
+    enabled,
+  });
 
-  useEffect(() => {
-    if (!workspaceId || !taskId) {
-      setTask(null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
-    const id = ++requestId.current;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    getWorkspaceTask(workspaceId, taskId)
-      .then((detail) => {
-        if (cancelled || requestId.current !== id) return;
-        setTask(detail);
-        setLoading(false);
-      })
-      .catch((err: ApiError) => {
-        if (cancelled || requestId.current !== id) return;
-        setError(err);
-        setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceId, taskId, tick]);
-
-  return { task, loading, error, reload };
+  return {
+    task: data ?? null,
+    loading: isFetching && !data,
+    error: error ?? null,
+    reload: () => void refetch(),
+  };
 }
