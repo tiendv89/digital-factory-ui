@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getWorkspace } from "@/services/workflow-backend";
 import type { WorkspaceDetail } from "@/services/workflow-backend";
 import type { ParsedFeature } from "@/services/yaml-parser";
 import { adaptWorkspaceDetail } from "@/features/workspaces/lib/workspaceAdapter";
 import type { BoardLoadError } from "../types";
 import { mapApiBoardError } from "../lib/error-utils";
+import { workspaceKeys } from "@/lib/query-keys";
 
 export type UseBoardDataResult = {
   features: ParsedFeature[];
@@ -24,68 +26,31 @@ export function useBoardData(
   options: UseBoardDataOptions = {},
 ): UseBoardDataResult {
   const { initialData } = options;
-  const [features, setFeatures] = useState<ParsedFeature[]>(() =>
-    initialData ? adaptWorkspaceDetail(initialData) : [],
-  );
-  const [loading, setLoading] = useState<boolean>(
-    workspaceId !== null && !initialData,
-  );
-  const [error, setError] = useState<BoardLoadError | null>(null);
-  const [tick, setTick] = useState(0);
-  const requestId = useRef(0);
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: workspaceKeys.detail(workspaceId ?? ""),
+    queryFn: () => getWorkspace(workspaceId!),
+    enabled: workspaceId !== null,
+    // Seed the cache with workspace data already loaded by WorkspaceContext.
+    // TanStack Query renders immediately with this data while a background
+    // fetch confirms freshness. On subsequent mounts within the 5-min stale
+    // window the cache entry is used directly and no fetch is triggered.
+    initialData: initialData ?? undefined,
+  });
 
   const reload = useCallback(() => {
-    setTick((t) => t + 1);
-  }, []);
+    if (!workspaceId) return;
+    queryClient.invalidateQueries({ queryKey: workspaceKeys.detail(workspaceId) });
+    refetch();
+  }, [workspaceId, queryClient, refetch]);
 
-  // When initialData changes (e.g. workspace synced), update features immediately
-  const prevInitialDataRef = useRef<WorkspaceDetail | undefined>(initialData);
-  useEffect(() => {
-    const next = initialData;
-    if (!next) return;
-    if (next === prevInitialDataRef.current) return;
-    prevInitialDataRef.current = next;
-    setFeatures(adaptWorkspaceDetail(next));
-    setLoading(false);
-    setError(null);
-  }, [initialData]);
+  if (!workspaceId) {
+    return { features: [], loading: false, error: null, reload };
+  }
 
-  useEffect(() => {
-    if (!workspaceId) {
-      setFeatures([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
+  const features = data ? adaptWorkspaceDetail(data) : [];
+  const boardError = error ? mapApiBoardError(error) : null;
 
-    if (tick === 0 && initialData) {
-      setFeatures(adaptWorkspaceDetail(initialData));
-      setLoading(false);
-      return;
-    }
-
-    const id = ++requestId.current;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    getWorkspace(workspaceId)
-      .then((detail) => {
-        if (cancelled || requestId.current !== id) return;
-        setFeatures(adaptWorkspaceDetail(detail));
-        setError(null);
-        setLoading(false);
-      })
-      .catch((err: unknown) => {
-        if (cancelled || requestId.current !== id) return;
-        setError(mapApiBoardError(err));
-        setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceId, tick, initialData]);
-
-  return { features, loading, error, reload };
+  return { features, loading: isLoading, error: boardError, reload };
 }
