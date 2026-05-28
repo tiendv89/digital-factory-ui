@@ -269,11 +269,11 @@ describe("FEATURE_STATUS_OPTIONS — Task Mode-only exclusion", () => {
   });
 
   it("does not contain any task lifecycle status", () => {
-    const keys = new Set(FEATURE_STATUS_OPTIONS.map((o) => o.key));
-    expect(keys.has("in_reviewing" as any)).toBe(false);
-    expect(keys.has("todo" as any)).toBe(false);
-    expect(keys.has("ready" as any)).toBe(false);
-    expect(keys.has("in_review" as any)).toBe(false);
+    const keys = new Set<string>(FEATURE_STATUS_OPTIONS.map((o) => o.key));
+    expect(keys.has("in_reviewing")).toBe(false);
+    expect(keys.has("todo")).toBe(false);
+    expect(keys.has("ready")).toBe(false);
+    expect(keys.has("in_review")).toBe(false);
   });
 });
 
@@ -297,17 +297,15 @@ describe("TaskBoardView — In Reviewing column header rendering", () => {
 
 describe("Feature Mode — Task Mode-only status exclusion", () => {
   it("FEATURE_STATUS_OPTIONS does not include in_reviewing", () => {
-    expect(
-      FEATURE_STATUS_OPTIONS.find((o) => o.key === "in_reviewing"),
-    ).toBeUndefined();
+    const keys = FEATURE_STATUS_OPTIONS.map((o) => o.key as string);
+    expect(keys).not.toContain("in_reviewing");
   });
 
   it("FeatureBoardView will not render in_reviewing column because FEATURE_STATUS_OPTIONS lacks it", () => {
     // FeatureBoardView uses getFeatureStatusColumns() which maps
     // FEATURE_STATUS_OPTIONS directly.  Since FEATURE_STATUS_OPTIONS does not
     // contain in_reviewing, FeatureBoardView will never render it.
-    expect(FEATURE_STATUS_OPTIONS.some((o) => o.key === "in_reviewing")).toBe(
-      false,
-    );
+    const keys = FEATURE_STATUS_OPTIONS.map((o) => o.key as string);
+    expect(keys.includes("in_reviewing")).toBe(false);
   });
 });
