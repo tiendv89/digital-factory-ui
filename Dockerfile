@@ -22,8 +22,6 @@ RUN npm install -g pnpm@10.5.2
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ARG NEXT_PUBLIC_API_BASE_URL
-ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 RUN apk add --no-cache git curl \
     && pnpm run type-check \
     && pnpm build
