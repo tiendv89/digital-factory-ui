@@ -1,8 +1,6 @@
 export {
   FeatureTabView,
   type FeatureTabViewProps,
-  FeatureTaskDrilldown,
-  DrilldownTaskContent,
 } from "./FeatureTabView";
 export { FeatureTabHeader, type FeatureTabHeaderProps } from "./FeatureTabHeader";
 export { FeatureDocumentPanel } from "./FeatureDocumentPanel";

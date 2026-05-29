@@ -82,7 +82,7 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
 }));
 
 import { FeatureTabView } from "../features/board/components/FeatureTabView/FeatureTabView";
-import { FeatureTaskDrilldown, DrilldownTaskContent } from "../features/board/components/FeatureTabView/FeatureTabView";
+import { FeatureTaskDrilldown, DrilldownTaskContent } from "../features/board/components/FeatureTabView/FeatureTaskDrilldown";
 import { WorkspaceTabBar } from "../features/workspaces/components/WorkspaceTabBar/WorkspaceTabBar";
 import { FeatureBoardView } from "../features/board/components/FeatureBoardView/FeatureBoardView";
 import { FeatureListRow } from "../features/board/components/FeatureBoardView/FeatureListRow";

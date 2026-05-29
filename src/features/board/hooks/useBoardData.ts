@@ -34,7 +34,7 @@ export function useBoardData(
     enabled: workspaceId !== null,
     // Seed the cache with workspace data already loaded by WorkspaceContext.
     // TanStack Query renders immediately with this data while a background
-    // fetch confirms freshness. On subsequent mounts within the 5-min stale
+    // fetch confirms freshness. On subsequent mounts within the 1-min stale
     // window the cache entry is used directly and no fetch is triggered.
     initialData: initialData ?? undefined,
   });

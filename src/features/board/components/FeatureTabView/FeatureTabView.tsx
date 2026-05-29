@@ -16,11 +16,7 @@ import { FeatureTabHeader } from "./FeatureTabHeader";
 import { FeatureDocumentPanel } from "./FeatureDocumentPanel";
 import { FeatureTasksPanel } from "./FeatureTasksPanel";
 import { FeatureLogsPanel } from "./FeatureLogsPanel";
-import { FeatureTaskDrilldown } from "./FeatureTaskDrilldown";
 import type { FeatureDetail } from "@/services/workflow-backend/types";
-
-// Re-export for consumers that import directly from this file.
-export { FeatureTaskDrilldown, DrilldownTaskContent } from "./FeatureTaskDrilldown";
 
 export type FeatureTabViewProps = {
   workspaceId: string;
@@ -79,11 +75,14 @@ export function FeatureTabView({
 }
 
 function FeatureTabContent({ feature }: { feature: FeatureDetail }) {
-  const { activeFeatureTabId, closeFeatureTab, goToBoard } =
-    useWorkspaceContext();
+  const {
+    activeFeatureTabId,
+    closeFeatureTab,
+    goToBoard,
+    openTaskTab,
+  } = useWorkspaceContext();
   const [copied, setCopied] = useState(false);
   const [activePanel, setActivePanel] = useState<FeatureTabPanel>("logs");
-  const [drilldownTaskId, setDrilldownTaskId] = useState<string | null>(null);
 
   function handleBackToBoard() {
     if (activeFeatureTabId) {
@@ -112,21 +111,21 @@ function FeatureTabContent({ feature }: { feature: FeatureDetail }) {
     }
   }
 
+  function handleOpenTaskTab(taskId: string, taskName: string, title: string) {
+    openTaskTab({
+      taskId,
+      taskName,
+      title,
+      featureId: feature.id,
+      featureName: feature.feature_name,
+      parentFeatureTabSessionId: activeFeatureTabId ?? undefined,
+    });
+  }
+
   const hasProductSpec =
     feature.stages?.product_spec?.review_status === "approved";
   const hasTechnicalDesign =
     feature.stages?.technical_design?.review_status === "approved";
-
-  if (drilldownTaskId) {
-    return (
-      <FeatureTaskDrilldown
-        workspaceId={feature.workspace_id}
-        featureId={feature.id}
-        taskId={drilldownTaskId}
-        onBack={() => setDrilldownTaskId(null)}
-      />
-    );
-  }
 
   return (
     <div
@@ -196,7 +195,7 @@ function FeatureTabContent({ feature }: { feature: FeatureDetail }) {
         {activePanel === "tasks" && (
           <FeatureTasksPanel
             feature={feature}
-            onDrilldown={setDrilldownTaskId}
+            onOpenTaskTab={handleOpenTaskTab}
           />
         )}
         {activePanel === "logs" && <FeatureLogsPanel feature={feature} />}

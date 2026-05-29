@@ -56,6 +56,8 @@ export type TaskTabEntry = {
   title: string;
   featureId?: string;
   featureName?: string;
+  /** When set, closing this task tab should reactivate the parent feature tab. */
+  parentFeatureTabSessionId?: string;
 };
 
 export type FeatureTabEntry = {
@@ -388,9 +390,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const closeTaskTab = useCallback(
     (sessionId: string) => {
+      // Look up the tab being closed to check for parent feature tab context
+      const tab = openTaskTabsRef.current.find(
+        (t) => t.sessionId === sessionId,
+      );
       setOpenTaskTabs((prev) => removeTaskTab(prev, sessionId));
       if (activeTaskTabId === sessionId) {
         setActiveTaskTabId(null);
+        if (tab?.parentFeatureTabSessionId) {
+          // Reactivate the parent feature tab instead of going to board
+          const parentTab = openFeatureTabsRef.current.find(
+            (ft) => ft.sessionId === tab.parentFeatureTabSessionId,
+          );
+          if (parentTab) {
+            setActiveFeatureTabId(parentTab.sessionId);
+            setActiveSurface("feature-tab");
+            router.push(getFeatureTabHref(parentTab));
+            return;
+          }
+        }
         setActiveSurface("board");
         router.push("/board");
       }

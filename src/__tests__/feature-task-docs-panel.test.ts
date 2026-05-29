@@ -107,7 +107,7 @@ describe("FeatureTasksPanel — tab labels", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).toContain("Tasks List");
@@ -118,7 +118,7 @@ describe("FeatureTasksPanel — tab labels", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).toContain("Task Docs");
@@ -129,7 +129,7 @@ describe("FeatureTasksPanel — tab labels", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).not.toContain("tasks.md");
@@ -148,7 +148,7 @@ describe("FeatureTasksPanel — Tasks List subview", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).toContain("data-feature-tasks-empty");
@@ -170,7 +170,7 @@ describe("FeatureTasksPanel — Tasks List subview", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).toContain("data-feature-tasks-list");
@@ -188,7 +188,7 @@ describe("FeatureTasksPanel — Tasks List subview", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).toContain(">2<");
@@ -216,7 +216,7 @@ describe("FeatureTasksPanel — Task Docs subview states", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -237,7 +237,7 @@ describe("FeatureTasksPanel — Task Docs subview states", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -264,7 +264,7 @@ describe("FeatureTasksPanel — Task Docs subview states", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     // The "Open in GitHub" link is in the component tree (inside the
@@ -295,7 +295,7 @@ describe("FeatureTasksPanel — Task Docs subview states", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -332,7 +332,7 @@ describe("FeatureTasksPanel — inline content path", () => {
     renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -357,7 +357,7 @@ describe("FeatureTasksPanel — inline content path", () => {
     renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -389,7 +389,7 @@ describe("FeatureTasksPanel — content proxy fetch path", () => {
     renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -418,7 +418,7 @@ describe("FeatureTasksPanel — no legacy copy", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -463,7 +463,7 @@ describe("FeatureTasksPanel — tasks_md document selection", () => {
     renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -498,7 +498,7 @@ describe("FeatureTasksPanel — tasks_md document selection", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -534,7 +534,7 @@ describe("FeatureTasksPanel — error state", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -567,7 +567,7 @@ describe("FeatureTasksPanel — error state", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -598,7 +598,7 @@ describe("FeatureTasksPanel — empty content state", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -618,7 +618,7 @@ describe("FeatureTasksPanel — empty content state", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -653,7 +653,7 @@ describe("FeatureTasksPanel — no raw URL as content", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 
@@ -684,7 +684,7 @@ describe("FeatureTasksPanel — no raw URL as content", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
 

@@ -8,13 +8,13 @@ global.document = { addEventListener: () => {}, removeEventListener: () => {}, v
 
 import { createQueryClient } from "../lib/query-client";
 
-const FIVE_MINUTES = 5 * 60 * 1000;
+const ONE_MINUTE = 60_000;
 
 describe("createQueryClient", () => {
-  it("creates a QueryClient with 5-minute stale time", () => {
+  it("creates a QueryClient with 1-minute stale time", () => {
     const client = createQueryClient();
     const defaults = client.getDefaultOptions();
-    expect(defaults.queries?.staleTime).toBe(FIVE_MINUTES);
+    expect(defaults.queries?.staleTime).toBe(ONE_MINUTE);
   });
 
   it("disables refetch on window focus", () => {
