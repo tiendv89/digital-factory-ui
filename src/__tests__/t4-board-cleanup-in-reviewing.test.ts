@@ -17,6 +17,7 @@ import {
   FEATURE_STATUS_OPTIONS,
   STATUS_COLUMNS,
 } from "../features/board/lib/status";
+import { BOARD_DEFAULT_SORT } from "../features/board/lib/backend-list-params";
 
 // ─── 1. Board page no longer renders "Create Task" button ──────────────────
 
@@ -125,10 +126,6 @@ const mockBoardContextForBoardPage = vi.hoisted(() => ({
   setFeaturePage: vi.fn(),
   taskPagination: null,
   featurePagination: null,
-  taskSort: "updated_at_desc",
-  setTaskSort: vi.fn(),
-  featureSort: "updated_at_desc",
-  setFeatureSort: vi.fn(),
   taskLimit: 20,
   setTaskLimit: vi.fn(),
   featureLimit: 20,
@@ -307,5 +304,81 @@ describe("Feature Mode — Task Mode-only status exclusion", () => {
     // contain in_reviewing, FeatureBoardView will never render it.
     const keys = FEATURE_STATUS_OPTIONS.map((o) => o.key as string);
     expect(keys.includes("in_reviewing")).toBe(false);
+  });
+});
+
+// ─── 6. T8 — Sort button removal ─────────────────────────────────────────
+
+describe("T8 — Sort button removed from /board", () => {
+  beforeEach(() => {
+    mockWorkspaceContext.activeSurface = "board";
+    mockWorkspaceContext.activeTaskTabId = null;
+    mockWorkspaceContext.activeFeatureTabId = null;
+    mockWorkspaceContext.openTaskTabs = [];
+    mockWorkspaceContext.openFeatureTabs = [];
+  });
+
+  it("does not render 'Sort order' aria-label on the board page (Task Mode)", () => {
+    mockBoardContextForBoardPage.boardMode = "task";
+    const html = renderToStaticMarkup(React.createElement(BoardPage));
+    expect(html).not.toContain('aria-label="Sort order"');
+  });
+
+  it("does not render 'Sort order' aria-label on the board page (Feature Mode)", () => {
+    mockBoardContextForBoardPage.boardMode = "feature";
+    const html = renderToStaticMarkup(React.createElement(BoardPage));
+    expect(html).not.toContain('aria-label="Sort order"');
+  });
+
+  it("does not render 'Sort' text on the board page in either mode", () => {
+    // Test in Task Mode
+    mockBoardContextForBoardPage.boardMode = "task";
+    const taskHtml = renderToStaticMarkup(React.createElement(BoardPage));
+    expect(taskHtml).not.toContain(">Sort<");
+
+    // Test in Feature Mode
+    mockBoardContextForBoardPage.boardMode = "feature";
+    const featureHtml = renderToStaticMarkup(React.createElement(BoardPage));
+    expect(featureHtml).not.toContain(">Sort<");
+  });
+});
+
+// ─── 7. T8 — Default ordering regression ─────────────────────────────────
+
+describe("T8 — Default board ordering preserved after sort removal", () => {
+  it("BOARD_DEFAULT_SORT is 'updated_at_desc' (existing default order)", () => {
+    expect(BOARD_DEFAULT_SORT).toBe("updated_at_desc");
+  });
+
+  it("STATUS_COLUMNS order is preserved (todo → cancelled)", () => {
+    const keys = STATUS_COLUMNS.map((c) => c.key);
+    expect(keys).toEqual([
+      "todo",
+      "ready",
+      "in_progress",
+      "in_reviewing",
+      "blocked",
+      "in_review",
+      "done",
+      "cancelled",
+    ]);
+  });
+
+  it("board still renders standard components without sort control", () => {
+    mockBoardContextForBoardPage.boardMode = "task";
+    const html = renderToStaticMarkup(React.createElement(BoardPage));
+    expect(html).toContain("data-board-header");
+    expect(html).toContain("data-kanban-board");
+    expect(html).toContain("data-task-tracking-panel");
+    expect(html).not.toContain('aria-label="Sort order"');
+  });
+
+  it("board filtering controls (Filter with Funnel icon) remain present", () => {
+    mockBoardContextForBoardPage.boardMode = "task";
+    const html = renderToStaticMarkup(React.createElement(BoardPage));
+    // The Filter button is inside KanbanBoard which is mocked, but we verify
+    // the board container is rendered and no sort controls leak through.
+    expect(html).toContain("data-kanban-board");
+    expect(html).not.toContain('aria-label="Sort order"');
   });
 });

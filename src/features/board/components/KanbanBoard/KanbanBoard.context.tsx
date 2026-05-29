@@ -100,12 +100,6 @@ export type BoardContextValue = {
   taskPagination: PaginationMeta | null;
   featurePagination: PaginationMeta | null;
 
-  // Sort state per mode
-  taskSort: string;
-  setTaskSort: (sort: string) => void;
-  featureSort: string;
-  setFeatureSort: (sort: string) => void;
-
   // Page size (limit) state per mode
   taskLimit: number;
   setTaskLimit: (limit: number) => void;
@@ -169,8 +163,6 @@ export function BoardProvider({
   );
   const [taskPage, setTaskPage] = useState(1);
   const [featurePage, setFeaturePage] = useState(1);
-  const [taskSort, setTaskSort] = useState(BOARD_DEFAULT_SORT);
-  const [featureSort, setFeatureSort] = useState(BOARD_DEFAULT_SORT);
   const [taskLimit, setTaskLimit] = useState(BOARD_DEFAULT_LIMIT);
   const [featureLimit, setFeatureLimit] = useState(BOARD_DEFAULT_LIMIT);
 
@@ -204,28 +196,25 @@ export function BoardProvider({
     boardMode === "task" &&
     (trimmedTaskQuery.length > 0 || taskStatusFilterActive);
 
-  // Reset page to 1 when search query, filters, sort, or limit change
+  // Reset page to 1 when search query, filters, or limit change
   const prevTaskQueryRef = useRef(trimmedTaskQuery);
   const prevTaskStatusRef = useRef(
     taskActiveFilters.statuses.join(","),
   );
-  const prevTaskSortRef = useRef(taskSort);
   const prevTaskLimitRef = useRef(taskLimit);
   useEffect(() => {
     const currentStatus = taskActiveFilters.statuses.join(",");
     if (
       trimmedTaskQuery !== prevTaskQueryRef.current ||
       currentStatus !== prevTaskStatusRef.current ||
-      taskSort !== prevTaskSortRef.current ||
       taskLimit !== prevTaskLimitRef.current
     ) {
       setTaskPage(1);
     }
     prevTaskQueryRef.current = trimmedTaskQuery;
     prevTaskStatusRef.current = currentStatus;
-    prevTaskSortRef.current = taskSort;
     prevTaskLimitRef.current = taskLimit;
-  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskSort, taskLimit]);
+  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskLimit]);
 
   const taskSearchParams = useMemo(() => {
     if (!taskSearchActive) return {};
@@ -239,9 +228,9 @@ export function BoardProvider({
       status,
       page: taskPage,
       limit: taskLimit,
-      sort: taskSort,
+      sort: BOARD_DEFAULT_SORT,
     };
-  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskSearchActive, taskStatusFilterActive, taskSort, taskLimit]);
+  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskSearchActive, taskStatusFilterActive, taskLimit]);
 
   const {
     results: backendTaskResults,
@@ -266,23 +255,20 @@ export function BoardProvider({
   const prevFeatureStatusRef = useRef(
     featureActiveFilters.statuses.join(","),
   );
-  const prevFeatureSortRef = useRef(featureSort);
   const prevFeatureLimitRef = useRef(featureLimit);
   useEffect(() => {
     const currentStatus = featureActiveFilters.statuses.join(",");
     if (
       trimmedFeatureQuery !== prevFeatureQueryRef.current ||
       currentStatus !== prevFeatureStatusRef.current ||
-      featureSort !== prevFeatureSortRef.current ||
       featureLimit !== prevFeatureLimitRef.current
     ) {
       setFeaturePage(1);
     }
     prevFeatureQueryRef.current = trimmedFeatureQuery;
     prevFeatureStatusRef.current = currentStatus;
-    prevFeatureSortRef.current = featureSort;
     prevFeatureLimitRef.current = featureLimit;
-  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featureSort, featureLimit]);
+  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featureLimit]);
 
   const featureSearchParams = useMemo(() => {
     if (!featureSearchActive) return {};
@@ -296,9 +282,9 @@ export function BoardProvider({
       status,
       page: featurePage,
       limit: featureLimit,
-      sort: featureSort,
+      sort: BOARD_DEFAULT_SORT,
     };
-  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featurePage, featureSearchActive, featureStatusFilterActive, featureSort, featureLimit]);
+  }, [trimmedFeatureQuery, featureActiveFilters.statuses, featurePage, featureSearchActive, featureStatusFilterActive, featureLimit]);
 
   const {
     results: backendFeatureResults,
@@ -481,10 +467,6 @@ export function BoardProvider({
       taskPagination,
       featurePagination,
 
-      taskSort,
-      setTaskSort,
-      featureSort,
-      setFeatureSort,
       taskLimit,
       setTaskLimit,
       featureLimit,
@@ -526,8 +508,6 @@ export function BoardProvider({
       taskPagination,
       featurePagination,
 
-      taskSort,
-      featureSort,
       taskLimit,
       featureLimit,
     ],
