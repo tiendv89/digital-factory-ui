@@ -334,3 +334,196 @@ describe("FeatureTabView — calls openTaskTab instead of inline drilldown", () 
     expect(html).not.toContain("data-feature-task-drilldown-content");
   });
 });
+
+// ─── Test: Flicker hardening — loading stays false when cached data exists ────
+//
+// These tests validate the no-blank/no-flicker tab-switching requirement.
+// When a tab's data already lives in the TanStack Query cache (from a previous
+// visit or pre-fetch), the hook must return loading=false immediately so the
+// UI can render cached content without flashing through a loading skeleton.
+
+import { workspaceKeys } from "../lib/query-keys";
+
+describe("Flicker hardening — useFeatureDetail with cached data", () => {
+  it("loading is false when cached feature data exists", async () => {
+    // Import the real (non-mocked) hook to exercise the TanStack Query cache path.
+    const actual = await vi.importActual<{
+      useFeatureDetail: typeof import("../features/board/hooks/useFeatureDetail").useFeatureDetail;
+    }>("../features/board/hooks/useFeatureDetail");
+    const { useFeatureDetail: realUseFeatureDetail } = actual;
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          staleTime: Infinity, // prevent background refetch during test
+          retry: false,
+          gcTime: 0,
+        },
+      },
+    });
+
+    const workspaceId = "ws-1";
+    const featureId = "feat-uuid-1";
+    const cachedFeature = makeFeatureDetail({ title: "Cached Feature" });
+
+    // Seed the cache as if the user already visited this feature tab.
+    queryClient.setQueryData(
+      workspaceKeys.feature(workspaceId, featureId),
+      cachedFeature,
+    );
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children);
+
+    const { result } = renderHook(
+      () => realUseFeatureDetail(workspaceId, featureId),
+      { wrapper },
+    );
+
+    // Flicker hardening: loading must be false because cached data exists.
+    expect(result.current.loading).toBe(false);
+    expect(result.current.feature).not.toBeNull();
+    expect(result.current.feature?.title).toBe("Cached Feature");
+  });
+
+  it("loading is false even when switching between two cached features", async () => {
+    const actual = await vi.importActual<{
+      useFeatureDetail: typeof import("../features/board/hooks/useFeatureDetail").useFeatureDetail;
+    }>("../features/board/hooks/useFeatureDetail");
+    const { useFeatureDetail: realUseFeatureDetail } = actual;
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { staleTime: Infinity, retry: false, gcTime: 0 },
+      },
+    });
+
+    const ws = "ws-1";
+    const featA = makeFeatureDetail({ id: "f-a", title: "Feature A" });
+    const featB = makeFeatureDetail({ id: "f-b", title: "Feature B" });
+
+    queryClient.setQueryData(workspaceKeys.feature(ws, "f-a"), featA);
+    queryClient.setQueryData(workspaceKeys.feature(ws, "f-b"), featB);
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children);
+
+    // Simulate tab switch: render hook for feature A, then feature B.
+    const { result: resultA, rerender } = renderHook(
+      (featureId: string) => realUseFeatureDetail(ws, featureId),
+      { wrapper, initialProps: "f-a" },
+    );
+
+    expect(resultA.current.loading).toBe(false);
+    expect(resultA.current.feature?.title).toBe("Feature A");
+
+    // Switch to feature B — loading must stay false because B is also cached.
+    rerender("f-b");
+
+    expect(resultA.current.loading).toBe(false);
+    expect(resultA.current.feature?.title).toBe("Feature B");
+  });
+});
+
+describe("Flicker hardening — useWorkspaceTask with cached data", () => {
+  it("loading is false when cached task data exists", async () => {
+    const actual = await vi.importActual<{
+      useWorkspaceTask: typeof import("../features/tasks/hooks/useWorkspaceTask").useWorkspaceTask;
+    }>("../features/tasks/hooks/useWorkspaceTask");
+    const { useWorkspaceTask: realUseWorkspaceTask } = actual;
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { staleTime: Infinity, retry: false, gcTime: 0 },
+      },
+    });
+
+    const workspaceId = "ws-1";
+    const taskId = "task-uuid-1";
+    const cachedTask: TaskDetail = {
+      id: taskId,
+      task_id: taskId,
+      task_name: "T1",
+      title: "Cached Task",
+      status: "in_progress",
+      feature_id: "feat-uuid-1",
+      feature_name: "my-feature",
+      workspace_id: workspaceId,
+      documents: [],
+      activity: [],
+      repo: "acme/ui",
+      branch: "feature/T1",
+      is_blocked: false,
+      updated_at: "2026-01-01T00:00:00Z",
+      source_state: { stale: false },
+    };
+
+    queryClient.setQueryData(
+      workspaceKeys.task(workspaceId, taskId),
+      cachedTask,
+    );
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children);
+
+    const { result } = renderHook(
+      () => realUseWorkspaceTask(workspaceId, taskId),
+      { wrapper },
+    );
+
+    // Flicker hardening: loading must be false because cached data exists.
+    expect(result.current.loading).toBe(false);
+    expect(result.current.task).not.toBeNull();
+    expect(result.current.task?.title).toBe("Cached Task");
+  });
+
+  it("loading is false when switching between two cached tasks", async () => {
+    const actual = await vi.importActual<{
+      useWorkspaceTask: typeof import("../features/tasks/hooks/useWorkspaceTask").useWorkspaceTask;
+    }>("../features/tasks/hooks/useWorkspaceTask");
+    const { useWorkspaceTask: realUseWorkspaceTask } = actual;
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { staleTime: Infinity, retry: false, gcTime: 0 },
+      },
+    });
+
+    const ws = "ws-1";
+
+    const taskA: TaskDetail = {
+      id: "t-a", task_id: "t-a", task_name: "TA", title: "Task A",
+      status: "in_progress", feature_id: "f-1", feature_name: "feat-one",
+      workspace_id: ws, documents: [], activity: [],
+      repo: "acme/ui", branch: "feature/TA", is_blocked: false,
+      updated_at: "2026-01-01T00:00:00Z", source_state: { stale: false },
+    };
+    const taskB: TaskDetail = {
+      id: "t-b", task_id: "t-b", task_name: "TB", title: "Task B",
+      status: "done", feature_id: "f-1", feature_name: "feat-one",
+      workspace_id: ws, documents: [], activity: [],
+      repo: "acme/ui", branch: "feature/TB", is_blocked: false,
+      updated_at: "2026-01-01T00:00:00Z", source_state: { stale: false },
+    };
+
+    queryClient.setQueryData(workspaceKeys.task(ws, "t-a"), taskA);
+    queryClient.setQueryData(workspaceKeys.task(ws, "t-b"), taskB);
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: queryClient }, children);
+
+    const { result, rerender } = renderHook(
+      (taskId: string) => realUseWorkspaceTask(ws, taskId),
+      { wrapper, initialProps: "t-a" },
+    );
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.task?.title).toBe("Task A");
+
+    // Switch to task B — loading must stay false because B is also cached.
+    rerender("t-b");
+
+    expect(result.current.loading).toBe(false);
+    expect(result.current.task?.title).toBe("Task B");
+  });
+});
