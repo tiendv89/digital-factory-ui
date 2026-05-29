@@ -343,7 +343,7 @@ describe("buildImportLocalSummary — import flow", () => {
 
 describe("SIDEBAR_TASK_PARAMS — independent from other query builders", () => {
   it("uses exactly the documented active statuses including blocked", () => {
-    expect(SIDEBAR_TASK_PARAMS.get("status")).toBe("blocked,in_progress,in_reviewing,in_review,ready");
+    expect(SIDEBAR_TASK_PARAMS.get("status")).toBe("blocked,in_progress,reviewing,in_review,ready");
   });
 
   it("uses task_id_asc sort", () => {

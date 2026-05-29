@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   searchWorkspaceTasks,
   SIDEBAR_TASK_PARAMS,
   type ApiError,
   type TaskSummary,
 } from "@/services/workflow-backend";
+import { workspaceKeys } from "@/lib/query-keys";
 
 export type UseSidebarTasksResult = {
   tasks: TaskSummary[];
@@ -16,45 +18,30 @@ export type UseSidebarTasksResult = {
 };
 
 export function useSidebarTasks(workspaceId: string | null): UseSidebarTasksResult {
-  const [tasks, setTasks] = useState<TaskSummary[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [tick, setTick] = useState(0);
-  const requestIdRef = useRef(0);
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: workspaceKeys.sidebarTasks(workspaceId ?? "", SIDEBAR_TASK_PARAMS),
+    queryFn: () => searchWorkspaceTasks(workspaceId!, SIDEBAR_TASK_PARAMS),
+    enabled: workspaceId !== null,
+  });
 
   const reload = useCallback(() => {
-    setTick((t) => t + 1);
-  }, []);
+    if (!workspaceId) return;
+    queryClient.invalidateQueries({
+      queryKey: workspaceKeys.sidebarTasks(workspaceId, SIDEBAR_TASK_PARAMS),
+    });
+    refetch();
+  }, [workspaceId, queryClient, refetch]);
 
-  useEffect(() => {
-    if (!workspaceId) {
-      setTasks([]);
-      setLoading(false);
-      setError(null);
-      return;
-    }
+  if (!workspaceId) {
+    return { tasks: [], loading: false, error: null, reload };
+  }
 
-    let cancelled = false;
-    const id = ++requestIdRef.current;
-    setLoading(true);
-
-    searchWorkspaceTasks(workspaceId, SIDEBAR_TASK_PARAMS)
-      .then((result) => {
-        if (cancelled || requestIdRef.current !== id) return;
-        setTasks(result);
-        setError(null);
-        setLoading(false);
-      })
-      .catch((err: ApiError) => {
-        if (cancelled || requestIdRef.current !== id) return;
-        setError(err);
-        setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceId, tick]);
-
-  return { tasks, loading, error, reload };
+  return {
+    tasks: data ?? [],
+    loading: isLoading,
+    error: error as ApiError | null,
+    reload,
+  };
 }

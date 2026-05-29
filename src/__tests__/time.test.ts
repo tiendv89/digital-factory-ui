@@ -1,7 +1,10 @@
 import { describe, it, expect } from "vitest";
 import {
+  computeLastUpdatedLabel,
+  computeStatusAge,
   findStatusLogEntry,
   formatElapsed,
+  formatLastUpdatedLabel,
   formatTimestamp,
   getElapsedSinceStatus,
   getFeatureLastModifiedAt,
@@ -54,6 +57,20 @@ describe("findStatusLogEntry", () => {
   it("returns null when log is undefined or empty", () => {
     expect(findStatusLogEntry(undefined, "ready")).toBeNull();
     expect(findStatusLogEntry([], "ready")).toBeNull();
+  });
+
+  it("matches reviewing action verbatim", () => {
+    const log: LogEntry[] = [makeEntry("reviewing", "2026-03-01T00:00:00Z")];
+    expect(findStatusLogEntry(log, "reviewing")?.at).toBe(
+      "2026-03-01T00:00:00Z",
+    );
+  });
+
+  it("handles reviewing with 'reviewing' action alias", () => {
+    const log: LogEntry[] = [makeEntry("reviewing", "2026-03-02T12:00:00Z")];
+    expect(findStatusLogEntry(log, "reviewing")?.at).toBe(
+      "2026-03-02T12:00:00Z",
+    );
   });
 
   it("returns null for unknown statuses (todo, done, etc.)", () => {
@@ -241,5 +258,114 @@ describe("getFeatureLastModifiedAt", () => {
     };
 
     expect(getFeatureLastModifiedAt(feature)).toBeNull();
+  });
+});
+
+// ─── computeStatusAge with reviewing ──────────────────────────────────────
+
+describe("computeStatusAge — reviewing", () => {
+  it("computes age from reviewing log entry", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      status: "reviewing",
+      log: [makeEntry("reviewing", "2026-05-27T08:00:00Z")],
+    };
+    expect(computeStatusAge(task, now)).toBe("2h");
+  });
+
+  it("falls back to 'reviewing' action alias for reviewing", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      status: "reviewing",
+      log: [makeEntry("reviewing", "2026-05-27T09:45:00Z")],
+    };
+    expect(computeStatusAge(task, now)).toBe("15m");
+  });
+
+  it("falls back to last log entry for reviewing when no specific reviewing log action matches", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      status: "reviewing",
+      log: [makeEntry("created", "2026-05-27T07:00:00Z")],
+    };
+    expect(computeStatusAge(task, now)).toBe("3h");
+  });
+
+  it("uses execution.last_updated_at when both log and specific action are unavailable", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      status: "reviewing",
+      execution: {
+        actor_type: "agent",
+        last_updated_at: "2026-05-27T09:30:00Z",
+      },
+    };
+    expect(computeStatusAge(task, now)).toBe("30m");
+  });
+});
+
+// ─── T9 — formatLastUpdatedLabel ─────────────────────────────────────────────
+
+describe("formatLastUpdatedLabel", () => {
+  it("formats seconds with 'ago' suffix", () => {
+    expect(formatLastUpdatedLabel(0)).toBe("0s ago");
+    expect(formatLastUpdatedLabel(30_000)).toBe("30s ago");
+    expect(formatLastUpdatedLabel(59_000)).toBe("59s ago");
+  });
+
+  it("formats minutes with 'ago' suffix", () => {
+    expect(formatLastUpdatedLabel(60_000)).toBe("1m ago");
+    expect(formatLastUpdatedLabel(90_000)).toBe("1m ago");
+    expect(formatLastUpdatedLabel(59 * 60_000)).toBe("59m ago");
+  });
+
+  it("formats hours with 'ago' suffix", () => {
+    expect(formatLastUpdatedLabel(60 * 60_000)).toBe("1h ago");
+    expect(formatLastUpdatedLabel(5 * 60 * 60_000)).toBe("5h ago");
+    expect(formatLastUpdatedLabel(23 * 60 * 60_000)).toBe("23h ago");
+  });
+
+  it("formats days with 'ago' suffix", () => {
+    expect(formatLastUpdatedLabel(24 * 60 * 60_000)).toBe("1d ago");
+    expect(formatLastUpdatedLabel(3 * 24 * 60 * 60_000)).toBe("3d ago");
+  });
+
+  it("returns em-dash for negative elapsed", () => {
+    expect(formatLastUpdatedLabel(-1)).toBe("—");
+  });
+});
+
+// ─── T9 — computeLastUpdatedLabel ────────────────────────────────────────────
+
+describe("computeLastUpdatedLabel", () => {
+  it("computes label from execution.last_updated_at", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      execution: { actor_type: "agent", last_updated_at: "2026-05-27T08:00:00Z" },
+    };
+    expect(computeLastUpdatedLabel(task, now)).toBe("2h ago");
+  });
+
+  it("computes seconds label for recent update", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      execution: { actor_type: "agent", last_updated_at: "2026-05-27T09:59:30Z" },
+    };
+    expect(computeLastUpdatedLabel(task, now)).toBe("30s ago");
+  });
+
+  it("returns null when execution is missing", () => {
+    expect(computeLastUpdatedLabel({})).toBeNull();
+  });
+
+  it("returns null when execution has no last_updated_at", () => {
+    expect(computeLastUpdatedLabel({ execution: { actor_type: "agent" } })).toBeNull();
+  });
+
+  it("returns null for invalid ISO timestamp", () => {
+    const task = {
+      execution: { actor_type: "agent", last_updated_at: "not-a-date" },
+    };
+    expect(computeLastUpdatedLabel(task)).toBeNull();
   });
 });

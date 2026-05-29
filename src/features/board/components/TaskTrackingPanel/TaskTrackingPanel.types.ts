@@ -3,7 +3,7 @@ import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 export type TrackedStatus =
   | "blocked"
   | "in_progress"
-  | "in_reviewing"
+  | "reviewing"
   | "in_review"
   | "ready";
 
@@ -26,7 +26,7 @@ export const TRACKED_SECTIONS: ReadonlyArray<{
 }> = [
   { status: "blocked", label: "BLOCKED" },
   { status: "in_progress", label: "IN PROGRESS" },
-  { status: "in_reviewing", label: "IN REVIEWING" },
+  { status: "reviewing", label: "IN REVIEWING" },
   { status: "in_review", label: "IN REVIEW" },
   { status: "ready", label: "READY" },
 ];

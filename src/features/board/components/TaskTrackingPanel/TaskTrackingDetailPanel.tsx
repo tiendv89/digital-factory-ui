@@ -22,7 +22,7 @@ const DETAIL_COPY = {
     empty: "No blocked tasks",
     secondary: "Blocked reason",
   },
-  in_reviewing: {
+  reviewing: {
     title: "In Reviewing",
     metric: "Review time",
     empty: "No tasks in reviewing",

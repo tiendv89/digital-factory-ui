@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { getFeature, getFeatureTask } from "@/services/workflow-backend/client";
 import type { FeatureDetail, TaskDetail, ApiError } from "@/services/workflow-backend/types";
+import { workspaceKeys } from "@/lib/query-keys";
 
 export type UseFeatureDetailResult = {
   feature: FeatureDetail | null;
@@ -15,47 +16,22 @@ export function useFeatureDetail(
   workspaceId: string | null,
   featureId: string | null,
 ): UseFeatureDetailResult {
-  const [feature, setFeature] = useState<FeatureDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [tick, setTick] = useState(0);
-  const requestId = useRef(0);
+  const enabled = Boolean(workspaceId && featureId);
 
-  const reload = useCallback(() => {
-    setTick((t) => t + 1);
-  }, []);
+  const { data, isFetching, error, refetch } = useQuery<FeatureDetail, ApiError>({
+    queryKey: enabled
+      ? workspaceKeys.feature(workspaceId!, featureId!)
+      : ["workspace-feature-disabled"],
+    queryFn: () => getFeature(workspaceId!, featureId!),
+    enabled,
+  });
 
-  useEffect(() => {
-    if (!workspaceId || !featureId) {
-      setFeature(null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
-    const id = ++requestId.current;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    getFeature(workspaceId, featureId)
-      .then((detail) => {
-        if (cancelled || requestId.current !== id) return;
-        setFeature(detail);
-        setLoading(false);
-      })
-      .catch((err: ApiError) => {
-        if (cancelled || requestId.current !== id) return;
-        setError(err);
-        setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceId, featureId, tick]);
-
-  return { feature, loading, error, reload };
+  return {
+    feature: data ?? null,
+    loading: isFetching && !data,
+    error: error ?? null,
+    reload: () => void refetch(),
+  };
 }
 
 export type UseFeatureTaskResult = {
@@ -70,45 +46,20 @@ export function useFeatureTask(
   featureId: string | null,
   taskId: string | null,
 ): UseFeatureTaskResult {
-  const [task, setTask] = useState<TaskDetail | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [tick, setTick] = useState(0);
-  const requestId = useRef(0);
+  const enabled = Boolean(workspaceId && featureId && taskId);
 
-  const reload = useCallback(() => {
-    setTick((t) => t + 1);
-  }, []);
+  const { data, isFetching, error, refetch } = useQuery<TaskDetail, ApiError>({
+    queryKey: enabled
+      ? workspaceKeys.featureTask(workspaceId!, featureId!, taskId!)
+      : ["workspace-feature-task-disabled"],
+    queryFn: () => getFeatureTask(workspaceId!, featureId!, taskId!),
+    enabled,
+  });
 
-  useEffect(() => {
-    if (!workspaceId || !featureId || !taskId) {
-      setTask(null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
-
-    const id = ++requestId.current;
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-
-    getFeatureTask(workspaceId, featureId, taskId)
-      .then((detail) => {
-        if (cancelled || requestId.current !== id) return;
-        setTask(detail);
-        setLoading(false);
-      })
-      .catch((err: ApiError) => {
-        if (cancelled || requestId.current !== id) return;
-        setError(err);
-        setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [workspaceId, featureId, taskId, tick]);
-
-  return { task, loading, error, reload };
+  return {
+    task: data ?? null,
+    loading: isFetching && !data,
+    error: error ?? null,
+    reload: () => void refetch(),
+  };
 }

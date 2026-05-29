@@ -436,6 +436,7 @@ describe("getDefaultStatusFilter (task mode, backward-compat)", () => {
     expect(defaults).toContain("todo");
     expect(defaults).toContain("ready");
     expect(defaults).toContain("in_progress");
+    expect(defaults).toContain("reviewing");
     expect(defaults).toContain("blocked");
     expect(defaults).toContain("in_review");
     expect(defaults).toContain("cancelled");

@@ -659,7 +659,7 @@ describe("Task Docs renders tasks.md Markdown", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).toContain("Task Docs");
@@ -673,7 +673,7 @@ describe("Task Docs renders tasks.md Markdown", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).not.toContain("tasks.md");
@@ -700,7 +700,7 @@ describe("Task Docs renders tasks.md Markdown", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     // Component renders without crashing and has the correct tab labels
@@ -759,7 +759,7 @@ See [design doc](https://example.com/design) for details.
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).toContain("data-feature-tasks-empty");
@@ -781,7 +781,7 @@ See [design doc](https://example.com/design) for details.
     const html = renderToStaticMarkup(
       React.createElement(FeatureTasksPanel, {
         feature,
-        onDrilldown: vi.fn(),
+        onOpenTaskTab: vi.fn(),
       }),
     );
     expect(html).toContain('data-feature-task-row="T3"');

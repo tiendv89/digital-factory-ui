@@ -3,6 +3,7 @@
 import { Clock3 } from "lucide-react";
 import { formatTimestamp } from "@/lib/time";
 import { formatStatusLabel } from "@/features/tasks/lib/status";
+import { tokenizeText } from "@/lib/url-tokenizer";
 import type { ActivityEvent, FeatureDetail } from "@/services/workflow-backend/types";
 
 type FeatureLogEntry = ActivityEvent & {
@@ -67,6 +68,30 @@ export function FeatureLogsPanel({ feature }: { feature: FeatureDetail }) {
   );
 }
 
+function FeatureLogNoteText({ text }: { text: string }) {
+  const tokens = tokenizeText(text);
+  return (
+    <>
+      {tokens.map((token, i) =>
+        token.type === "link" ? (
+          <a
+            key={i}
+            href={token.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:opacity-80"
+            data-feature-log-link
+          >
+            {token.label}
+          </a>
+        ) : (
+          <span key={i}>{token.value}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 function FeatureLogItem({
   entry,
   isLast,
@@ -103,7 +128,7 @@ function FeatureLogItem({
         </div>
         {entry.note ? (
           <p className="mt-3 border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
-            {entry.note}
+            <FeatureLogNoteText text={entry.note} />
           </p>
         ) : null}
       </div>

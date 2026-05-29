@@ -2,7 +2,6 @@
 
 import {
   AlertTriangle,
-  ArrowUpDown,
   Funnel,
   LayoutGrid,
   ListChecks,
@@ -10,12 +9,12 @@ import {
   Search,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useBoardContext } from "./KanbanBoard.context";
 import { TaskBoardView } from "../TaskBoardView";
 import { FeatureBoardView } from "../FeatureBoardView";
 import { BoardTableTitle } from "../BoardTableTitle";
-import { CreateTaskButton } from "../CreateTaskButton";
+
 import { FEATURE_STATUS_OPTIONS, STATUS_COLUMNS } from "../../lib/status";
 import {
   isAllFeatureStatusFilterSelected,
@@ -260,88 +259,6 @@ function FeatureModeFilterMenu() {
   );
 }
 
-const SORT_OPTIONS = [
-  { value: "updated_at_desc", label: "Recently updated" },
-  { value: "updated_at_asc", label: "Oldest updated" },
-  { value: "title_asc", label: "Title A–Z" },
-  { value: "title_desc", label: "Title Z–A" },
-] as const;
-
-function SortSelector({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (sort: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    function handlePointerDown(event: PointerEvent) {
-      if (!ref.current?.contains(event.target as Node)) {
-        setOpen(false);
-      }
-    }
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [open]);
-
-  const handleSelect = useCallback(
-    (sort: string) => {
-      onChange(sort);
-      setOpen(false);
-    },
-    [onChange],
-  );
-
-  const currentLabel =
-    SORT_OPTIONS.find((o) => o.value === value)?.label ?? "Sort";
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        aria-label="Sort order"
-        className="flex h-8 items-center gap-1.5 border border-border bg-surface px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle"
-      >
-        <ArrowUpDown className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span className="max-w-[100px] truncate">{currentLabel}</span>
-      </button>
-      {open && (
-        <div
-          role="listbox"
-          className="absolute right-0 top-9 z-30 w-44 border border-border bg-surface shadow-lg"
-        >
-          {SORT_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              role="option"
-              aria-selected={opt.value === value}
-              onClick={() => handleSelect(opt.value)}
-              className={
-                "block w-full px-3 py-1.5 text-left text-xs " +
-                (opt.value === value
-                  ? "bg-primary/10 font-semibold text-primary"
-                  : "text-text-secondary hover:bg-surface-subtle")
-              }
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 function BoardControls() {
   const {
     loading,
@@ -356,10 +273,6 @@ function BoardControls() {
     setFeatureSearchQuery,
     taskActiveFilters,
     featureActiveFilters,
-    taskSort,
-    setTaskSort,
-    featureSort,
-    setFeatureSort,
   } = useBoardContext();
   const [filterOpen, setFilterOpen] = useState(false);
   const filterRef = useRef<HTMLDivElement>(null);
@@ -395,11 +308,6 @@ function BoardControls() {
       <ModeSegmentedControl />
 
       <div className="flex items-center gap-2">
-        <CreateTaskButton
-          workspaceName={
-            workspaceDetail.name || workspaceDetail.slug || "workspace"
-          }
-        />
         {showSyncButton && (
           <button
             type="button"
@@ -438,10 +346,6 @@ function BoardControls() {
             </button>
           )}
         </label>
-        <SortSelector
-          value={boardMode === "task" ? taskSort : featureSort}
-          onChange={boardMode === "task" ? setTaskSort : setFeatureSort}
-        />
         <div ref={filterRef} className="relative">
           <button
             type="button"

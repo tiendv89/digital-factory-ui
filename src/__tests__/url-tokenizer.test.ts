@@ -17,12 +17,24 @@ describe("tokenizeText", () => {
     });
   });
 
-  it("splits text and URL when URL appears mid-sentence", () => {
+  it("splits text and URL when URL appears mid-sentence, preserving surrounding spaces", () => {
     const tokens = tokenizeText("See https://example.com for details");
     expect(tokens).toHaveLength(3);
-    expect(tokens[0]).toEqual({ type: "text", value: "See" });
+    expect(tokens[0]).toEqual({ type: "text", value: "See " });
     expect(tokens[1]).toEqual({ type: "link", href: "https://example.com", label: "https://example.com" });
-    expect(tokens[2]).toEqual({ type: "text", value: "for details" });
+    expect(tokens[2]).toEqual({ type: "text", value: " for details" });
+  });
+
+  it("preserves spaces so adjacent text and link tokens render without losing whitespace", () => {
+    // Regression: split-on-space tokenizer discarded spaces, causing
+    // "PR merged at https://url done" to render as "PR merged athttps://urldone"
+    const tokens = tokenizeText("PR merged at https://example.com done");
+    const text0 = tokens.find((t): t is TextToken => t.type === "text" && t.value.includes("PR"));
+    const link = tokens.find((t) => t.type === "link");
+    const textEnd = tokens.find((t): t is TextToken => t.type === "text" && t.value.includes("done"));
+    expect(text0?.value).toBe("PR merged at ");
+    expect(link?.href).toBe("https://example.com");
+    expect(textEnd?.value).toBe(" done");
   });
 
   it("strips trailing period from URL", () => {
@@ -73,7 +85,7 @@ describe("tokenizeText", () => {
     const textAfter = tokens.find(
       (t): t is TextToken => t.type === "text" && "value" in t && (t as TextToken).value.includes("after")
     );
-    expect(textBefore?.value).toBe("Before");
-    expect(textAfter?.value).toBe("after");
+    expect(textBefore?.value).toBe("Before ");
+    expect(textAfter?.value).toBe(" after");
   });
 });

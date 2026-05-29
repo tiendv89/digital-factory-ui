@@ -13,8 +13,8 @@ import { FeatureRow } from "../features/board/components/FeatureRow";
 import { TaskCard } from "../features/board/components/TaskCard";
 
 describe("STATUS_COLUMNS", () => {
-  it("defines exactly 7 columns", () => {
-    expect(STATUS_COLUMNS).toHaveLength(7);
+  it("defines exactly 8 columns", () => {
+    expect(STATUS_COLUMNS).toHaveLength(8);
   });
 
   it("contains the canonical task statuses in order", () => {
@@ -23,6 +23,7 @@ describe("STATUS_COLUMNS", () => {
       "todo",
       "ready",
       "in_progress",
+      "reviewing",
       "blocked",
       "in_review",
       "done",
@@ -49,6 +50,7 @@ describe("getStatusColor", () => {
     expect(getStatusColor("todo")).toBe("#3274b4");
     expect(getStatusColor("ready")).toBe("#6e6de7");
     expect(getStatusColor("in_progress")).toBe("#e08500");
+    expect(getStatusColor("reviewing")).toBe("#b45fbd");
     expect(getStatusColor("blocked")).toBe("#e62a34");
     expect(getStatusColor("in_review")).toBe("#8e67cb");
     expect(getStatusColor("done")).toBe("#009252");
@@ -67,6 +69,7 @@ describe("getNextAction", () => {
       "todo",
       "ready",
       "in_progress",
+      "reviewing",
       "blocked",
       "in_review",
       "cancelled",
@@ -82,9 +85,12 @@ describe("getNextAction", () => {
   });
 
   it("maps status → workflow transition label from the task status diagram", () => {
-    expect(getNextAction("todo")).toBe("Auto-ready when last dependency is done");
+    expect(getNextAction("todo")).toBe(
+      "Auto-ready when last dependency is done",
+    );
     expect(getNextAction("ready")).toBe("Start implementation");
     expect(getNextAction("in_progress")).toBe("Waiting for result");
+    expect(getNextAction("reviewing")).toBe("Agent is reviewing the result");
     expect(getNextAction("blocked")).toBe("Human resolves");
     expect(getNextAction("in_review")).toBe("Human approves or rejects");
     expect(getNextAction("done")).toBe("");

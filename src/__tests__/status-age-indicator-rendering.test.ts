@@ -7,7 +7,7 @@
  *   - Status-age badge renders with correct aria-label, text, and CSS classes
  *   - Status-age badge is hidden when no timestamp is available
  *   - Status-age badge renders consistently across statuses (blocked, in_progress,
- *     in_review, ready, in_reviewing)
+ *     in_review, ready, reviewing)
  *   - Status-age badge re-calculates on dynamic prop updates (new log entries)
  */
 
@@ -222,10 +222,10 @@ describe("T7 subtask 6 — Status-age badge renders correctly via @testing-libra
     assertStatusAgeHidden();
   });
 
-  // ── 6c: in_reviewing status — falls back to last log or execution ─────────
+  // ── 6c: reviewing status — falls back to last log or execution ─────────
 
-  it("renders status-age badge for in_reviewing using last log fallback", () => {
-    const task = makeTask("T7", "in_reviewing", {
+  it("renders status-age badge for reviewing using last log fallback", () => {
+    const task = makeTask("T7", "reviewing", {
       log: [
         {
           action: "started",
@@ -246,8 +246,8 @@ describe("T7 subtask 6 — Status-age badge renders correctly via @testing-libra
     assertStatusAgePresent("Status age: 5m", "5m");
   });
 
-  it("renders status-age badge for in_reviewing using execution.last_updated_at fallback", () => {
-    const task = makeTask("T8", "in_reviewing", {
+  it("renders status-age badge for reviewing using execution.last_updated_at fallback", () => {
+    const task = makeTask("T8", "reviewing", {
       execution: {
         actor_type: "agent",
         last_updated_at: new Date(

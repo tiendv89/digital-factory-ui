@@ -241,7 +241,7 @@ export default function BoardQATestPage() {
       <section id="section-task-docs" className="mb-12">
         <h2 className="mb-4 text-lg font-semibold">5. Feature Tasks Panel — Tasks List & Task Docs</h2>
         <div className="border border-border">
-          <FeatureTasksPanel feature={mockFeatureDetail} onDrilldown={() => {}} />
+          <FeatureTasksPanel feature={mockFeatureDetail} onOpenTaskTab={() => {}} />
         </div>
       </section>
 

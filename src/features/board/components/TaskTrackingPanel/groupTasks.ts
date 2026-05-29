@@ -9,7 +9,7 @@ import {
 const SIDEBAR_STATUSES = new Set<TrackedStatus>([
   "blocked",
   "in_progress",
-  "in_reviewing",
+  "reviewing",
   "in_review",
   "ready",
 ]);

@@ -17,6 +17,7 @@ import {
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 import { useWorkspaceTask } from "../../hooks/useWorkspaceTask";
 import { formatTimestamp } from "@/lib/time";
+import { tokenizeText } from "@/lib/url-tokenizer";
 import { getStatusColor } from "@/features/board/lib/status";
 import { formatStatusLabel, getStatusStyle } from "../../lib/status";
 import type { TaskDetail } from "@/services/workflow-backend/types";
@@ -425,6 +426,30 @@ function getTimelineStatusKey(action: string): string {
   return action;
 }
 
+function ActivityNoteText({ text }: { text: string }) {
+  const tokens = tokenizeText(text);
+  return (
+    <>
+      {tokens.map((token, i) =>
+        token.type === "link" ? (
+          <a
+            key={i}
+            href={token.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline hover:opacity-80"
+            data-task-activity-link
+          >
+            {token.label}
+          </a>
+        ) : (
+          <span key={i}>{token.value}</span>
+        ),
+      )}
+    </>
+  );
+}
+
 function TaskActivityTimelineItem({
   entry,
   isLast,
@@ -457,7 +482,7 @@ function TaskActivityTimelineItem({
         <span className="text-xs text-text-muted">by {entry.actor}</span>
         {entry.note ? (
           <p className="mt-2 border border-border bg-surface px-3 py-2 text-sm text-text-secondary">
-            {entry.note}
+            <ActivityNoteText text={entry.note} />
           </p>
         ) : null}
       </div>

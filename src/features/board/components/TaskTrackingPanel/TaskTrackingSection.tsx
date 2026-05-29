@@ -28,7 +28,7 @@ const STATUS_ICON_STYLE: Record<
     boxClass: "bg-warning-bg",
     iconClass: "text-warning",
   },
-  in_reviewing: {
+  reviewing: {
     icon: Eye,
     boxClass: "bg-info-bg",
     iconClass: "text-info",

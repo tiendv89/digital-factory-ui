@@ -17,10 +17,10 @@ type TaskSubView = "list" | "markdown";
 
 type FeatureTasksPanelProps = {
   feature: FeatureDetail;
-  onDrilldown: (taskId: string) => void;
+  onOpenTaskTab: (taskId: string, taskName: string, title: string) => void;
 };
 
-export function FeatureTasksPanel({ feature, onDrilldown }: FeatureTasksPanelProps) {
+export function FeatureTasksPanel({ feature, onOpenTaskTab }: FeatureTasksPanelProps) {
   const [subView, setSubView] = useState<TaskSubView>("list");
   const tasks = feature.tasks ?? [];
 
@@ -94,7 +94,13 @@ export function FeatureTasksPanel({ feature, onDrilldown }: FeatureTasksPanelPro
               <FeatureTaskRow
                 key={task.id}
                 task={task}
-                onDrilldown={() => onDrilldown(task.id)}
+                onOpenTaskTab={() =>
+                  onOpenTaskTab(
+                    task.id,
+                    task.task_name || task.id,
+                    task.title || task.task_name || "",
+                  )
+                }
               />
             ))}
           </div>
@@ -170,10 +176,10 @@ export function FeatureTasksPanel({ feature, onDrilldown }: FeatureTasksPanelPro
 
 function FeatureTaskRow({
   task,
-  onDrilldown,
+  onOpenTaskTab,
 }: {
   task: TaskSummary;
-  onDrilldown: () => void;
+  onOpenTaskTab: () => void;
 }) {
   const statusStyle = getStatusStyle(task.status);
 
@@ -181,7 +187,7 @@ function FeatureTaskRow({
     <button
       type="button"
       data-feature-task-row={task.task_name}
-      onClick={onDrilldown}
+      onClick={onOpenTaskTab}
       aria-label={`Open task ${task.task_name}`}
       className="flex w-full min-w-0 items-center gap-3 border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary-light hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >

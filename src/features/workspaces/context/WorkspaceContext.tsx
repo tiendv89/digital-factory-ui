@@ -45,6 +45,8 @@ import {
   clearFeatureStatusFilter,
   clearBoardMode,
 } from "@/features/board/lib/status-filter-store";
+import { useQueryClient } from "@tanstack/react-query";
+import { workspaceKeys } from "@/lib/query-keys";
 
 export type TaskTabEntry = {
   sessionId: string;
@@ -54,6 +56,8 @@ export type TaskTabEntry = {
   title: string;
   featureId?: string;
   featureName?: string;
+  /** When set, closing this task tab should reactivate the parent feature tab. */
+  parentFeatureTabSessionId?: string;
 };
 
 export type FeatureTabEntry = {
@@ -125,6 +129,7 @@ const WorkspaceActionsContext =
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [summaries, setSummaries] = useState<LocalWorkspaceSummary[]>(() =>
     getLocalWorkspaceSummaries(),
   );
@@ -308,6 +313,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const detail = await apiSyncWorkspace(selectedWorkspaceId);
       setActiveWorkspace(detail);
+      // Update board detail cache immediately with fresh sync data
+      queryClient.setQueryData(workspaceKeys.detail(selectedWorkspaceId), detail);
+      // Invalidate sidebar tasks so they refetch in the background
+      queryClient.invalidateQueries({
+        queryKey: ["workspace", selectedWorkspaceId, "sidebar-tasks"],
+      });
     } catch (err) {
       const apiError = err as ApiError;
       if (isWorkspaceNotFound(apiError)) {
@@ -319,7 +330,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     } finally {
       setSyncingWorkspace(false);
     }
-  }, [handleMissingWorkspace, isWorkspaceNotFound, selectedWorkspaceId]);
+  }, [handleMissingWorkspace, isWorkspaceNotFound, queryClient, selectedWorkspaceId]);
 
   const clearSyncError = useCallback(() => {
     setSyncError(null);
@@ -379,9 +390,25 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const closeTaskTab = useCallback(
     (sessionId: string) => {
+      // Look up the tab being closed to check for parent feature tab context
+      const tab = openTaskTabsRef.current.find(
+        (t) => t.sessionId === sessionId,
+      );
       setOpenTaskTabs((prev) => removeTaskTab(prev, sessionId));
       if (activeTaskTabId === sessionId) {
         setActiveTaskTabId(null);
+        if (tab?.parentFeatureTabSessionId) {
+          // Reactivate the parent feature tab instead of going to board
+          const parentTab = openFeatureTabsRef.current.find(
+            (ft) => ft.sessionId === tab.parentFeatureTabSessionId,
+          );
+          if (parentTab) {
+            setActiveFeatureTabId(parentTab.sessionId);
+            setActiveSurface("feature-tab");
+            router.push(getFeatureTabHref(parentTab));
+            return;
+          }
+        }
         setActiveSurface("board");
         router.push("/board");
       }
