@@ -35,7 +35,7 @@ export function TaskTrackingItem({
 
   const statusAge = computeStatusAge(task);
 
-  const tick = useLastUpdatedTimer();
+  useLastUpdatedTimer();
   const lastUpdatedLabel = computeLastUpdatedLabel(task);
 
   const priorityLabel = task.priority?.trim()
