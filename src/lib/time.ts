@@ -46,6 +46,38 @@ export function formatStatusAgeDuration(elapsedMs: number): string {
   return `${days}d`;
 }
 
+/** Compact last-updated label reading exclusively from execution.last_updated_at. */
+export function computeLastUpdatedLabel(
+  task: Pick<ParsedTask, "execution">,
+  now: Date = new Date(),
+): string | null {
+  const iso = task.execution?.last_updated_at;
+  if (!iso) return null;
+  const ms = new Date(iso).getTime();
+  if (Number.isNaN(ms)) return null;
+  const elapsed = now.getTime() - ms;
+  return formatLastUpdatedLabel(elapsed);
+}
+
+/** Formats elapsed milliseconds as a compact human-readable "… ago" label. */
+export function formatLastUpdatedLabel(elapsedMs: number): string {
+  if (elapsedMs < 0) return "—";
+  if (elapsedMs < MINUTE_MS) {
+    const secs = Math.floor(elapsedMs / 1000);
+    return `${secs}s ago`;
+  }
+  if (elapsedMs < HOUR_MS) {
+    const mins = Math.floor(elapsedMs / MINUTE_MS);
+    return `${mins}m ago`;
+  }
+  if (elapsedMs < DAY_MS) {
+    const hours = Math.floor(elapsedMs / HOUR_MS);
+    return `${hours}h ago`;
+  }
+  const days = Math.floor(elapsedMs / DAY_MS);
+  return `${days}d ago`;
+}
+
 export function computeStatusAge(
   task: Pick<ParsedTask, "status" | "log" | "execution">,
   now: Date = new Date(),

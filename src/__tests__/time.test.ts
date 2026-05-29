@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  computeLastUpdatedLabel,
   findStatusLogEntry,
   formatElapsed,
+  formatLastUpdatedLabel,
   formatTimestamp,
   getElapsedSinceStatus,
   getFeatureLastModifiedAt,
@@ -241,5 +243,71 @@ describe("getFeatureLastModifiedAt", () => {
     };
 
     expect(getFeatureLastModifiedAt(feature)).toBeNull();
+  });
+});
+
+// ─── T9 — formatLastUpdatedLabel ─────────────────────────────────────────────
+
+describe("formatLastUpdatedLabel", () => {
+  it("formats seconds with 'ago' suffix", () => {
+    expect(formatLastUpdatedLabel(0)).toBe("0s ago");
+    expect(formatLastUpdatedLabel(30_000)).toBe("30s ago");
+    expect(formatLastUpdatedLabel(59_000)).toBe("59s ago");
+  });
+
+  it("formats minutes with 'ago' suffix", () => {
+    expect(formatLastUpdatedLabel(60_000)).toBe("1m ago");
+    expect(formatLastUpdatedLabel(90_000)).toBe("1m ago");
+    expect(formatLastUpdatedLabel(59 * 60_000)).toBe("59m ago");
+  });
+
+  it("formats hours with 'ago' suffix", () => {
+    expect(formatLastUpdatedLabel(60 * 60_000)).toBe("1h ago");
+    expect(formatLastUpdatedLabel(5 * 60 * 60_000)).toBe("5h ago");
+    expect(formatLastUpdatedLabel(23 * 60 * 60_000)).toBe("23h ago");
+  });
+
+  it("formats days with 'ago' suffix", () => {
+    expect(formatLastUpdatedLabel(24 * 60 * 60_000)).toBe("1d ago");
+    expect(formatLastUpdatedLabel(3 * 24 * 60 * 60_000)).toBe("3d ago");
+  });
+
+  it("returns em-dash for negative elapsed", () => {
+    expect(formatLastUpdatedLabel(-1)).toBe("—");
+  });
+});
+
+// ─── T9 — computeLastUpdatedLabel ────────────────────────────────────────────
+
+describe("computeLastUpdatedLabel", () => {
+  it("computes label from execution.last_updated_at", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      execution: { actor_type: "agent", last_updated_at: "2026-05-27T08:00:00Z" },
+    };
+    expect(computeLastUpdatedLabel(task, now)).toBe("2h ago");
+  });
+
+  it("computes seconds label for recent update", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      execution: { actor_type: "agent", last_updated_at: "2026-05-27T09:59:30Z" },
+    };
+    expect(computeLastUpdatedLabel(task, now)).toBe("30s ago");
+  });
+
+  it("returns null when execution is missing", () => {
+    expect(computeLastUpdatedLabel({})).toBeNull();
+  });
+
+  it("returns null when execution has no last_updated_at", () => {
+    expect(computeLastUpdatedLabel({ execution: { actor_type: "agent" } })).toBeNull();
+  });
+
+  it("returns null for invalid ISO timestamp", () => {
+    const task = {
+      execution: { actor_type: "agent", last_updated_at: "not-a-date" },
+    };
+    expect(computeLastUpdatedLabel(task)).toBeNull();
   });
 });
