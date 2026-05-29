@@ -1,13 +1,13 @@
 /**
- * T4 — Board visual cleanup and In Reviewing status
+ * T4 — Board visual cleanup and Reviewing status
  *
  * Covers:
  *   1. Board page no longer renders CreateTaskButton
- *   2. STATUS_COLUMNS includes in_reviewing with correct label/color
- *   3. FEATURE_STATUS_OPTIONS does NOT include in_reviewing (Task Mode-only)
- *   4. FeatureBoardView does not render In Reviewing status column
- *   5. in_reviewing tasks render in the correct column in TaskBoardView
- *   6. TaskBoardView renders exactly 8 column headers (including In Reviewing)
+ *   2. STATUS_COLUMNS includes reviewing with correct label/color
+ *   3. FEATURE_STATUS_OPTIONS does NOT include reviewing (Task Mode-only)
+ *   4. FeatureBoardView does not render Reviewing status column
+ *   5. reviewing tasks render in the correct column in TaskBoardView
+ *   6. TaskBoardView renders exactly 8 column headers (including Reviewing)
  */
 
 import React from "react";
@@ -98,7 +98,7 @@ const mockBoardContextForBoardPage = vi.hoisted(() => ({
   openTaskTabNewSession: vi.fn(),
   openFeatureTab: vi.fn(),
   openFeatureTabNewSession: vi.fn(),
-  boardMode: "task" as const,
+  boardMode: "task" as "task" | "feature",
   setBoardMode: vi.fn(),
   taskSearchQuery: "",
   setTaskSearchQuery: vi.fn(),
@@ -206,24 +206,24 @@ describe("BoardPage — CreateTaskButton removal", () => {
   });
 });
 
-// ─── 2. STATUS_COLUMNS includes in_reviewing ──────────────────────────────
+// ─── 2. STATUS_COLUMNS includes reviewing ──────────────────────────────
 
-describe("STATUS_COLUMNS — includes in_reviewing", () => {
-  it("contains in_reviewing entry with correct label", () => {
-    const col = STATUS_COLUMNS.find((c) => c.key === "in_reviewing");
+describe("STATUS_COLUMNS — includes reviewing", () => {
+  it("contains reviewing entry with correct label", () => {
+    const col = STATUS_COLUMNS.find((c) => c.key === "reviewing");
     expect(col).toBeDefined();
     expect(col!.label).toBe("In Reviewing");
   });
 
-  it("contains in_reviewing entry with valid hex color", () => {
-    const col = STATUS_COLUMNS.find((c) => c.key === "in_reviewing");
+  it("contains reviewing entry with valid hex color", () => {
+    const col = STATUS_COLUMNS.find((c) => c.key === "reviewing");
     expect(col).toBeDefined();
     expect(col!.color).toMatch(/^#[0-9a-fA-F]{6}$/);
   });
 
-  it("places in_reviewing between in_progress and blocked (index 3)", () => {
+  it("places reviewing between in_progress and blocked (index 3)", () => {
     expect(STATUS_COLUMNS[2].key).toBe("in_progress");
-    expect(STATUS_COLUMNS[3].key).toBe("in_reviewing");
+    expect(STATUS_COLUMNS[3].key).toBe("reviewing");
     expect(STATUS_COLUMNS[4].key).toBe("blocked");
   });
 
@@ -243,12 +243,12 @@ describe("STATUS_COLUMNS — includes in_reviewing", () => {
   });
 });
 
-// ─── 3. FEATURE_STATUS_OPTIONS does NOT include in_reviewing ─────────────
+// ─── 3. FEATURE_STATUS_OPTIONS does NOT include reviewing ─────────────
 
 describe("FEATURE_STATUS_OPTIONS — Task Mode-only exclusion", () => {
-  it("does not contain in_reviewing", () => {
+  it("does not contain reviewing", () => {
     const keys = FEATURE_STATUS_OPTIONS.map((o) => o.key);
-    expect(keys).not.toContain("in_reviewing");
+    expect(keys).not.toContain("reviewing");
   });
 
   it("still contains exactly the 8 canonical feature lifecycle statuses", () => {
@@ -267,18 +267,18 @@ describe("FEATURE_STATUS_OPTIONS — Task Mode-only exclusion", () => {
 
   it("does not contain any task lifecycle status", () => {
     const keys = new Set<string>(FEATURE_STATUS_OPTIONS.map((o) => o.key));
-    expect(keys.has("in_reviewing")).toBe(false);
+    expect(keys.has("reviewing")).toBe(false);
     expect(keys.has("todo")).toBe(false);
     expect(keys.has("ready")).toBe(false);
     expect(keys.has("in_review")).toBe(false);
   });
 });
 
-// ─── 4. TaskBoardView renders In Reviewing column header ─────────────────
+// ─── 4. TaskBoardView renders Reviewing column header ─────────────────
 
-describe("TaskBoardView — In Reviewing column header rendering", () => {
-  it("STATUS_COLUMNS includes in_reviewing with uppercase label", () => {
-    const col = STATUS_COLUMNS.find((c) => c.key === "in_reviewing");
+describe("TaskBoardView — Reviewing column header rendering", () => {
+  it("STATUS_COLUMNS includes reviewing with uppercase label", () => {
+    const col = STATUS_COLUMNS.find((c) => c.key === "reviewing");
     expect(col).toBeDefined();
     expect(col!.label).toBe("In Reviewing");
   });
@@ -293,17 +293,17 @@ describe("TaskBoardView — In Reviewing column header rendering", () => {
 // ─── 5. Feature Mode does not display Task Mode-only status ──────────────
 
 describe("Feature Mode — Task Mode-only status exclusion", () => {
-  it("FEATURE_STATUS_OPTIONS does not include in_reviewing", () => {
+  it("FEATURE_STATUS_OPTIONS does not include reviewing", () => {
     const keys = FEATURE_STATUS_OPTIONS.map((o) => o.key as string);
-    expect(keys).not.toContain("in_reviewing");
+    expect(keys).not.toContain("reviewing");
   });
 
-  it("FeatureBoardView will not render in_reviewing column because FEATURE_STATUS_OPTIONS lacks it", () => {
+  it("FeatureBoardView will not render reviewing column because FEATURE_STATUS_OPTIONS lacks it", () => {
     // FeatureBoardView uses getFeatureStatusColumns() which maps
     // FEATURE_STATUS_OPTIONS directly.  Since FEATURE_STATUS_OPTIONS does not
-    // contain in_reviewing, FeatureBoardView will never render it.
+    // contain reviewing, FeatureBoardView will never render it.
     const keys = FEATURE_STATUS_OPTIONS.map((o) => o.key as string);
-    expect(keys.includes("in_reviewing")).toBe(false);
+    expect(keys.includes("reviewing")).toBe(false);
   });
 });
 
@@ -356,7 +356,7 @@ describe("T8 — Default board ordering preserved after sort removal", () => {
       "todo",
       "ready",
       "in_progress",
-      "in_reviewing",
+      "reviewing",
       "blocked",
       "in_review",
       "done",

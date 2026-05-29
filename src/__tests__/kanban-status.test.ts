@@ -23,7 +23,7 @@ describe("STATUS_COLUMNS", () => {
       "todo",
       "ready",
       "in_progress",
-      "in_reviewing",
+      "reviewing",
       "blocked",
       "in_review",
       "done",
@@ -50,7 +50,7 @@ describe("getStatusColor", () => {
     expect(getStatusColor("todo")).toBe("#3274b4");
     expect(getStatusColor("ready")).toBe("#6e6de7");
     expect(getStatusColor("in_progress")).toBe("#e08500");
-    expect(getStatusColor("in_reviewing")).toBe("#b45fbd");
+    expect(getStatusColor("reviewing")).toBe("#b45fbd");
     expect(getStatusColor("blocked")).toBe("#e62a34");
     expect(getStatusColor("in_review")).toBe("#8e67cb");
     expect(getStatusColor("done")).toBe("#009252");
@@ -69,7 +69,7 @@ describe("getNextAction", () => {
       "todo",
       "ready",
       "in_progress",
-      "in_reviewing",
+      "reviewing",
       "blocked",
       "in_review",
       "cancelled",
@@ -90,7 +90,7 @@ describe("getNextAction", () => {
     );
     expect(getNextAction("ready")).toBe("Start implementation");
     expect(getNextAction("in_progress")).toBe("Waiting for result");
-    expect(getNextAction("in_reviewing")).toBe("Agent is reviewing the result");
+    expect(getNextAction("reviewing")).toBe("Agent is reviewing the result");
     expect(getNextAction("blocked")).toBe("Human resolves");
     expect(getNextAction("in_review")).toBe("Human approves or rejects");
     expect(getNextAction("done")).toBe("");

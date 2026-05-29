@@ -3,6 +3,7 @@ import type { LogEntry, ParsedFeature, ParsedTask } from "@/services/yaml-parser
 const STATUS_TO_LOG_ACTIONS: Record<string, readonly string[]> = {
   blocked: ["blocked"],
   in_progress: ["in_progress", "started", "claimed"],
+  reviewing: ["reviewing"],
   ready: ["ready"],
   in_review: ["in_review", "moved_to_review"],
 };

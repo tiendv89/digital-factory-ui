@@ -33,7 +33,7 @@ describe("groupTrackedTasks", () => {
     expect(sections.map((s) => s.status)).toEqual([
       "blocked",
       "in_progress",
-      "in_reviewing",
+      "reviewing",
       "in_review",
       "ready",
     ]);

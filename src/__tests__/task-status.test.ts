@@ -23,6 +23,7 @@ describe("getStatusStyle", () => {
       "todo",
       "ready",
       "in_progress",
+      "reviewing",
       "blocked",
       "in_review",
       "done",
@@ -54,7 +55,16 @@ describe("getStatusStyle", () => {
 
 describe("getNextActionLabel", () => {
   it("returns an action for every tracked status", () => {
-    const statuses = ["todo", "ready", "in_progress", "blocked", "in_review", "done", "cancelled"];
+    const statuses = [
+      "todo",
+      "ready",
+      "in_progress",
+      "reviewing",
+      "blocked",
+      "in_review",
+      "done",
+      "cancelled",
+    ];
     for (const status of statuses) {
       expect(getNextActionLabel(status)).toBeDefined();
       expect(typeof getNextActionLabel(status)).toBe("string");

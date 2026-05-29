@@ -5,7 +5,7 @@
  * Uses @testing-library/react with jsdom to verify:
  *   - Last-updated label renders with correct aria-label, text, and styles
  *   - Label appears for all five tracked statuses (blocked, in_progress,
- *     in_reviewing, in_review, ready)
+ *     reviewing, in_review, ready)
  *   - Label is omitted when execution or last_updated_at is missing
  *   - Label is omitted for invalid timestamps
  *   - Existing click behavior and status age label are preserved
@@ -128,8 +128,8 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
     assertLastUpdatedPresent("2h ago");
   });
 
-  it("renders last-updated label for in_reviewing tasks", () => {
-    const task = makeTask("T3", "in_reviewing", {
+  it("renders last-updated label for reviewing tasks", () => {
+    const task = makeTask("T3", "reviewing", {
       execution: { actor_type: "agent", last_updated_at: timestamp },
     });
     render(

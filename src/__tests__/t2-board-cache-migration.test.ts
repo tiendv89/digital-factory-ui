@@ -51,11 +51,12 @@ const WORKSPACE_ID = "ws-test-123";
 const WORKSPACE_DETAIL = {
   id: WORKSPACE_ID,
   name: "Test Workspace",
+  slug: "test-workspace",
   features: [],
   tasks: [],
   repo_url: "https://github.com/test/repo",
-  default_branch: "main",
-  source_state: "synced" as const,
+  source_state: { stale: false },
+  updated_at: "2026-01-01T00:00:00Z",
 };
 
 function makeQueryClient() {

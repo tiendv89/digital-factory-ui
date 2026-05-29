@@ -22,7 +22,11 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useRouter } from "next/navigation";
-import type { TaskDetail, FeatureDetail, TaskSummary } from "../services/workflow-backend/types";
+import type {
+  TaskDetail,
+  FeatureDetail,
+  TaskSummary,
+} from "../services/workflow-backend/types";
 
 // ─── Mock next/navigation ─────────────────────────────────────────────────────
 
@@ -34,8 +38,16 @@ const mockRouterPush = vi.fn();
 
 // ─── Helper: create a TaskTabEntry for context tests ──────────────────────────
 
-import type { TaskTabEntry, WorkspaceContextValue } from "../features/workspaces/context/WorkspaceContext";
-import { addTaskTab, removeTaskTab, getTaskTabHref, createTabSessionId } from "../features/workspaces/lib/tabState";
+import type {
+  TaskTabEntry,
+  WorkspaceContextValue,
+} from "../features/workspaces/context/WorkspaceContext";
+import {
+  addTaskTab,
+  removeTaskTab,
+  getTaskTabHref,
+  createTabSessionId,
+} from "../features/workspaces/lib/tabState";
 
 // ─── Test: tabState helpers ───────────────────────────────────────────────────
 
@@ -163,7 +175,9 @@ vi.mock("../features/tasks/lib/status", () => ({
 
 import { FeatureTasksPanel } from "../features/board/components/FeatureTabView/FeatureTasksPanel";
 
-function makeFeatureDetail(overrides: Partial<FeatureDetail> = {}): FeatureDetail {
+function makeFeatureDetail(
+  overrides: Partial<FeatureDetail> = {},
+): FeatureDetail {
   return {
     id: "feat-uuid-1",
     feature_id: "feat-uuid-1",
@@ -171,7 +185,14 @@ function makeFeatureDetail(overrides: Partial<FeatureDetail> = {}): FeatureDetai
     title: "My Feature",
     status: "in_implementation",
     current_stage: "in_implementation",
-    task_counts: { total: 0, done: 0, in_progress: 0, blocked: 0, ready: 0, todo: 0 },
+    task_counts: {
+      total: 0,
+      done: 0,
+      in_progress: 0,
+      blocked: 0,
+      ready: 0,
+      todo: 0,
+    },
     workspace_id: "ws-uuid-1",
     documents: [],
     tasks: [],
@@ -204,7 +225,9 @@ describe("FeatureTasksPanel — onOpenTaskTab callback", () => {
   it("renders task rows and calls onOpenTaskTab with task details", () => {
     const onOpenTaskTab = vi.fn();
     const feature = makeFeatureDetail({
-      tasks: [makeTaskSummary({ task_name: "T3", title: "Implement kanban board" })],
+      tasks: [
+        makeTaskSummary({ task_name: "T3", title: "Implement kanban board" }),
+      ],
     });
 
     const html = renderToStaticMarkup(
@@ -298,7 +321,9 @@ describe("FeatureTabView — calls openTaskTab instead of inline drilldown", () 
     vi.clearAllMocks();
     mockUseFeatureDetail.mockReturnValue({
       feature: makeFeatureDetail({
-        tasks: [makeTaskSummary({ task_name: "T3", title: "Implement kanban board" })],
+        tasks: [
+          makeTaskSummary({ task_name: "T3", title: "Implement kanban board" }),
+        ],
       }),
       loading: false,
       error: null,
@@ -373,7 +398,11 @@ describe("Flicker hardening — useFeatureDetail with cached data", () => {
     );
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(QueryClientProvider, { client: queryClient }, children);
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children,
+      );
 
     const { result } = renderHook(
       () => realUseFeatureDetail(workspaceId, featureId),
@@ -406,7 +435,11 @@ describe("Flicker hardening — useFeatureDetail with cached data", () => {
     queryClient.setQueryData(workspaceKeys.feature(ws, "f-b"), featB);
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(QueryClientProvider, { client: queryClient }, children);
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children,
+      );
 
     // Simulate tab switch: render hook for feature A, then feature B.
     const { result: resultA, rerender } = renderHook(
@@ -449,13 +482,14 @@ describe("Flicker hardening — useWorkspaceTask with cached data", () => {
       feature_id: "feat-uuid-1",
       feature_name: "my-feature",
       workspace_id: workspaceId,
-      documents: [],
       activity: [],
       repo: "acme/ui",
       branch: "feature/T1",
       is_blocked: false,
-      updated_at: "2026-01-01T00:00:00Z",
-      source_state: { stale: false },
+      next_action: "",
+      blocked_reason: "",
+      depends_on: [],
+      execution: { actor_type: "agent" },
     };
 
     queryClient.setQueryData(
@@ -464,7 +498,11 @@ describe("Flicker hardening — useWorkspaceTask with cached data", () => {
     );
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(QueryClientProvider, { client: queryClient }, children);
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children,
+      );
 
     const { result } = renderHook(
       () => realUseWorkspaceTask(workspaceId, taskId),
@@ -492,25 +530,51 @@ describe("Flicker hardening — useWorkspaceTask with cached data", () => {
     const ws = "ws-1";
 
     const taskA: TaskDetail = {
-      id: "t-a", task_id: "t-a", task_name: "TA", title: "Task A",
-      status: "in_progress", feature_id: "f-1", feature_name: "feat-one",
-      workspace_id: ws, documents: [], activity: [],
-      repo: "acme/ui", branch: "feature/TA", is_blocked: false,
-      updated_at: "2026-01-01T00:00:00Z", source_state: { stale: false },
+      id: "t-a",
+      task_id: "t-a",
+      task_name: "TA",
+      title: "Task A",
+      status: "in_progress",
+      feature_id: "f-1",
+      feature_name: "feat-one",
+      workspace_id: ws,
+      activity: [],
+      next_action: "",
+      blocked_reason: "",
+      depends_on: [],
+      execution: { actor_type: "agent" },
+      repo: "acme/ui",
+      branch: "feature/TA",
+      is_blocked: false,
     };
     const taskB: TaskDetail = {
-      id: "t-b", task_id: "t-b", task_name: "TB", title: "Task B",
-      status: "done", feature_id: "f-1", feature_name: "feat-one",
-      workspace_id: ws, documents: [], activity: [],
-      repo: "acme/ui", branch: "feature/TB", is_blocked: false,
-      updated_at: "2026-01-01T00:00:00Z", source_state: { stale: false },
+      id: "t-b",
+      task_id: "t-b",
+      task_name: "TB",
+      title: "Task B",
+      status: "done",
+      feature_id: "f-1",
+      feature_name: "feat-one",
+      workspace_id: ws,
+      activity: [],
+      next_action: "",
+      blocked_reason: "",
+      depends_on: [],
+      execution: { actor_type: "agent" },
+      repo: "acme/ui",
+      branch: "feature/TB",
+      is_blocked: false,
     };
 
     queryClient.setQueryData(workspaceKeys.task(ws, "t-a"), taskA);
     queryClient.setQueryData(workspaceKeys.task(ws, "t-b"), taskB);
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(QueryClientProvider, { client: queryClient }, children);
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children,
+      );
 
     const { result, rerender } = renderHook(
       (taskId: string) => realUseWorkspaceTask(ws, taskId),

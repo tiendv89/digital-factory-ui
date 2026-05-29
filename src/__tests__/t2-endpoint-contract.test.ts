@@ -153,7 +153,7 @@ describe("Task mode list/search/filter endpoint contract", () => {
 
 describe("Status-only filter triggers backend search", () => {
   it("isAllStatusFilterSelected returns false for default filter (excludes done)", () => {
-    const defaultFilter = ["todo", "ready", "in_progress", "blocked", "in_review", "cancelled"];
+    const defaultFilter = ["todo", "ready", "in_progress", "reviewing", "blocked", "in_review", "cancelled"];
     expect(isAllStatusFilterSelected(defaultFilter)).toBe(false);
   });
 

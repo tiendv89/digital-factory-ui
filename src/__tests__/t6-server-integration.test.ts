@@ -137,9 +137,7 @@ describe("T6 Browser QA — refetchInterval configuration", () => {
 
 describe("T6 Browser QA — Feature-origin task tab Back behavior", () => {
   it("tabState addTaskTab preserves parentFeatureTabSessionId", async () => {
-    const { addTaskTab } = await import(
-      "../features/workspaces/lib/tabState"
-    );
+    const { addTaskTab } = await import("../features/workspaces/lib/tabState");
     const entry = {
       sessionId: "task-abc",
       workspaceId: "ws-1",
@@ -154,9 +152,8 @@ describe("T6 Browser QA — Feature-origin task tab Back behavior", () => {
   });
 
   it("removeTaskTab removes only the specified tab", async () => {
-    const { removeTaskTab } = await import(
-      "../features/workspaces/lib/tabState"
-    );
+    const { removeTaskTab } =
+      await import("../features/workspaces/lib/tabState");
     const tabs = [
       {
         sessionId: "task-abc",
@@ -180,9 +177,8 @@ describe("T6 Browser QA — Feature-origin task tab Back behavior", () => {
   });
 
   it("getTaskTabHref includes workspaceId, taskId, and sessionId", async () => {
-    const { getTaskTabHref } = await import(
-      "../features/workspaces/lib/tabState"
-    );
+    const { getTaskTabHref } =
+      await import("../features/workspaces/lib/tabState");
     const entry = {
       sessionId: "task-abc-123",
       workspaceId: "ws-1",
@@ -203,14 +199,13 @@ describe("T6 Browser QA — Sidebar task timestamp rendering", () => {
   it("TaskTrackingItem renders compact relative labels for all 5 statuses", async () => {
     const { default: React } = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");
-    const { TaskTrackingItem } = await import(
-      "../features/board/components/TaskTrackingPanel/TaskTrackingItem"
-    );
+    const { TaskTrackingItem } =
+      await import("../features/board/components/TaskTrackingPanel/TaskTrackingItem");
 
     const statuses = [
       "blocked",
       "in_progress",
-      "in_reviewing",
+      "reviewing",
       "in_review",
       "ready",
     ];
@@ -223,9 +218,7 @@ describe("T6 Browser QA — Sidebar task timestamp rendering", () => {
         dependsOn: [],
         execution: {
           actor_type: "agent" as const,
-          last_updated_at: new Date(
-            Date.now() - 30 * 60_000,
-          ).toISOString(),
+          last_updated_at: new Date(Date.now() - 30 * 60_000).toISOString(),
         },
       };
       const feature = {
@@ -252,9 +245,8 @@ describe("T6 Browser QA — Sidebar task timestamp rendering", () => {
   it("TaskTrackingItem omits label for missing timestamps", async () => {
     const { default: React } = await import("react");
     const { renderToStaticMarkup } = await import("react-dom/server");
-    const { TaskTrackingItem } = await import(
-      "../features/board/components/TaskTrackingPanel/TaskTrackingItem"
-    );
+    const { TaskTrackingItem } =
+      await import("../features/board/components/TaskTrackingPanel/TaskTrackingItem");
 
     const task = {
       id: "T-no-ts",
@@ -286,32 +278,29 @@ describe("T6 Browser QA — Sidebar task timestamp rendering", () => {
 // ─── 7. Status verification ─────────────────────────────────────────────────
 
 describe("T6 Browser QA — Status rendering", () => {
-  it("STATUS_COLUMNS includes in_reviewing with correct position", async () => {
+  it("STATUS_COLUMNS includes reviewing with correct position", async () => {
     const { STATUS_COLUMNS } = await import("../features/board/lib/status");
-    expect(STATUS_COLUMNS[3].key).toBe("in_reviewing");
+    expect(STATUS_COLUMNS[3].key).toBe("reviewing");
     expect(STATUS_COLUMNS[3].label).toBe("In Reviewing");
   });
 
-  it("FEATURE_STATUS_OPTIONS excludes in_reviewing", async () => {
-    const { FEATURE_STATUS_OPTIONS } = await import(
-      "../features/board/lib/status"
-    );
+  it("FEATURE_STATUS_OPTIONS excludes reviewing", async () => {
+    const { FEATURE_STATUS_OPTIONS } =
+      await import("../features/board/lib/status");
     const keys = FEATURE_STATUS_OPTIONS.map((o) => o.key);
-    expect(keys).not.toContain("in_reviewing");
+    expect(keys).not.toContain("reviewing");
   });
 
-  it("TRACKED_SECTIONS includes in_reviewing at position 2", async () => {
-    const { TRACKED_SECTIONS } = await import(
-      "../features/board/components/TaskTrackingPanel/TaskTrackingPanel.types"
-    );
-    expect(TRACKED_SECTIONS[2].status).toBe("in_reviewing");
+  it("TRACKED_SECTIONS includes reviewing at position 2", async () => {
+    const { TRACKED_SECTIONS } =
+      await import("../features/board/components/TaskTrackingPanel/TaskTrackingPanel.types");
+    expect(TRACKED_SECTIONS[2].status).toBe("reviewing");
   });
 
-  it("SIDEBAR_TASK_PARAMS includes in_reviewing in ordered statuses", async () => {
-    const { SIDEBAR_TASK_PARAMS } = await import(
-      "../services/workflow-backend/query-params"
-    );
-    expect(SIDEBAR_TASK_PARAMS.get("status")).toContain("in_reviewing");
+  it("SIDEBAR_TASK_PARAMS includes reviewing in ordered statuses", async () => {
+    const { SIDEBAR_TASK_PARAMS } =
+      await import("../services/workflow-backend/query-params");
+    expect(SIDEBAR_TASK_PARAMS.get("status")).toContain("reviewing");
   });
 });
 
@@ -319,9 +308,8 @@ describe("T6 Browser QA — Status rendering", () => {
 
 describe("T6 Browser QA — Sort button removal", () => {
   it("BOARD_DEFAULT_SORT is 'updated_at_desc'", async () => {
-    const { BOARD_DEFAULT_SORT } = await import(
-      "../features/board/lib/backend-list-params"
-    );
+    const { BOARD_DEFAULT_SORT } =
+      await import("../features/board/lib/backend-list-params");
     expect(BOARD_DEFAULT_SORT).toBe("updated_at_desc");
   });
 
@@ -332,7 +320,7 @@ describe("T6 Browser QA — Sort button removal", () => {
       "todo",
       "ready",
       "in_progress",
-      "in_reviewing",
+      "reviewing",
       "blocked",
       "in_review",
       "done",
@@ -341,9 +329,8 @@ describe("T6 Browser QA — Sort button removal", () => {
   });
 
   it("shouldResetPage handles sort changes correctly", async () => {
-    const { shouldResetPage, makeDefaultBoardListParams } = await import(
-      "../features/board/lib/backend-list-params"
-    );
+    const { shouldResetPage, makeDefaultBoardListParams } =
+      await import("../features/board/lib/backend-list-params");
     const base = makeDefaultBoardListParams();
     expect(
       shouldResetPage(
@@ -377,7 +364,9 @@ describe("T6 Browser QA — Log link formatting", () => {
   it("url-tokenizer returns text tokens for non-URL content", async () => {
     const { tokenizeText } = await import("../lib/url-tokenizer");
     const tokens = tokenizeText("Plain text with no URLs here");
-    expect(tokens).toEqual([{ type: "text", value: "Plain text with no URLs here" }]);
+    expect(tokens).toEqual([
+      { type: "text", value: "Plain text with no URLs here" },
+    ]);
   });
 
   it("url-tokenizer handles malformed URLs as text", async () => {
@@ -427,73 +416,63 @@ describe("T6 Browser QA — Visual cleanup verification", () => {
     const mockOpenTaskTabNewSession = vi.fn();
     const mockOpenFeatureTabNewSession = vi.fn();
 
-    vi.doMock(
-      "@/features/workspaces/context/WorkspaceContext",
-      () => ({
-        useWorkspaceContext: () => ({
-          activeWorkspace: {
-            id: "ws-1",
-            name: "test",
-            slug: "test",
-            repo_url: "https://github.com/test/repo.git",
-            source_state: { stale: false },
-            updated_at: "2026-01-01T00:00:00Z",
-            features: [],
-            tasks: [],
-          },
-          loadingWorkspace: false,
-          workspaceError: null,
-          summaries: [],
-          activeSurface: "board",
-          activeTaskTabId: null,
-          activeFeatureTabId: null,
-          openTaskTabs: [],
-          openFeatureTabs: [],
-          goToBoard: mockGoToBoard,
-          selectWorkspace: mockSelectWorkspace,
-          importWorkspace: mockImportWorkspace,
-          clearImportError: mockClearImportError,
-          removeLocalSummary: mockRemoveLocalSummary,
-          syncCurrentWorkspace: mockSyncCurrentWorkspace,
-          clearSyncError: mockClearSyncError,
-          openTaskTab: mockOpenTaskTab,
-          closeTaskTab: mockCloseTaskTab,
-          activateTaskTab: mockActivateTaskTab,
-          openFeatureTab: mockOpenFeatureTab,
-          closeFeatureTab: mockCloseFeatureTab,
-          activateFeatureTab: mockActivateFeatureTab,
-        }),
-        useWorkspaceActionsContext: () => ({
-          syncCurrentWorkspace: mockSyncCurrentWorkspace,
-          syncingWorkspace: false,
-          syncError: null,
-          openTaskTab: mockOpenTaskTab,
-          openFeatureTab: mockOpenFeatureTab,
-        }),
+    vi.doMock("@/features/workspaces/context/WorkspaceContext", () => ({
+      useWorkspaceContext: () => ({
+        activeWorkspace: {
+          id: "ws-1",
+          name: "test",
+          slug: "test",
+          repo_url: "https://github.com/test/repo.git",
+          source_state: { stale: false },
+          updated_at: "2026-01-01T00:00:00Z",
+          features: [],
+          tasks: [],
+        },
+        loadingWorkspace: false,
+        workspaceError: null,
+        summaries: [],
+        activeSurface: "board",
+        activeTaskTabId: null,
+        activeFeatureTabId: null,
+        openTaskTabs: [],
+        openFeatureTabs: [],
+        goToBoard: mockGoToBoard,
+        selectWorkspace: mockSelectWorkspace,
+        importWorkspace: mockImportWorkspace,
+        clearImportError: mockClearImportError,
+        removeLocalSummary: mockRemoveLocalSummary,
+        syncCurrentWorkspace: mockSyncCurrentWorkspace,
+        clearSyncError: mockClearSyncError,
+        openTaskTab: mockOpenTaskTab,
+        closeTaskTab: mockCloseTaskTab,
+        activateTaskTab: mockActivateTaskTab,
+        openFeatureTab: mockOpenFeatureTab,
+        closeFeatureTab: mockCloseFeatureTab,
+        activateFeatureTab: mockActivateFeatureTab,
       }),
-    );
+      useWorkspaceActionsContext: () => ({
+        syncCurrentWorkspace: mockSyncCurrentWorkspace,
+        syncingWorkspace: false,
+        syncError: null,
+        openTaskTab: mockOpenTaskTab,
+        openFeatureTab: mockOpenFeatureTab,
+      }),
+    }));
 
     vi.doMock("next/navigation", () => ({
       useRouter: () => ({ replace: vi.fn() }),
     }));
 
-    vi.doMock(
-      "@/features/board/components/BoardHeader/BoardHeader",
-      () => ({
-        BoardHeader: () =>
-          React.createElement("header", { "data-board-header": true }),
-      }),
-    );
+    vi.doMock("@/features/board/components/BoardHeader/BoardHeader", () => ({
+      BoardHeader: () =>
+        React.createElement("header", { "data-board-header": true }),
+    }));
 
     vi.doMock(
       "@/features/board/components/KanbanBoard/KanbanBoard.context",
       () => ({
         BoardProvider: ({ children }: { children: React.ReactNode }) =>
-          React.createElement(
-            "div",
-            { "data-board-provider": true },
-            children,
-          ),
+          React.createElement("div", { "data-board-provider": true }, children),
         useBoardContext: () => ({
           workspaceDetail: null,
           features: [],
@@ -549,13 +528,10 @@ describe("T6 Browser QA — Visual cleanup verification", () => {
       }),
     );
 
-    vi.doMock(
-      "@/features/board/components/KanbanBoard/KanbanBoard",
-      () => ({
-        KanbanBoard: () =>
-          React.createElement("div", { "data-kanban-board": true }),
-      }),
-    );
+    vi.doMock("@/features/board/components/KanbanBoard/KanbanBoard", () => ({
+      KanbanBoard: () =>
+        React.createElement("div", { "data-kanban-board": true }),
+    }));
 
     vi.doMock(
       "@/features/board/components/TaskTrackingPanel/TaskTrackingPanel",
@@ -585,19 +561,16 @@ describe("T6 Browser QA — Visual cleanup verification", () => {
 
 describe("T6 Browser QA — Tab switching data persistence", () => {
   it("createTabSessionId produces unique IDs", async () => {
-    const { createTabSessionId } = await import(
-      "../features/workspaces/lib/tabState"
-    );
-    const id1 = createTabSessionId();
-    const id2 = createTabSessionId();
+    const { createTabSessionId } =
+      await import("../features/workspaces/lib/tabState");
+    const id1 = createTabSessionId("task");
+    const id2 = createTabSessionId("feature");
     expect(id1).not.toBe(id2);
     expect(id1.length).toBeGreaterThan(0);
   });
 
   it("addTaskTab creates and deduplicates task tabs", async () => {
-    const { addTaskTab } = await import(
-      "../features/workspaces/lib/tabState"
-    );
+    const { addTaskTab } = await import("../features/workspaces/lib/tabState");
     const entry1 = {
       sessionId: "sess-1",
       workspaceId: "ws-1",

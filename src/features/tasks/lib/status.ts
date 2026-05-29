@@ -20,6 +20,11 @@ const STATUS_STYLES: Record<string, StatusBadgeStyle> = {
     text: "text-warning",
     dot: "bg-warning",
   },
+  reviewing: {
+    bg: "bg-info-bg",
+    text: "text-info",
+    dot: "bg-info",
+  },
   blocked: {
     bg: "bg-danger-bg",
     text: "text-danger",
@@ -54,6 +59,7 @@ export const NEXT_ACTIONS: Record<string, string> = {
   todo: "Auto-ready when last dependency is done",
   ready: "Start implementation",
   in_progress: "Waiting for result",
+  reviewing: "Agent is reviewing the result",
   blocked: "Human resolves",
   in_review: "Human approves or rejects",
   done: "",

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   computeLastUpdatedLabel,
+  computeStatusAge,
   findStatusLogEntry,
   formatElapsed,
   formatLastUpdatedLabel,
@@ -56,6 +57,20 @@ describe("findStatusLogEntry", () => {
   it("returns null when log is undefined or empty", () => {
     expect(findStatusLogEntry(undefined, "ready")).toBeNull();
     expect(findStatusLogEntry([], "ready")).toBeNull();
+  });
+
+  it("matches reviewing action verbatim", () => {
+    const log: LogEntry[] = [makeEntry("reviewing", "2026-03-01T00:00:00Z")];
+    expect(findStatusLogEntry(log, "reviewing")?.at).toBe(
+      "2026-03-01T00:00:00Z",
+    );
+  });
+
+  it("handles reviewing with 'reviewing' action alias", () => {
+    const log: LogEntry[] = [makeEntry("reviewing", "2026-03-02T12:00:00Z")];
+    expect(findStatusLogEntry(log, "reviewing")?.at).toBe(
+      "2026-03-02T12:00:00Z",
+    );
   });
 
   it("returns null for unknown statuses (todo, done, etc.)", () => {
@@ -243,6 +258,49 @@ describe("getFeatureLastModifiedAt", () => {
     };
 
     expect(getFeatureLastModifiedAt(feature)).toBeNull();
+  });
+});
+
+// ─── computeStatusAge with reviewing ──────────────────────────────────────
+
+describe("computeStatusAge — reviewing", () => {
+  it("computes age from reviewing log entry", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      status: "reviewing",
+      log: [makeEntry("reviewing", "2026-05-27T08:00:00Z")],
+    };
+    expect(computeStatusAge(task, now)).toBe("2h");
+  });
+
+  it("falls back to 'reviewing' action alias for reviewing", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      status: "reviewing",
+      log: [makeEntry("reviewing", "2026-05-27T09:45:00Z")],
+    };
+    expect(computeStatusAge(task, now)).toBe("15m");
+  });
+
+  it("falls back to last log entry for reviewing when no specific reviewing log action matches", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      status: "reviewing",
+      log: [makeEntry("created", "2026-05-27T07:00:00Z")],
+    };
+    expect(computeStatusAge(task, now)).toBe("3h");
+  });
+
+  it("uses execution.last_updated_at when both log and specific action are unavailable", () => {
+    const now = new Date("2026-05-27T10:00:00Z");
+    const task = {
+      status: "reviewing",
+      execution: {
+        actor_type: "agent",
+        last_updated_at: "2026-05-27T09:30:00Z",
+      },
+    };
+    expect(computeStatusAge(task, now)).toBe("30m");
   });
 });
 
