@@ -90,7 +90,7 @@ describe("WorkspaceContext — closeTaskTab with parentFeatureTabSessionId", () 
   beforeEach(() => {
     vi.clearAllMocks();
     mockRouterPush.mockReset();
-    (useRouter as ReturnType<typeof vi.mocked>).mockReturnValue({
+    (useRouter as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       push: mockRouterPush,
     });
   });
@@ -170,9 +170,11 @@ function makeFeatureDetail(overrides: Partial<FeatureDetail> = {}): FeatureDetai
     feature_name: "my-feature",
     title: "My Feature",
     status: "in_implementation",
+    current_stage: "in_implementation",
+    task_counts: { total: 0, done: 0, in_progress: 0, blocked: 0, ready: 0, todo: 0 },
     workspace_id: "ws-uuid-1",
-    tasks: [],
     documents: [],
+    tasks: [],
     activity: [],
     updated_at: "2026-01-01T00:00:00Z",
     source_state: { stale: false },
