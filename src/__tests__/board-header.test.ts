@@ -63,6 +63,11 @@ vi.mock("@/features/workspaces/context/WorkspaceContext", () => ({
   useWorkspaceContext: () => mockWorkspaceContext,
 }));
 
+vi.mock("@/features/auth", () => ({
+  useSession: () => ({ session: { status: "authenticated", data: null }, logout: vi.fn() }),
+  SessionProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 vi.mock("@/features/workspaces/components/ImportModal/ImportModal", () => ({
   ImportModal: () => React.createElement("div", { "data-import-modal": true }),
 }));

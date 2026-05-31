@@ -15,7 +15,7 @@ pnpm install
 
 # 2. Configure environment
 cp .env.template .env.local
-# Edit .env.local — set NEXT_PUBLIC_API_BASE_URL to your local backend URL (e.g. http://localhost:8081)
+# Edit .env.local — set NEXT_PUBLIC_WORKFLOW_API_URL and NEXT_PUBLIC_USER_SERVICE_URL
 
 # 3. Start the dev server
 pnpm dev
@@ -29,8 +29,11 @@ See `.env.template` for the full list with descriptions. Key variables:
 
 | Variable | Required | Description |
 |---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | Yes | Base URL of the workflow-backend API (no trailing slash) |
+| `NEXT_PUBLIC_WORKFLOW_API_URL` | Yes | Base URL of the workflow-backend API (no trailing slash). Replaces the old `NEXT_PUBLIC_API_BASE_URL`. |
+| `NEXT_PUBLIC_USER_SERVICE_URL` | Yes | Base URL of the user-service (no trailing slash). Used for login, `/api/me`, and logout. FE and user-service must share a parent domain for the session cookie. |
 `NEXT_PUBLIC_*` variables are baked into the client bundle at build time. Set them in your deployment environment **before** running `next build` or `docker build`.
+
+> **Backward compat:** `NEXT_PUBLIC_API_BASE_URL` is still accepted as a fallback for `NEXT_PUBLIC_WORKFLOW_API_URL`. Prefer the new name in all new configs.
 
 ## Available scripts
 
@@ -113,5 +116,7 @@ docs/                      QA notes and test plans
 ## Architecture notes
 
 - All workspace data is fetched from `workflow-backend` — no direct GitHub API calls from the browser.
-- `NEXT_PUBLIC_API_BASE_URL` is read once at startup via `getApiBase()` in `src/services/workflow-backend/client.ts`; if unset the app throws immediately rather than silently failing later.
+- `NEXT_PUBLIC_WORKFLOW_API_URL` (or legacy `NEXT_PUBLIC_API_BASE_URL`) is read once at startup via `getApiBase()` in `src/services/workflow-backend/client.ts`; if unset the app throws immediately rather than silently failing later.
+- Authentication is handled by `user-service` (separate service). The frontend fetches `/api/me` on mount; on 401 it redirects to `/login`.
+- Session cookies are set by `user-service` and sent automatically by the browser on same-parent-domain requests. No token storage in JS.
 - The app uses Next.js standalone output (`output: "standalone"`) for Docker deployments.
