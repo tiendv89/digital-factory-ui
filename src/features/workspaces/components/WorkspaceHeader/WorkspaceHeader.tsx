@@ -1,6 +1,6 @@
 "use client";
 
-import { Layers, X } from "lucide-react";
+import { Layers, LogOut, X } from "lucide-react";
 import type {
   FeatureTabEntry,
   TaskTabEntry,
@@ -8,6 +8,7 @@ import type {
 import { useWorkspaceContext } from "../../context/WorkspaceContext";
 import { WorkspaceSwitcher } from "../WorkspaceSwitcher";
 import type { SourceState } from "@/services/workflow-backend";
+import { useSession } from "@/features/auth";
 
 type WorkspaceHeaderProps = {
   workspaceName: string;
@@ -201,6 +202,8 @@ export function WorkspaceHeader({
   showMeta = false,
   showTitle = true,
 }: WorkspaceHeaderProps) {
+  const { logout } = useSession();
+
   return (
     <header
       data-workspace-header
@@ -233,6 +236,15 @@ export function WorkspaceHeader({
             )}
           </div>
         )}
+        <button
+          type="button"
+          onClick={logout}
+          title="Sign out"
+          aria-label="Sign out"
+          className="ml-1 flex shrink-0 items-center gap-1 rounded p-1 text-text-muted transition-colors hover:bg-surface-subtle hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
       </div>
     </header>
   );
