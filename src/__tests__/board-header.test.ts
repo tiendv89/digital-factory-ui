@@ -2,6 +2,12 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => ({ get: () => null, toString: () => "" }),
+  usePathname: () => "/board",
+}));
+
 const mockWorkspaceContext = vi.hoisted(() => ({
   summaries: [
     {
