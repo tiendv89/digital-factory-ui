@@ -3,11 +3,7 @@
 import { getUserServiceBase } from "@/services/user-service";
 
 function getProviderUrl(provider: "google" | "github"): string {
-  try {
-    return `${getUserServiceBase()}/auth/${provider}/start`;
-  } catch {
-    return `/auth/${provider}/start`;
-  }
+  return `${getUserServiceBase()}/auth/${provider}/start`;
 }
 
 export default function LoginPage() {
