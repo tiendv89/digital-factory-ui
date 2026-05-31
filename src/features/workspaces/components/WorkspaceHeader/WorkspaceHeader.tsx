@@ -7,6 +7,7 @@ import type {
 } from "../../context/WorkspaceContext";
 import { useWorkspaceContext } from "../../context/WorkspaceContext";
 import { WorkspaceSwitcher } from "../WorkspaceSwitcher";
+import { OrgWorkspaceSwitcher } from "../OrgWorkspaceSwitcher";
 import type { SourceState } from "@/services/workflow-backend";
 import { useSession } from "@/features/auth";
 
@@ -209,8 +210,9 @@ export function WorkspaceHeader({
       data-workspace-header
       className="flex h-9 shrink-0 items-center gap-2 border-b border-border bg-surface px-4 py-0.5"
     >
-      <div className="flex w-fit shrink-0 items-center">
+      <div className="flex w-fit shrink-0 items-center gap-2">
         <WorkspaceSwitcher />
+        <OrgWorkspaceSwitcher />
       </div>
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <div className="min-w-0 flex-1">
