@@ -23,6 +23,7 @@ function getApiBase(): string {
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${getApiBase()}${path}`, {
     ...init,
+    credentials: "include",
     headers: {
       Accept: "application/json",
       ...(init?.body ? { "Content-Type": "application/json" } : {}),
