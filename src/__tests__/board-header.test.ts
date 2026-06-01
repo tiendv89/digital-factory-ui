@@ -2,6 +2,12 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
+  useSearchParams: () => ({ get: () => null, toString: () => "" }),
+  usePathname: () => "/board",
+}));
+
 const mockWorkspaceContext = vi.hoisted(() => ({
   summaries: [
     {
@@ -61,6 +67,11 @@ const mockBoardContext = vi.hoisted(() => ({
 
 vi.mock("@/features/workspaces/context/WorkspaceContext", () => ({
   useWorkspaceContext: () => mockWorkspaceContext,
+}));
+
+vi.mock("@/features/auth", () => ({
+  useSession: () => ({ session: { status: "authenticated", data: null }, logout: vi.fn() }),
+  SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
 vi.mock("@/features/workspaces/components/ImportModal/ImportModal", () => ({

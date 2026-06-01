@@ -143,10 +143,11 @@ describe("workflow-backend client", () => {
       });
     });
 
-    it("throws when NEXT_PUBLIC_API_BASE_URL is not set", async () => {
+    it("throws when neither NEXT_PUBLIC_WORKFLOW_API_URL nor NEXT_PUBLIC_API_BASE_URL is set", async () => {
       delete process.env.NEXT_PUBLIC_API_BASE_URL;
+      delete process.env.NEXT_PUBLIC_WORKFLOW_API_URL;
       await expect(request("/api/workspaces/ws-uuid")).rejects.toThrow(
-        "NEXT_PUBLIC_API_BASE_URL is required",
+        "NEXT_PUBLIC_WORKFLOW_API_URL is required",
       );
     });
 

@@ -1,6 +1,7 @@
 "use client";
 import { useConnectForm } from "./ConnectForm.context";
-import { Link2, AlertCircle } from "lucide-react";
+import { useSession } from "@/features/auth/context/SessionContext";
+import { Link2, AlertCircle, LogOut } from "lucide-react";
 export function ConnectForm() {
   const {
     repoUrl,
@@ -14,6 +15,7 @@ export function ConnectForm() {
     setName,
     handleSubmit,
   } = useConnectForm();
+  const { logout } = useSession();
   return (
     <div className="w-full max-w-[680px]">
       <div className="mb-8 text-center">
@@ -124,6 +126,18 @@ export function ConnectForm() {
             )}
           </form>
         </div>
+      </div>
+      <div className="mt-4 flex justify-center">
+        <button
+          type="button"
+          onClick={logout}
+          title="Sign out"
+          aria-label="Sign out"
+          className="flex items-center gap-1.5 rounded p-1.5 text-sm text-text-muted transition-colors hover:bg-surface-subtle hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+          Sign out
+        </button>
       </div>
     </div>
   );
