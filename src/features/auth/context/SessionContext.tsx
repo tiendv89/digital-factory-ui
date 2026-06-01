@@ -2,8 +2,10 @@
 
 import {
   createContext,
+  startTransition,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
 } from "react";
@@ -28,32 +30,42 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [session, setSession] = useState<SessionState>({ status: "loading" });
 
+  // Refs let the bootstrap effect read the latest pathname/router without
+  // re-firing on every navigation. Re-running fetchMe on pathname changes
+  // creates a render→redirect→render storm in Next 16 (RSC prefetch flood).
+  const pathnameRef = useRef(pathname);
+  const routerRef = useRef(router);
+  useEffect(() => {
+    pathnameRef.current = pathname;
+    routerRef.current = router;
+  }, [pathname, router]);
+
   useEffect(() => {
     let cancelled = false;
     fetchMe()
       .then((data) => {
         if (cancelled) return;
         setSession({ status: "authenticated", data });
-        if (pathname === "/login") {
-          router.replace("/");
+        if (pathnameRef.current === "/login") {
+          startTransition(() => routerRef.current.replace("/"));
         }
       })
       .catch(() => {
         if (cancelled) return;
         setSession({ status: "unauthenticated" });
-        if (pathname !== "/login") {
-          router.replace("/login");
+        if (pathnameRef.current !== "/login") {
+          startTransition(() => routerRef.current.replace("/login"));
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [router, pathname]);
+  }, []);
 
   const logout = useCallback(async () => {
     await logoutUser();
     setSession({ status: "unauthenticated" });
-    router.replace("/login");
+    startTransition(() => router.replace("/login"));
   }, [router]);
 
   return (

@@ -6,7 +6,7 @@ dist/
 # Environment files — use .env.template as the committed reference.
 # Copy to .env.local for local development (never commit real values).
 .env
-.env.local
+.env
 .env.development
 .env.production
 .env.staging
