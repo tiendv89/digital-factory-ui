@@ -322,7 +322,7 @@ describe("useFeatureTaskList", () => {
     expect(result.current.data?.page).toBe(1);
     expect(result.current.data?.limit).toBe(50);
     expect(result.current.data?.total).toBe(1);
-    expect(result.current.features?.[0]).toBeUndefined(); // accessed via data.features
+    expect((result.current as Record<string, unknown>).features).toBeUndefined(); // accessed via data.features
     expect(result.current.data?.features[0].tasks[0].updated_at).toBe("2026-05-29T11:59:28Z");
   });
 
@@ -385,7 +385,7 @@ describe("useFeatureTaskList", () => {
 
     expect(query).toBeDefined();
     // staleTime and gcTime are set on the query's observer options
-    const options = query?.options;
+    const options = query?.options as Record<string, unknown> | undefined;
     expect(options?.staleTime).toBe(60_000);
     expect(options?.gcTime).toBe(60_000);
     expect(options?.refetchInterval).toBe(60_000);

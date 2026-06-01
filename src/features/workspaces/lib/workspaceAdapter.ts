@@ -1,10 +1,12 @@
 import type {
   ActivityEvent,
   FeatureDetail,
+  FeatureWithTasks,
   WorkspaceDetail,
   FeatureSummary,
   TaskDetail,
   TaskSummary,
+  TaskSummaryWithUpdatedAt,
   ImportWorkspaceRequest,
   LocalWorkspaceSummary,
   PullRequestRef,
@@ -102,13 +104,15 @@ export function normalizeFeatureLifecycleStatus(
   return isFeatureLifecycleStatus(value) ? value : "unknown";
 }
 
-export function adaptTaskSummary(task: TaskSummary): ParsedTask {
+export function adaptTaskSummary(task: TaskSummary | TaskSummaryWithUpdatedAt): ParsedTask {
   const blockedReason =
     task.blocked_reason && task.blocked_reason.trim() !== ""
       ? task.blocked_reason
       : task.is_blocked
         ? "blocked"
         : undefined;
+
+  const withUpdatedAt = task as TaskSummaryWithUpdatedAt;
 
   return {
     id: task.task_name,
@@ -131,7 +135,23 @@ export function adaptTaskSummary(task: TaskSummary): ParsedTask {
     backendId: task.id,
     featureBackendId: task.feature_id || undefined,
     repo: task.repo || undefined,
+    ...(withUpdatedAt.updated_at ? { updatedAt: withUpdatedAt.updated_at } : {}),
   };
+}
+
+export function adaptFeatureWithTasksToFeatures(
+  features: FeatureWithTasks[],
+): ParsedFeature[] {
+  return features.map((f) => ({
+    id: f.feature_name,
+    title: f.title,
+    featureStatus: normalizeFeatureLifecycleStatus(f.status),
+    tasks: f.tasks.map(adaptTaskSummary),
+    backendId: f.id,
+    currentStage: f.current_stage,
+    taskCounts: f.task_counts,
+    updatedAt: f.updated_at,
+  }));
 }
 
 export function adaptTaskDetail(task: TaskDetail): ParsedTask {
