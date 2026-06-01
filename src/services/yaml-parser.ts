@@ -30,6 +30,7 @@ export type ParsedTask = {
   backendId?: string;
   featureBackendId?: string;
   repo?: string;
+  updatedAt?: string;
 };
 
 export type ParsedFeature = {

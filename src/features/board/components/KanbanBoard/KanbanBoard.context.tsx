@@ -16,8 +16,9 @@ import type { WorkspaceDetail } from "@/services/workflow-backend";
 import { useBoardData } from "../../hooks/useBoardData";
 import { usePullRequestTaskData } from "../../hooks/usePullRequestTaskData";
 import { useBackendFeatureSearch } from "../../hooks/useBackendFeatureSearch";
-import { useBackendTaskSearch } from "../../hooks/useBackendTaskSearch";
 import { useWorkspaceActionsContext } from "@/features/workspaces/context/WorkspaceContext";
+import { useFeatureTaskList } from "@/features/tasks/hooks/useFeatureTaskList";
+import { adaptFeatureWithTasksToFeatures } from "@/features/workspaces/lib/workspaceAdapter";
 import type {
   ActiveFilters,
   BoardLoadError,
@@ -36,10 +37,7 @@ import {
   saveFeatureStatusFilter,
   saveStatusFilter,
 } from "../../lib/status-filter-store";
-import {
-  isAllStatusFilterSelected,
-  isAllFeatureStatusFilterSelected,
-} from "../../lib/status-filter";
+import { isAllFeatureStatusFilterSelected } from "../../lib/status-filter";
 import {
   BOARD_DEFAULT_LIMIT,
   BOARD_DEFAULT_SORT,
@@ -166,41 +164,15 @@ export function BoardProvider({
   const [taskLimit, setTaskLimit] = useState(BOARD_DEFAULT_LIMIT);
   const [featureLimit, setFeatureLimit] = useState(BOARD_DEFAULT_LIMIT);
 
-  // Build a map of feature backend ID -> feature lifecycle status from the
-  // already-loaded features array.  Passed to useBackendTaskSearch so
-  // adaptTaskSummariesToFeatures can set the correct feature lifecycle status
-  // on each ParsedFeature instead of falling back to a task-derived value.
-  const featureStatusMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const f of features) {
-      if (f.backendId && f.featureStatus) {
-        map.set(f.backendId, f.featureStatus);
-      }
-    }
-    return map as ReadonlyMap<string, string>;
-  }, [features]);
-
-  // Backend search hooks
+  // Task Mode always uses the feature-task API. Build params from current
+  // search/filter/pagination state. Sort is fixed at task_id_asc per spec.
   const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
   const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
   const trimmedTaskQuery = deferredTaskSearchQuery.trim();
 
-  // Backend search is active when either search text is present OR the status
-  // filter is a non-default subset (not all statuses selected).  When every
-  // status is selected there is no effective filter, so we fall back to the
-  // workspace root payload.
-  const taskStatusFilterActive =
-    taskActiveFilters.statuses.length > 0 &&
-    !isAllStatusFilterSelected(taskActiveFilters.statuses);
-  const taskSearchActive =
-    boardMode === "task" &&
-    (trimmedTaskQuery.length > 0 || taskStatusFilterActive);
-
   // Reset page to 1 when search query, filters, or limit change
   const prevTaskQueryRef = useRef(trimmedTaskQuery);
-  const prevTaskStatusRef = useRef(
-    taskActiveFilters.statuses.join(","),
-  );
+  const prevTaskStatusRef = useRef(taskActiveFilters.statuses.join(","));
   const prevTaskLimitRef = useRef(taskLimit);
   useEffect(() => {
     const currentStatus = taskActiveFilters.statuses.join(",");
@@ -216,28 +188,52 @@ export function BoardProvider({
     prevTaskLimitRef.current = taskLimit;
   }, [trimmedTaskQuery, taskActiveFilters.statuses, taskLimit]);
 
-  const taskSearchParams = useMemo(() => {
-    if (!taskSearchActive) return {};
-
-    const status = taskStatusFilterActive
-      ? taskActiveFilters.statuses.join(",")
-      : undefined;
-
+  const taskModeParams = useMemo(() => {
+    const status =
+      taskActiveFilters.statuses.length > 0
+        ? taskActiveFilters.statuses.join(",")
+        : undefined;
     return {
       title: trimmedTaskQuery || undefined,
       status,
       page: taskPage,
       limit: taskLimit,
-      sort: BOARD_DEFAULT_SORT,
+      sort: "task_id_asc" as const,
     };
-  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskSearchActive, taskStatusFilterActive, taskLimit]);
+  }, [trimmedTaskQuery, taskActiveFilters.statuses, taskPage, taskLimit]);
 
   const {
-    results: backendTaskResults,
-    searching: taskSearching,
-    searchError: taskSearchError,
-    pagination: taskPagination,
-  } = useBackendTaskSearch(workspaceDetail.id, taskSearchParams, featureStatusMap);
+    data: featureTaskData,
+    loading: taskSearching,
+    error: featureTaskError,
+  } = useFeatureTaskList(
+    boardMode === "task" ? workspaceDetail.id : null,
+    taskModeParams,
+  );
+
+  const backendTaskResults = useMemo<ParsedFeature[] | null>(() => {
+    if (boardMode !== "task") return null;
+    if (!featureTaskData) return null;
+    return adaptFeatureWithTasksToFeatures(featureTaskData.features);
+  }, [boardMode, featureTaskData]);
+
+  const taskPagination = useMemo(() => {
+    if (!featureTaskData) return null;
+    return {
+      total: featureTaskData.total,
+      page: featureTaskData.page,
+      limit: featureTaskData.limit,
+    };
+  }, [featureTaskData]);
+
+  const taskSearchError = useMemo(() => {
+    if (!featureTaskError) return null;
+    return {
+      kind: "network_error" as const,
+      message: featureTaskError.message ?? "Task Mode fetch failed",
+      retryable: featureTaskError.retryable,
+    };
+  }, [featureTaskError]);
 
   const trimmedFeatureQuery = deferredFeatureSearchQuery.trim();
 
