@@ -127,6 +127,24 @@ export type TaskSummary = {
   log?: TaskLogEntry[];
 };
 
+export type TaskSummaryWithUpdatedAt = TaskSummary & {
+  updated_at: string;
+};
+
+export type FeatureWithTasks = FeatureSummary & {
+  tasks: TaskSummaryWithUpdatedAt[];
+};
+
+export type FeatureTaskPage = {
+  id: string;
+  name: string;
+  slug: string;
+  page: number;
+  limit: number;
+  total: number;
+  features: FeatureWithTasks[];
+};
+
 export type PagedTasks = {
   items: TaskSummary[];
   total: number;

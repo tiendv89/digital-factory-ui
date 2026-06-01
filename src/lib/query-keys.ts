@@ -1,4 +1,4 @@
-import type { TaskSearchParams, FeatureSearchParams } from "@/services/workflow-backend/query-params";
+import type { TaskSearchParams, FeatureSearchParams, FeatureTaskParams } from "@/services/workflow-backend/query-params";
 
 export type QueryKey = readonly unknown[];
 
@@ -33,6 +33,23 @@ function normalizeFeatureParams(
   if (params.sort) normalized.sort = params.sort;
   if (params.page !== undefined) normalized.page = params.page;
   if (params.limit !== undefined) normalized.limit = params.limit;
+  return normalized;
+}
+
+function normalizeFeatureTaskParams(
+  params: FeatureTaskParams,
+): Record<string, unknown> {
+  const normalized: Record<string, unknown> = {};
+  if (params.status !== undefined) {
+    normalized.status = Array.isArray(params.status)
+      ? [...params.status].sort().join(",")
+      : params.status;
+  }
+  if (params.title) normalized.title = params.title;
+  if (params.query) normalized.query = params.query;
+  if (params.page !== undefined) normalized.page = params.page;
+  if (params.limit !== undefined) normalized.limit = params.limit;
+  if (params.sort) normalized.sort = params.sort;
   return normalized;
 }
 
@@ -76,6 +93,14 @@ export const workspaceKeys = {
     taskId: string,
   ): QueryKey =>
     ["workspace", workspaceId, "feature", featureId, "task", taskId] as const,
+
+  taskModeFeatures: (workspaceId: string, params: FeatureTaskParams): QueryKey =>
+    [
+      "workspace",
+      workspaceId,
+      "task-mode-features",
+      normalizeFeatureTaskParams(params),
+    ] as const,
 
   all: (workspaceId: string): QueryKey =>
     ["workspace", workspaceId] as const,
