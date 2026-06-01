@@ -11,7 +11,7 @@ import type {
 } from "./types";
 
 function getApiBase(): string {
-  const base = process.env.NEXT_PUBLIC_WORKFLOW_API_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL;
+  const base = process.env.NEXT_PUBLIC_WORKFLOW_API_URL ?? "https://workflow-backend-api.kitelabs.io";
   if (!base) {
     throw new Error(
       "NEXT_PUBLIC_WORKFLOW_API_URL is required for workflow-backend API calls",

@@ -1,7 +1,7 @@
 import type { MeResponse } from "./types";
 
 export function getUserServiceBase(): string {
-  const base = process.env.NEXT_PUBLIC_USER_SERVICE_URL;
+  const base = process.env.NEXT_PUBLIC_USER_SERVICE_URL ?? "https://workflow-user-service-api.kitelabs.io"
   if (!base) {
     throw new Error(
       "NEXT_PUBLIC_USER_SERVICE_URL is required for user-service API calls",
