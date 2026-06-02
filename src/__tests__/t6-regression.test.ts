@@ -801,10 +801,10 @@ import {
 describe("status regression: Feature row renders lifecycle status", () => {
   it("FeatureRow renders feature lifecycle status for all statuses", () => {
     const statuses = [
-      { key: "in_design", label: "In Design" },
-      { key: "in_tdd", label: "In TDD" },
-      { key: "ready_for_implementation", label: "Ready" },
-      { key: "in_implementation", label: "In Progress" },
+      { key: "in_design", label: "Design" },
+      { key: "in_tdd", label: "Technical design" },
+      { key: "ready_for_implementation", label: "Ready to build" },
+      { key: "in_implementation", label: "Building" },
       { key: "in_handoff", label: "Handoff" },
       { key: "done", label: "Done" },
       { key: "blocked", label: "Blocked" },
@@ -917,10 +917,10 @@ describe("feature-card regression: status tag suppressed in Feature mode", () =>
 
     // Status pill must not appear for any lifecycle status
     const statusLabels = [
-      "In Design",
-      "In TDD",
-      "Ready",
-      "In Progress",
+      "Design",
+      "Technical design",
+      "Ready to build",
+      "Building",
       "Handoff",
       "Done",
       "Blocked",
