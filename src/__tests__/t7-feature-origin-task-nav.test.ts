@@ -285,6 +285,10 @@ vi.mock("../features/board/hooks/useFeatureDetail", () => ({
   useFeatureTask: mockUseFeatureTask,
 }));
 
+vi.mock("../features/board/hooks/useActivity", () => ({
+  useActivity: () => ({ events: [], loading: false, error: null }),
+}));
+
 // Mock workspace context
 const mockOpenTaskTab = vi.hoisted(() => vi.fn());
 
