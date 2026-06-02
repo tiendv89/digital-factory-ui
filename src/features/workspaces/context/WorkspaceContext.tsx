@@ -191,7 +191,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setActiveWorkspace(null);
       setWorkspaceError(null);
       setLoadingWorkspace(false);
-      router.replace("/connect");
+      router.replace("/admin/connect");
     },
     [router, selectedWorkspaceId],
   );

@@ -42,7 +42,7 @@ export default function BoardPage() {
       !activeWorkspace &&
       summaries.length === 0
     ) {
-      router.replace("/connect");
+      router.replace("/admin/connect");
     }
   }, [
     activeWorkspace,
