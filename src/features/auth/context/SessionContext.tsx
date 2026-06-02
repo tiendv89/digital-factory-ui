@@ -43,7 +43,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     fetchMe()
-        .then((data) => data.data)
       .then((data) => {
         if (cancelled) return;
         setSession({ status: "authenticated", data });
