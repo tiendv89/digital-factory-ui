@@ -84,6 +84,7 @@ export type WorkspaceContextValue = {
   importError: ApiError | null;
   syncingWorkspace: boolean;
   syncError: ApiError | null;
+  refreshingWorkspace: boolean;
 
   selectWorkspace: (workspaceId: string) => void;
   importWorkspace: (body: ImportWorkspaceRequest) => Promise<void>;
@@ -91,6 +92,7 @@ export type WorkspaceContextValue = {
   removeLocalSummary: (workspaceId: string) => void;
   syncCurrentWorkspace: () => Promise<void>;
   clearSyncError: () => void;
+  refreshWorkspace: () => void;
 
   activeSurface: WorkspaceSurface;
   openTaskTabs: TaskTabEntry[];
@@ -119,6 +121,8 @@ export type WorkspaceActionsContextValue = Pick<
   | "syncCurrentWorkspace"
   | "syncingWorkspace"
   | "syncError"
+  | "refreshWorkspace"
+  | "refreshingWorkspace"
   | "openTaskTab"
   | "openFeatureTab"
 >;
@@ -148,6 +152,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [importError, setImportError] = useState<ApiError | null>(null);
   const [syncingWorkspace, setSyncingWorkspace] = useState(false);
   const [syncError, setSyncError] = useState<ApiError | null>(null);
+  const [refreshingWorkspace, setRefreshingWorkspace] = useState(false);
 
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("board");
   const [openTaskTabs, setOpenTaskTabs] = useState<TaskTabEntry[]>([]);
@@ -191,7 +196,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setActiveWorkspace(null);
       setWorkspaceError(null);
       setLoadingWorkspace(false);
-      router.replace("/connect");
+      router.replace("/admin/connect");
     },
     [router, selectedWorkspaceId],
   );
@@ -335,6 +340,67 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const clearSyncError = useCallback(() => {
     setSyncError(null);
   }, []);
+
+  const refreshWorkspace = useCallback(() => {
+    if (!selectedWorkspaceId) return;
+    const requestId = loadWorkspaceSequenceRef.current.next();
+    setRefreshingWorkspace(true);
+    getWorkspace(selectedWorkspaceId)
+      .then((detail) => {
+        if (!loadWorkspaceSequenceRef.current.isCurrent(requestId)) return;
+        setActiveWorkspace(detail);
+        setWorkspaceError(null);
+        setRefreshingWorkspace(false);
+      })
+      .catch((err: ApiError) => {
+        if (!loadWorkspaceSequenceRef.current.isCurrent(requestId)) return;
+        if (isWorkspaceNotFound(err)) {
+          handleMissingWorkspace(selectedWorkspaceId);
+          setRefreshingWorkspace(false);
+          return;
+        }
+        setWorkspaceError(err);
+        setRefreshingWorkspace(false);
+      });
+  }, [handleMissingWorkspace, isWorkspaceNotFound, selectedWorkspaceId]);
+
+  // 30s focus-aware background polling
+  useEffect(() => {
+    if (!selectedWorkspaceId) return;
+
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    function startPolling() {
+      intervalId = setInterval(refreshWorkspace, 30_000);
+    }
+
+    function stopPolling() {
+      if (intervalId !== null) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        refreshWorkspace();
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    }
+
+    if (document.visibilityState === "visible") {
+      startPolling();
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [selectedWorkspaceId, refreshWorkspace]);
 
   const removeLocalSummary = useCallback(
     (workspaceId: string) => {
@@ -515,12 +581,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       importError,
       syncingWorkspace,
       syncError,
+      refreshingWorkspace,
       selectWorkspace,
       importWorkspace: importWorkspaceFn,
       clearImportError,
       removeLocalSummary,
       syncCurrentWorkspace,
       clearSyncError,
+      refreshWorkspace,
       activeSurface,
       openTaskTabs,
       activeTaskTabId,
@@ -546,12 +614,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       importError,
       syncingWorkspace,
       syncError,
+      refreshingWorkspace,
       selectWorkspace,
       importWorkspaceFn,
       clearImportError,
       removeLocalSummary,
       syncCurrentWorkspace,
       clearSyncError,
+      refreshWorkspace,
       activeSurface,
       openTaskTabs,
       activeTaskTabId,
@@ -574,6 +644,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       syncCurrentWorkspace,
       syncingWorkspace,
       syncError,
+      refreshWorkspace,
+      refreshingWorkspace,
       openTaskTab,
       openFeatureTab,
     }),
@@ -581,6 +653,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       syncCurrentWorkspace,
       syncingWorkspace,
       syncError,
+      refreshWorkspace,
+      refreshingWorkspace,
       openTaskTab,
       openFeatureTab,
     ],

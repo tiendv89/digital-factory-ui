@@ -9,7 +9,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useDocumentContent } from "../../hooks/useDocumentContent";
-import { formatStatusLabel, getStatusStyle } from "@/features/tasks/lib/status";
+import { getStatusStyle } from "@/features/tasks/lib/status";
+import { clientStatusLabel } from "@/features/board/lib/status";
 import { MarkdownBlock } from "./MarkdownBlock";
 import type { FeatureDetail, TaskSummary } from "@/services/workflow-backend/types";
 
@@ -189,30 +190,37 @@ function FeatureTaskRow({
       data-feature-task-row={task.task_name}
       onClick={onOpenTaskTab}
       aria-label={`Open task ${task.task_name}`}
-      className="flex w-full min-w-0 items-center gap-3 border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary-light hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      className="flex w-full min-w-0 flex-col gap-1 border border-border bg-surface px-4 py-3 text-left transition-colors hover:border-primary-light hover:bg-surface-subtle focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
     >
-      <span className="shrink-0 bg-chip-bg px-2 py-0.5 font-mono text-xs font-semibold text-text-secondary">
-        {task.task_name}
-      </span>
-      <span
-        className={
-          "shrink-0 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide " +
-          statusStyle.bg +
-          " " +
-          statusStyle.text
-        }
-      >
-        {formatStatusLabel(task.status)}
-      </span>
-      <span className="min-w-0 truncate text-sm font-medium text-text-primary">
-        {task.title || task.task_name}
-      </span>
-      {task.is_blocked && (
-        <AlertCircle
-          className="ml-auto h-3.5 w-3.5 shrink-0 text-danger"
-          aria-hidden="true"
-        />
-      )}
+      <div className="flex w-full min-w-0 items-center gap-3">
+        <span className="shrink-0 bg-chip-bg px-2 py-0.5 font-mono text-xs font-semibold text-text-secondary">
+          {task.task_name}
+        </span>
+        <span
+          className={
+            "shrink-0 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide " +
+            statusStyle.bg +
+            " " +
+            statusStyle.text
+          }
+        >
+          {clientStatusLabel(task.status)}
+        </span>
+        <span className="min-w-0 truncate text-sm font-medium text-text-primary">
+          {task.title || task.task_name}
+        </span>
+        {task.is_blocked && (
+          <AlertCircle
+            className="ml-auto h-3.5 w-3.5 shrink-0 text-danger"
+            aria-hidden="true"
+          />
+        )}
+      </div>
+      {task.status === "blocked" && task.blocked_reason ? (
+        <p data-blocked-reason className="text-xs text-danger">
+          {task.blocked_reason}
+        </p>
+      ) : null}
     </button>
   );
 }

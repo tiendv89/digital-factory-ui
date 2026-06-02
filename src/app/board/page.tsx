@@ -1,9 +1,8 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
+import { EmptyState } from "@/features/workspaces/components/EmptyState";
 import { BoardHeader } from "@/features/board/components/BoardHeader/BoardHeader";
 import { BoardProvider } from "@/features/board/components/KanbanBoard/KanbanBoard.context";
 import { KanbanBoard } from "@/features/board/components/KanbanBoard/KanbanBoard";
@@ -31,26 +30,8 @@ function ErrorState({ message }: { message: string }) {
 }
 
 export default function BoardPage() {
-  const router = useRouter();
   const { activeWorkspace, loadingWorkspace, workspaceError, summaries } =
     useWorkspaceContext();
-
-  useEffect(() => {
-    if (
-      !loadingWorkspace &&
-      !workspaceError &&
-      !activeWorkspace &&
-      summaries.length === 0
-    ) {
-      router.replace("/connect");
-    }
-  }, [
-    activeWorkspace,
-    loadingWorkspace,
-    router,
-    summaries.length,
-    workspaceError,
-  ]);
 
   if (loadingWorkspace) {
     return <LoadingState />;
@@ -62,6 +43,10 @@ export default function BoardPage() {
         message={workspaceError.message || "Failed to load workspace."}
       />
     );
+  }
+
+  if (!activeWorkspace && summaries.length === 0) {
+    return <EmptyState />;
   }
 
   if (!activeWorkspace) {

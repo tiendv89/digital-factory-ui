@@ -102,6 +102,9 @@ export const workspaceKeys = {
       normalizeFeatureTaskParams(params),
     ] as const,
 
+  activity: (workspaceId: string): QueryKey =>
+    ["workspace", workspaceId, "activity", "client"] as const,
+
   all: (workspaceId: string): QueryKey =>
     ["workspace", workspaceId] as const,
 };

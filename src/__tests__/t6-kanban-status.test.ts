@@ -177,10 +177,10 @@ describe("FeatureListRow — Kanban card status data attribute", () => {
 describe("FeatureRow — lifecycle status rendering", () => {
   it("renders all 8 valid feature lifecycle status labels", () => {
     const labels: Record<FeatureStatus, string> = {
-      in_design: "In Design",
-      in_tdd: "In TDD",
-      ready_for_implementation: "Ready",
-      in_implementation: "In Progress",
+      in_design: "Design",
+      in_tdd: "Technical design",
+      ready_for_implementation: "Ready to build",
+      in_implementation: "Building",
       in_handoff: "Handoff",
       done: "Done",
       blocked: "Blocked",
@@ -323,9 +323,9 @@ describe("T6 regression — task statuses are not feature lifecycle statuses", (
         onOpenTaskTab: () => undefined,
       }),
     );
-    // getFeatureStatusLabel("todo") returns "Unknown" (defense in depth — T5 change)
-    expect(html).toContain("Unknown");
+    // clientFeatureStatusLabel("todo") falls back to "todo" (not a feature lifecycle status)
+    expect(html).toContain("todo");
     // Must not be a human-readable feature lifecycle label
-    expect(html).not.toContain("In Design");
+    expect(html).not.toContain("Design");
   });
 });

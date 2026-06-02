@@ -1,4 +1,5 @@
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
+import { clientStatusLabel } from "@/features/board/lib/status";
 
 export type TrackedStatus =
   | "blocked"
@@ -24,9 +25,9 @@ export const TRACKED_SECTIONS: ReadonlyArray<{
   status: TrackedStatus;
   label: string;
 }> = [
-  { status: "blocked", label: "BLOCKED" },
-  { status: "in_progress", label: "IN PROGRESS" },
-  { status: "reviewing", label: "IN REVIEWING" },
-  { status: "in_review", label: "IN REVIEW" },
-  { status: "ready", label: "READY" },
+  { status: "blocked", label: clientStatusLabel("blocked").toUpperCase() },
+  { status: "in_progress", label: clientStatusLabel("in_progress").toUpperCase() },
+  { status: "reviewing", label: clientStatusLabel("reviewing").toUpperCase() },
+  { status: "in_review", label: clientStatusLabel("in_review").toUpperCase() },
+  { status: "ready", label: clientStatusLabel("ready").toUpperCase() },
 ];
