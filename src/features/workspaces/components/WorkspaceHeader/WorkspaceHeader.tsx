@@ -1,6 +1,6 @@
 "use client";
 
-import { Layers, LogOut, X } from "lucide-react";
+import { Layers, LogOut, RefreshCw, X } from "lucide-react";
 import type {
   FeatureTabEntry,
   TaskTabEntry,
@@ -18,6 +18,8 @@ type WorkspaceHeaderProps = {
   sourceState?: SourceState | null;
   showMeta?: boolean;
   showTitle?: boolean;
+  onRefresh?: () => void;
+  refreshing?: boolean;
 };
 
 function formatSyncedTime(iso: string): string {
@@ -202,6 +204,8 @@ export function WorkspaceHeader({
   sourceState,
   showMeta = false,
   showTitle = true,
+  onRefresh,
+  refreshing = false,
 }: WorkspaceHeaderProps) {
   const { logout } = useSession();
 
@@ -237,6 +241,21 @@ export function WorkspaceHeader({
               </span>
             )}
           </div>
+        )}
+        {onRefresh && (
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={refreshing}
+            title="Refresh workspace data"
+            aria-label="Refresh workspace data"
+            className="flex shrink-0 items-center rounded p-1 text-text-muted transition-colors hover:bg-surface-subtle hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-50"
+          >
+            <RefreshCw
+              className={`h-3.5 w-3.5${refreshing ? " animate-spin" : ""}`}
+              aria-hidden="true"
+            />
+          </button>
         )}
         <button
           type="button"

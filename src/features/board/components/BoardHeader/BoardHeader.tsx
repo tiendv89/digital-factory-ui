@@ -7,7 +7,8 @@ import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceCont
 
 export function BoardHeader() {
   const { workspaceDetail, features } = useBoardContext();
-  const { summaries, selectedWorkspaceId } = useWorkspaceContext();
+  const { summaries, selectedWorkspaceId, refreshWorkspace, refreshingWorkspace } =
+    useWorkspaceContext();
 
   const totalTasks = useMemo(
     () => features.reduce((sum, feature) => sum + feature.tasks.length, 0),
@@ -29,6 +30,8 @@ export function BoardHeader() {
       sourceState={source_state}
       showMeta={false}
       showTitle={false}
+      onRefresh={refreshWorkspace}
+      refreshing={refreshingWorkspace}
     />
   );
 }
