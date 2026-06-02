@@ -17,7 +17,7 @@ import {
 import { useFeatureTask } from "../../hooks/useFeatureDetail";
 import { formatTimestamp } from "@/lib/time";
 import { formatStatusLabel, getStatusStyle } from "@/features/tasks/lib/status";
-import { getStatusColor } from "@/features/board/lib/status";
+import { clientStatusLabel, getStatusColor } from "@/features/board/lib/status";
 import type {
   PullRequestRef,
   TaskDetail,
@@ -176,7 +176,7 @@ export function DrilldownTaskContent({
             className="px-2 py-1 font-semibold uppercase tracking-wide"
             style={{ backgroundColor: `${statusColor}18`, color: statusColor }}
           >
-            {formatStatusLabel(task.status).toUpperCase()}
+            {clientStatusLabel(task.status).toUpperCase()}
           </span>
           {task.execution?.last_updated_at && (
             <span className="text-text-muted">

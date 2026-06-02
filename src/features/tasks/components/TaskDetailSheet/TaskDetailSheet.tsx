@@ -20,6 +20,7 @@ import {
   getStatusStyle,
   type StatusBadgeStyle,
 } from "../../lib/status";
+import { clientStatusLabel } from "@/features/board/lib/status";
 
 export type TaskDetailSheetProps = {
   task: ParsedTask | null;
@@ -177,7 +178,7 @@ function DetailHeader({
               statusStyle.text
             }
           >
-            {formatStatusLabel(task.status)}
+            {clientStatusLabel(task.status)}
           </span>
         </div>
         <h2

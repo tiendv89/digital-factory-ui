@@ -15,7 +15,7 @@ import { TaskBoardView } from "../TaskBoardView";
 import { FeatureBoardView } from "../FeatureBoardView";
 import { BoardTableTitle } from "../BoardTableTitle";
 
-import { FEATURE_STATUS_OPTIONS, STATUS_COLUMNS } from "../../lib/status";
+import { FEATURE_STATUS_OPTIONS, STATUS_COLUMNS, clientFeatureStatusLabel, clientStatusLabel } from "../../lib/status";
 import {
   isAllFeatureStatusFilterSelected,
   isAllStatusFilterSelected,
@@ -193,7 +193,7 @@ function TaskModeFilterMenu() {
             style={{ background: status.color }}
             aria-hidden="true"
           />
-          <span>{status.label}</span>
+          <span>{clientStatusLabel(status.key)}</span>
         </label>
       ))}
     </div>
@@ -252,7 +252,7 @@ function FeatureModeFilterMenu() {
             style={{ background: status.color }}
             aria-hidden="true"
           />
-          {status.label}
+          {clientFeatureStatusLabel(status.key)}
         </label>
       ))}
     </div>

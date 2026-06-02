@@ -18,7 +18,7 @@ import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceCont
 import { useWorkspaceTask } from "../../hooks/useWorkspaceTask";
 import { formatTimestamp } from "@/lib/time";
 import { tokenizeText } from "@/lib/url-tokenizer";
-import { getStatusColor } from "@/features/board/lib/status";
+import { clientStatusLabel, getStatusColor } from "@/features/board/lib/status";
 import { formatStatusLabel, getStatusStyle } from "../../lib/status";
 import type { TaskDetail } from "@/services/workflow-backend/types";
 
@@ -164,7 +164,7 @@ function TaskTabContent({
             className="px-2 py-1 font-semibold uppercase tracking-wide"
             style={{ backgroundColor: `${statusColor}18`, color: statusColor }}
           >
-            {formatStatusLabel(task.status).toUpperCase()}
+            {clientStatusLabel(task.status).toUpperCase()}
           </span>
           {task.execution?.last_updated_at && (
             <span className="text-text-muted">
