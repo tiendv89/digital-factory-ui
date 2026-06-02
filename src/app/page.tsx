@@ -12,7 +12,7 @@ export default function RootPage() {
     if (summaries.length > 0) {
       router.replace("/board");
     } else {
-      router.replace("/connect");
+      router.replace("/admin/connect");
     }
   }, [router]);
 
