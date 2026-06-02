@@ -540,7 +540,7 @@ describe("feature mode cards: ID smaller than title, title prioritized", () => {
     expect(html).toContain("PROJ-456");
   });
 
-  it("title uses line-clamp-2 for wrapping (not truncate)", () => {
+  it("title uses line-clamp-5 for wrapping (not truncate)", () => {
     const longTitle =
       "This is a very long feature title that should wrap across multiple lines rather than being cut off abruptly";
     const feature = makeFeature({
@@ -555,7 +555,7 @@ describe("feature mode cards: ID smaller than title, title prioritized", () => {
       }),
     );
 
-    expect(html).toContain("line-clamp-2");
+    expect(html).toContain("line-clamp-5");
   });
 
   it("ID uses truncate for compact rendering", () => {
@@ -571,7 +571,7 @@ describe("feature mode cards: ID smaller than title, title prioritized", () => {
       }),
     );
 
-    // ID section uses truncate (but title uses line-clamp-2)
+    // ID section uses truncate (but title uses line-clamp-5)
     // Both appear in the HTML; the ID's parent <p> uses truncate
     expect(html).toContain("truncate");
   });

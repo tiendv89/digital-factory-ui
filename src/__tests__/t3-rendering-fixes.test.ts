@@ -253,8 +253,8 @@ describe("feature mode card title/ID hierarchy", () => {
         onClick: () => undefined,
       }),
     );
-    // Title uses line-clamp-2 (wraps) instead of truncate
-    expect(html).toContain("line-clamp-2");
+    // Title uses line-clamp-5 (wraps up to 5 rows) instead of truncate
+    expect(html).toContain("line-clamp-5");
     // ID is still truncated
     expect(html).toContain("truncate");
   });
