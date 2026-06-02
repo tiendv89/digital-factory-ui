@@ -1,9 +1,9 @@
 "use client";
 
 import { getNextAction } from "@/features/board/lib/status";
-import { useLastUpdatedTimer } from "@/features/board/hooks/useLastUpdatedTimer";
+import { useRelativeTime } from "@/hooks/useRelativeTime";
 import { createSingleDoubleClickController } from "@/lib/click-intent";
-import { computeLastUpdatedLabel, computeStatusAge } from "@/lib/time";
+import { computeStatusAge } from "@/lib/time";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import { ArrowRight, Bot, Layers } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -35,8 +35,7 @@ export function TaskTrackingItem({
 
   const statusAge = computeStatusAge(task);
 
-  useLastUpdatedTimer();
-  const lastUpdatedLabel = computeLastUpdatedLabel(task);
+  const lastUpdatedLabel = useRelativeTime(task.execution?.last_updated_at);
 
   const priorityLabel = task.priority?.trim()
     ? task.priority.trim().toUpperCase()
@@ -151,7 +150,7 @@ export function TaskTrackingItem({
         {lastUpdatedLabel && (
           <span
             aria-label={`Last updated: ${lastUpdatedLabel}`}
-            className="border border-border bg-surface px-1.5 font-mono text-text-secondary"
+            className="border border-primary-light bg-primary-light px-1.5 font-mono font-semibold text-primary"
           >
             {lastUpdatedLabel}
           </span>

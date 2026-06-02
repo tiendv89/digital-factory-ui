@@ -54,11 +54,12 @@ function onSelect() {
 // ─── Assertion helpers ───────────────────────────────────────────────────────
 
 const LAST_UPDATED_CLASSES = [
-  "border-border",
-  "bg-surface",
+  "border-primary-light",
+  "bg-primary-light",
   "px-1.5",
   "font-mono",
-  "text-text-secondary",
+  "font-semibold",
+  "text-primary",
 ] as const;
 
 function assertLastUpdatedPresent(expectedLabel: string) {
