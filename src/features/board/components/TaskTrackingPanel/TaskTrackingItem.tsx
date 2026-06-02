@@ -131,7 +131,7 @@ export function TaskTrackingItem({
         >
           {task.id}
         </span>
-        <p className="line-clamp-2 min-w-0 text-xs font-semibold leading-snug text-text-primary">
+        <p className="line-clamp-5 min-w-0 break-words text-xs font-semibold leading-snug text-text-primary">
           {task.title || "Untitled task"}
         </p>
       </div>

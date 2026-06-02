@@ -97,7 +97,7 @@ export function TaskCard({
           {task.id}
         </span>
       </div>
-      <p className="mb-2 text-xs font-medium leading-snug text-text-primary line-clamp-2">
+      <p className="mb-2 text-xs font-medium leading-snug text-text-primary line-clamp-5 break-words">
         {task.title}
       </p>
       {nextAction && (
