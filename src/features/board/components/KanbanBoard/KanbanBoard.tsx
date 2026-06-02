@@ -5,7 +5,6 @@ import {
   Funnel,
   LayoutGrid,
   ListChecks,
-  RefreshCw,
   Search,
   X,
 } from "lucide-react";
@@ -26,7 +25,7 @@ import {
 import type { BoardMode } from "../../lib/status-filter-store";
 
 function StaleBanner() {
-  const { workspaceDetail, syncBoard, syncing, syncError } = useBoardContext();
+  const { workspaceDetail, syncError } = useBoardContext();
   const { source_state } = workspaceDetail;
 
   if (syncError) {
@@ -41,24 +40,9 @@ function StaleBanner() {
           aria-hidden="true"
         />
         <p className="flex-1 text-xs text-danger">
-          <span className="font-semibold">Sync failed</span>
+          <span className="font-semibold">Data unavailable</span>
           {` — ${syncError.message}`}
         </p>
-        {syncError.retryable && (
-          <button
-            type="button"
-            onClick={syncBoard}
-            disabled={syncing}
-            aria-label="Retry workspace sync"
-            className="flex items-center gap-1.5 rounded border border-danger bg-danger-bg px-2 py-0.5 text-[11px] font-medium text-danger transition-colors hover:bg-danger/20 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <RefreshCw
-              className={"h-3 w-3 " + (syncing ? "animate-spin" : "")}
-              aria-hidden="true"
-            />
-            {syncing ? "Retrying…" : "Retry"}
-          </button>
-        )}
       </div>
     );
   }
@@ -67,7 +51,7 @@ function StaleBanner() {
 
   const staleMessage = source_state.error_code
     ? `Data is out of date (Error: ${source_state.error_code}).`
-    : "Sync connection is unavailable.";
+    : "Data may be out of date.";
 
   return (
     <div
@@ -80,19 +64,6 @@ function StaleBanner() {
         aria-hidden="true"
       />
       <p className="flex-1 text-xs text-warning">{staleMessage}</p>
-      <button
-        type="button"
-        onClick={syncBoard}
-        disabled={syncing}
-        aria-label="Sync workspace to refresh data"
-        className="flex items-center gap-1.5 rounded border border-warning/40 bg-warning/10 px-2 py-0.5 text-[11px] font-medium text-warning transition-colors hover:bg-warning/20 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <RefreshCw
-          className={"h-3 w-3 " + (syncing ? "animate-spin" : "")}
-          aria-hidden="true"
-        />
-        {syncing ? "Syncing…" : "Sync now"}
-      </button>
     </div>
   );
 }
@@ -261,11 +232,6 @@ function FeatureModeFilterMenu() {
 
 function BoardControls() {
   const {
-    loading,
-    syncing,
-    syncBoard,
-    syncError,
-    workspaceDetail,
     boardMode,
     taskSearchQuery,
     setTaskSearchQuery,
@@ -286,7 +252,6 @@ function BoardControls() {
     boardMode === "task" ? taskSearchQuery : featureSearchQuery;
   const setSearchValue =
     boardMode === "task" ? setTaskSearchQuery : setFeatureSearchQuery;
-  const showSyncButton = !syncError && !workspaceDetail.source_state?.stale;
 
   useEffect(() => {
     if (!filterOpen) return;
@@ -304,25 +269,13 @@ function BoardControls() {
   }, [filterOpen]);
 
   return (
-    <div className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-4">
+    <div
+      data-board-controls
+      className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-4"
+    >
       <ModeSegmentedControl />
 
       <div className="flex items-center gap-2">
-        {showSyncButton && (
-          <button
-            type="button"
-            onClick={syncBoard}
-            disabled={loading || syncing}
-            aria-label="Sync workspace data"
-            className="flex h-8 items-center gap-2 border border-border bg-surface px-3 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <RefreshCw
-              className={"h-3.5 w-3.5 " + (syncing ? "animate-spin" : "")}
-              aria-hidden="true"
-            />
-            {syncing ? "Syncing..." : "Sync"}
-          </button>
-        )}
         <label className="flex h-8 w-64 items-center gap-2 border border-border bg-surface px-3 text-xs text-text-secondary focus-within:border-primary">
           <Search className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           <span className="sr-only">Search board</span>
