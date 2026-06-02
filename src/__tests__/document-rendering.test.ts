@@ -55,6 +55,10 @@ vi.mock("../features/workspaces/context/WorkspaceContext", () => ({
   useWorkspaceContext: () => mockWorkspaceContext,
 }));
 
+vi.mock("../features/board/hooks/useActivity", () => ({
+  useActivity: () => ({ events: [], loading: false, error: null }),
+}));
+
 // ─── Mocks for TaskTabView ────────────────────────────────────────────────────
 
 const mockUseWorkspaceTask = vi.hoisted(() => vi.fn());

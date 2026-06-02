@@ -12,11 +12,12 @@ import {
 } from "lucide-react";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 import { useFeatureDetail } from "../../hooks/useFeatureDetail";
+import { useActivity } from "../../hooks/useActivity";
 import { FeatureTabHeader } from "./FeatureTabHeader";
 import { FeatureDocumentPanel } from "./FeatureDocumentPanel";
 import { FeatureTasksPanel } from "./FeatureTasksPanel";
 import { FeatureLogsPanel } from "./FeatureLogsPanel";
-import type { FeatureDetail } from "@/services/workflow-backend/types";
+import type { ActivityEvent, FeatureDetail } from "@/services/workflow-backend/types";
 
 export type FeatureTabViewProps = {
   workspaceId: string;
@@ -33,6 +34,7 @@ export function FeatureTabView({
     workspaceId,
     featureId,
   );
+  const { events: allActivityEvents, loading: activityLoading } = useActivity(workspaceId);
 
   if (loading) {
     return (
@@ -71,10 +73,49 @@ export function FeatureTabView({
 
   if (!feature) return null;
 
-  return <FeatureTabContent feature={feature} />;
+  const featureActivityEvents = filterFeatureEvents(allActivityEvents, feature);
+
+  return (
+    <FeatureTabContent
+      feature={feature}
+      workspaceId={workspaceId}
+      featureEvents={featureActivityEvents}
+      featureEventsLoading={activityLoading}
+    />
+  );
 }
 
-function FeatureTabContent({ feature }: { feature: FeatureDetail }) {
+function filterFeatureEvents(
+  events: ActivityEvent[],
+  feature: FeatureDetail,
+): ActivityEvent[] {
+  const filtered = events.filter(
+    (e) =>
+      e.feature_id === feature.id ||
+      e.feature_id === feature.feature_id ||
+      e.feature_id === feature.feature_name,
+  );
+  return filtered
+    .map((entry, sequence) => {
+      const t = new Date(entry.occurred_at).getTime();
+      return { ...entry, sortTime: Number.isNaN(t) ? Number.NEGATIVE_INFINITY : t, sequence };
+    })
+    .sort((a, b) => {
+      if (a.sortTime !== b.sortTime) return b.sortTime - a.sortTime;
+      return a.sequence - b.sequence;
+    });
+}
+
+function FeatureTabContent({
+  feature,
+  featureEvents,
+  featureEventsLoading,
+}: {
+  feature: FeatureDetail;
+  workspaceId: string;
+  featureEvents: ActivityEvent[];
+  featureEventsLoading: boolean;
+}) {
   const {
     activeFeatureTabId,
     closeFeatureTab,
@@ -198,7 +239,12 @@ function FeatureTabContent({ feature }: { feature: FeatureDetail }) {
             onOpenTaskTab={handleOpenTaskTab}
           />
         )}
-        {activePanel === "logs" && <FeatureLogsPanel feature={feature} />}
+        {activePanel === "logs" && (
+          <FeatureLogsPanel
+            events={featureEvents}
+            loading={featureEventsLoading}
+          />
+        )}
       </div>
     </div>
   );

@@ -78,6 +78,21 @@ vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
   }),
 }));
 
+vi.mock("../features/workspaces/context/WorkspaceContext", () => ({
+  useWorkspaceContext: () => ({ selectedWorkspaceId: "ws-test" }),
+  useWorkspaceActionsContext: () => ({
+    syncCurrentWorkspace: vi.fn(),
+    syncingWorkspace: false,
+    syncError: null,
+    openTaskTab: vi.fn(),
+    openFeatureTab: vi.fn(),
+  }),
+}));
+
+vi.mock("../features/board/hooks/useActivity", () => ({
+  useActivity: () => ({ events: [], loading: false, error: null }),
+}));
+
 import { TaskTrackingPanel } from "../features/board/components/TaskTrackingPanel";
 import { TaskTrackingItem } from "../features/board/components/TaskTrackingPanel/TaskTrackingItem";
 import { TaskTrackingSection } from "../features/board/components/TaskTrackingPanel/TaskTrackingSection";

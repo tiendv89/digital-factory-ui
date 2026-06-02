@@ -1,4 +1,5 @@
 import type {
+  ActivityEvent,
   ApiError,
   FeatureDetail,
   FeatureTaskPage,
@@ -151,6 +152,17 @@ export async function getFeatureTaskList(
   if (!sp.has("include")) sp.set("include", "tasks");
   const qs = sp.toString() ? `?${sp.toString()}` : "";
   return request<FeatureTaskPage>(`/api/workspaces/${workspaceId}/features${qs}`);
+}
+
+export async function listActivity(
+  workspaceId: string,
+  params?: { audience?: string; limit?: number },
+): Promise<ActivityEvent[]> {
+  const sp = new URLSearchParams();
+  if (params?.audience) sp.set("audience", params.audience);
+  if (params?.limit !== undefined) sp.set("limit", String(params.limit));
+  const qs = sp.toString() ? `?${sp.toString()}` : "";
+  return request<ActivityEvent[]>(`/api/workspaces/${workspaceId}/activity${qs}`);
 }
 
 function unwrapItems<T>(result: T[] | { items: T[] }): T[] {

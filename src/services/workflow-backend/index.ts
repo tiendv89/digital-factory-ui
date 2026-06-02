@@ -43,6 +43,7 @@ export {
   getWorkspace,
   getWorkspaceTask,
   importWorkspace,
+  listActivity,
   request,
   searchFeatureTasks,
   searchFeatures,

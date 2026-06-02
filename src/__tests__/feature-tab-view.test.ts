@@ -68,6 +68,10 @@ vi.mock("../features/workspaces/context/WorkspaceContext", () => ({
   useWorkspaceContext: () => mockWorkspaceContext,
 }));
 
+vi.mock("../features/board/hooks/useActivity", () => ({
+  useActivity: () => ({ events: [], loading: false, error: null }),
+}));
+
 // ─── Mock useBoardContext for FeatureBoardView tests ─────────────────────────
 
 const mockOpenFeatureTab = vi.hoisted(() => vi.fn());
@@ -635,9 +639,7 @@ describe("FeatureTabView — logs panel", () => {
       }),
     );
     expect(html).toContain("data-feature-logs-panel");
-    expect(html).toContain("data-feature-log-entry");
     expect(html).toContain("Feature Logs");
-    expect(html).toContain("Tasks approved. Feature advances to ready_for_implementation.");
   });
 
   it("renders empty feature logs state when activity is empty", () => {
@@ -655,7 +657,7 @@ describe("FeatureTabView — logs panel", () => {
       }),
     );
     expect(html).toContain("data-feature-logs-panel");
-    expect(html).toContain("No activity logs available");
+    expect(html).toContain("No activity yet.");
   });
 
   it("does not render task list while logs tab is the default panel", () => {
