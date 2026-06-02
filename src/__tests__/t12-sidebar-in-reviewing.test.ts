@@ -28,7 +28,7 @@ const makeFeature = (id: string, tasks: ParsedTask[]): ParsedFeature => ({
 describe("TRACKED_SECTIONS — includes reviewing", () => {
   it("has reviewing as the third section (index 2)", () => {
     expect(TRACKED_SECTIONS[2].status).toBe("reviewing");
-    expect(TRACKED_SECTIONS[2].label).toBe("IN REVIEWING");
+    expect(TRACKED_SECTIONS[2].label).toBe("IN REVIEW");
   });
 
   it("positions reviewing directly after in_progress (index 1)", () => {

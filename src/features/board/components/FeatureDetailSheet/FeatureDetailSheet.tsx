@@ -21,8 +21,9 @@ import {
   type StatusBadgeStyle,
 } from "@/features/tasks/lib/status";
 import {
+  clientFeatureStatusLabel,
+  clientStatusLabel,
   getFeatureStatusColor,
-  getFeatureStatusLabel,
 } from "../../lib/status";
 
 export type FeatureDetailSheetProps = {
@@ -107,7 +108,7 @@ function FeatureDetailContents({
   titleId,
   descId,
 }: ContentsProps) {
-  const statusLabel = getFeatureStatusLabel(feature.featureStatus);
+  const statusLabel = clientFeatureStatusLabel(feature.featureStatus);
   const statusColor = getFeatureStatusColor(feature.featureStatus);
   const lastModifiedAt = getFeatureLastModifiedAt(feature);
 
@@ -243,6 +244,12 @@ function FeatureTaskCard({ task }: { task: ParsedTask }) {
         {task.title || task.id}
       </h4>
 
+      {task.status === "blocked" && task.blockedReason ? (
+        <p data-blocked-reason className="mt-1 text-xs text-danger">
+          {task.blockedReason}
+        </p>
+      ) : null}
+
       <div className="mt-3 grid grid-cols-2 gap-3 text-sm text-text-secondary">
         <span className="flex min-w-0 items-center gap-2">
           <GitBranch className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -303,7 +310,7 @@ function TaskStatusBadge({ status }: { status: string }) {
         statusStyle.text
       }
     >
-      {formatStatusLabel(status)}
+      {clientStatusLabel(status)}
     </span>
   );
 }

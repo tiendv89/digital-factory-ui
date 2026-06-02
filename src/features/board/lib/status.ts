@@ -3,6 +3,9 @@ export type TaskStatus =
   | "ready"
   | "in_progress"
   | "reviewing"
+  | "review_passed"
+  | "change_requested"
+  | "review_incomplete"
   | "blocked"
   | "in_review"
   | "done"
@@ -142,4 +145,37 @@ export function getFeatureNextAction(
     }
   }
   return null;
+}
+
+const CLIENT_TASK_STATUS_LABELS: Record<string, string> = {
+  todo: "Not started",
+  ready: "Ready to start",
+  in_progress: "In progress",
+  in_review: "In review",
+  reviewing: "In review",
+  review_passed: "In review",
+  change_requested: "Revisions in progress",
+  review_incomplete: "In review",
+  blocked: "Blocked",
+  done: "Done",
+  cancelled: "Cancelled",
+};
+
+const CLIENT_FEATURE_STATUS_LABELS: Record<string, string> = {
+  in_design: "Design",
+  in_tdd: "Technical design",
+  ready_for_implementation: "Ready to build",
+  in_implementation: "Building",
+  in_handoff: "Handoff",
+  done: "Done",
+  blocked: "Blocked",
+  cancelled: "Cancelled",
+};
+
+export function clientStatusLabel(status: string): string {
+  return CLIENT_TASK_STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+}
+
+export function clientFeatureStatusLabel(status: string): string {
+  return CLIENT_FEATURE_STATUS_LABELS[status] ?? status.replace(/_/g, " ");
 }

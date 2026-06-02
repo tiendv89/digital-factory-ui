@@ -8,7 +8,7 @@ import {
   Clock3,
 } from "lucide-react";
 import { formatTimestamp } from "@/lib/time";
-import { getFeatureStatusColor, getFeatureStatusLabel } from "../../lib/status";
+import { clientFeatureStatusLabel, getFeatureStatusColor } from "../../lib/status";
 import type { FeatureDetail } from "@/services/workflow-backend/types";
 
 export type FeatureTabHeaderProps = {
@@ -64,7 +64,7 @@ export function FeatureTabHeader({
   copied,
 }: FeatureTabHeaderProps) {
   const statusColor = getFeatureStatusColor(feature.status);
-  const statusLabel = getFeatureStatusLabel(feature.status);
+  const statusLabel = clientFeatureStatusLabel(feature.status);
   const featureSummary = getFeatureLogsSummary(feature);
 
   const currentStageIndex = stageOrder.indexOf(

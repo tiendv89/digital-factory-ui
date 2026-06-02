@@ -3,6 +3,7 @@
 import { Clock3, ExternalLink, GitBranch, ListChecks } from "lucide-react";
 import { useMemo } from "react";
 import { getElapsedSinceStatus } from "@/lib/time";
+import { clientStatusLabel } from "@/features/board/lib/status";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { groupTrackedTasks } from "./groupTasks";
 import type {
@@ -17,33 +18,33 @@ type TaskTrackingDetailPanelProps = {
 
 const DETAIL_COPY = {
   blocked: {
-    title: "Blocked",
+    title: clientStatusLabel("blocked"),
     metric: "Blocked time",
     empty: "No blocked tasks",
     secondary: "Blocked reason",
   },
   reviewing: {
-    title: "In Reviewing",
+    title: clientStatusLabel("reviewing"),
     metric: "Review time",
-    empty: "No tasks in reviewing",
+    empty: "No tasks in review",
     secondary: "Pull request",
   },
   in_review: {
-    title: "In Review",
+    title: clientStatusLabel("in_review"),
     metric: "Review time",
     empty: "No tasks in review",
     secondary: "Pull request",
   },
   in_progress: {
-    title: "In Progress",
+    title: clientStatusLabel("in_progress"),
     metric: "Active time",
     empty: "No tasks in progress",
     secondary: "Branch",
   },
   ready: {
-    title: "Ready",
+    title: clientStatusLabel("ready"),
     metric: "Wait time",
-    empty: "No ready tasks",
+    empty: "No tasks ready to start",
     secondary: "Dependencies",
   },
 } satisfies Record<
