@@ -10,8 +10,9 @@ import {
 import { TaskCard } from "../TaskCard";
 import {
   STATUS_COLUMNS,
+  clientFeatureStatusLabel,
+  clientStatusLabel,
   getFeatureStatusColor,
-  getFeatureStatusLabel,
 } from "../../lib/status";
 
 type FeatureRowProps = {
@@ -40,8 +41,7 @@ function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
       {tasks.map((task) => {
         const col = STATUS_COLUMNS.find((c) => c.key === task.status);
         const color = col?.color ?? "#8892b5";
-        const statusLabel =
-          col?.label ?? task.status.toUpperCase().replace(/_/g, " ");
+        const statusLabel = clientStatusLabel(task.status);
 
         return (
           <div
@@ -75,7 +75,7 @@ function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
 
 function FeatureStatusPill({ status }: { status: string }) {
   const color = getFeatureStatusColor(status);
-  const label = getFeatureStatusLabel(status);
+  const label = clientFeatureStatusLabel(status);
   return (
     <span
       className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"

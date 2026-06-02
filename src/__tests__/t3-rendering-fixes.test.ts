@@ -43,7 +43,7 @@ function makeTask(overrides: Partial<ParsedTask> = {}): ParsedTask {
 // ═══ Task-mode feature lifecycle status ═══════════════════════════════════
 
 describe("task-mode feature lifecycle status", () => {
-  it("uses real feature lifecycle status (in_implementation → In Progress label)", () => {
+  it("uses real feature lifecycle status (in_implementation → Building label)", () => {
     const feature = makeFeature({
       id: "my-feature",
       featureStatus: "in_implementation",
@@ -58,7 +58,7 @@ describe("task-mode feature lifecycle status", () => {
       }),
     );
     // The FeatureRow in task mode should show the real feature status label
-    expect(html).toContain("In Progress");
+    expect(html).toContain("Building");
   });
 
   it("renders feature status for done lifecycle status", () => {
@@ -109,7 +109,7 @@ describe("task-mode feature lifecycle status", () => {
         onOpenTaskTab: () => undefined,
       }),
     );
-    expect(html).toContain("In Design");
+    expect(html).toContain("Design");
   });
 
   it("does not derive feature status from task statuses when lifecycle status is set", () => {
@@ -156,8 +156,8 @@ describe("feature mode card status-pill suppression", () => {
     );
     // Status pill must be suppressed; status is represented by the
     // kanban-style status column/cell.
-    expect(html).not.toContain("In Progress");
-    expect(html).not.toContain("In Design");
+    expect(html).not.toContain("Building");
+    expect(html).not.toContain("Design");
     expect(html).not.toContain("Done");
     expect(html).not.toContain("Blocked");
     expect(html).not.toContain("Ready");

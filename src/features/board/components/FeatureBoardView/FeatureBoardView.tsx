@@ -6,6 +6,7 @@ import { FeatureListRow } from "./FeatureListRow";
 import { PaginationControls } from "../PaginationControls";
 import {
   FEATURE_STATUS_OPTIONS,
+  clientFeatureStatusLabel,
   isValidFeatureStatus,
 } from "../../lib/status";
 import {
@@ -25,7 +26,10 @@ type FeatureStatusColumn = {
 };
 
 function getFeatureStatusColumns(): FeatureStatusColumn[] {
-  return [...FEATURE_STATUS_OPTIONS];
+  return FEATURE_STATUS_OPTIONS.map((opt) => ({
+    ...opt,
+    label: clientFeatureStatusLabel(opt.key),
+  }));
 }
 
 function FeatureColumnHeader({

@@ -165,7 +165,7 @@ describe("FeatureDetailSheet — open state", () => {
         onClose: () => undefined,
       }),
     );
-    expect(html).toContain("In Progress");
+    expect(html).toContain("Building");
   });
 
   it("renders last modified time when tasks have timestamps", () => {

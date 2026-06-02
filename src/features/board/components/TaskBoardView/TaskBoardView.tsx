@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureRow } from "../FeatureRow";
 import { PaginationControls } from "../PaginationControls";
-import { STATUS_COLUMNS } from "../../lib/status";
+import { STATUS_COLUMNS, clientStatusLabel } from "../../lib/status";
 import {
   AccessDeniedState,
   EmptyBoardState,
@@ -140,7 +140,7 @@ export function TaskBoardView() {
             {STATUS_COLUMNS.map((col) => (
               <TaskColumnHeader
                 key={col.key}
-                label={col.label}
+                label={clientStatusLabel(col.key)}
                 color={col.color}
                 count={columnCounts[col.key] ?? 0}
               />
