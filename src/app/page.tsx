@@ -2,19 +2,30 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getLocalWorkspaceSummaries } from "@/services/local-workspace-store";
+import { useSession } from "@/features/auth";
+import { EmptyState } from "@/features/workspaces/components/EmptyState";
 
 export default function RootPage() {
   const router = useRouter();
+  const { session } = useSession();
 
   useEffect(() => {
-    const summaries = getLocalWorkspaceSummaries();
-    if (summaries.length > 0) {
+    if (session.status !== "authenticated") return;
+    if (session.data.accessible_workspace_ids.length > 0) {
       router.replace("/board");
-    } else {
-      router.replace("/admin/connect");
     }
-  }, [router]);
+  }, [router, session]);
+
+  if (session.status === "loading") {
+    return null;
+  }
+
+  if (
+    session.status === "authenticated" &&
+    session.data.accessible_workspace_ids.length === 0
+  ) {
+    return <EmptyState />;
+  }
 
   return null;
 }
