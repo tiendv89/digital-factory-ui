@@ -164,6 +164,14 @@ describe("auto-refresh interval stability", () => {
 
 const mockOpenTaskTab = vi.fn();
 
+vi.mock("../features/workspaces/context/WorkspaceContext", () => ({
+  useWorkspaceContext: () => ({ selectedWorkspaceId: "ws-test" }),
+}));
+
+vi.mock("../features/board/hooks/useActivity", () => ({
+  useActivity: () => ({ events: [], loading: false, error: null }),
+}));
+
 vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
   useBoardContext: () => ({
     features: [],

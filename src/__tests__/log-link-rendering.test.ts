@@ -9,10 +9,9 @@
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import type { FeatureDetail } from "../services/workflow-backend/types";
-import type { TaskDetail } from "../services/workflow-backend/types";
+import type { ActivityEvent, TaskDetail } from "../services/workflow-backend/types";
 
-// ─── Mock hooks for FeatureLogsPanel ─────────────────────────────────────────
+// ─── Mock hooks ───────────────────────────────────────────────────────────────
 
 const mockUseFeatureDetail = vi.hoisted(() => vi.fn());
 const mockUseFeatureTask = vi.hoisted(() => vi.fn());
@@ -37,6 +36,7 @@ vi.mock("../features/workspaces/context/WorkspaceContext", () => ({
     closeFeatureTab: vi.fn(),
     activateFeatureTab: vi.fn(),
     goToBoard: vi.fn(),
+    selectedWorkspaceId: "ws-uuid-1",
   }),
 }));
 
@@ -53,30 +53,14 @@ import { TaskTabView } from "../features/tasks/components/TaskTabView/TaskTabVie
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-function makeFeatureWithNote(note: string): FeatureDetail {
+function makeActivityEvent(note: string): ActivityEvent {
   return {
-    id: "feat-uuid-1",
+    action: "approved",
+    scope: "tasks",
+    actor: "test@example.com",
+    occurred_at: "2026-05-09T13:02:00Z",
+    note,
     feature_id: "feat-uuid-1",
-    feature_name: "test-feature",
-    title: "Test Feature",
-    status: "in_implementation",
-    current_stage: "in_tdd",
-    stages: {},
-    updated_at: "2026-05-20T10:30:00Z",
-    task_counts: { total: 1, done: 0, in_progress: 1, blocked: 0, ready: 0, todo: 0 },
-    workspace_id: "ws-uuid-1",
-    documents: [],
-    tasks: [],
-    activity: [
-      {
-        action: "approved",
-        scope: "tasks",
-        actor: "test@example.com",
-        occurred_at: "2026-05-09T13:02:00Z",
-        note,
-      },
-    ],
-    source_state: { stale: false },
   };
 }
 
@@ -115,27 +99,25 @@ function makeTaskDetailWithActivityNote(note: string): TaskDetail {
 // ─── FeatureLogsPanel — link rendering ───────────────────────────────────────
 
 describe("FeatureLogsPanel — log note link rendering", () => {
-  it("renders HTTP/HTTPS URL in note as a clickable link with data-feature-log-link", () => {
+  it("renders HTTP/HTTPS URL in note as a clickable link with data-activity-feed-link", () => {
+    const note = "PR merged at https://github.com/org/repo/pull/42 done";
     const html = renderToStaticMarkup(
       React.createElement(FeatureLogsPanel, {
-        feature: makeFeatureWithNote(
-          "PR merged at https://github.com/org/repo/pull/42 done",
-        ),
+        events: [makeActivityEvent(note)],
       }),
     );
 
-    expect(html).toContain("data-feature-log-link");
+    expect(html).toContain("data-activity-feed-link");
     expect(html).toContain('href="https://github.com/org/repo/pull/42"');
     expect(html).toContain('target="_blank"');
     expect(html).toContain('rel="noopener noreferrer"');
   });
 
   it("renders surrounding text alongside the link", () => {
+    const note = "See https://example.com for details";
     const html = renderToStaticMarkup(
       React.createElement(FeatureLogsPanel, {
-        feature: makeFeatureWithNote(
-          "See https://example.com for details",
-        ),
+        events: [makeActivityEvent(note)],
       }),
     );
 
@@ -145,14 +127,15 @@ describe("FeatureLogsPanel — log note link rendering", () => {
   });
 
   it("renders plain note text without link markup when no URL is present", () => {
+    const note = "Tasks approved with no links here.";
     const html = renderToStaticMarkup(
       React.createElement(FeatureLogsPanel, {
-        feature: makeFeatureWithNote("Tasks approved with no links here."),
+        events: [makeActivityEvent(note)],
       }),
     );
 
     expect(html).toContain("Tasks approved with no links here.");
-    expect(html).not.toContain("data-feature-log-link");
+    expect(html).not.toContain("data-activity-feed-link");
     expect(html).not.toContain("<a ");
   });
 
@@ -160,32 +143,29 @@ describe("FeatureLogsPanel — log note link rendering", () => {
     expect(() =>
       renderToStaticMarkup(
         React.createElement(FeatureLogsPanel, {
-          feature: makeFeatureWithNote(
-            "Invalid url: https:// and https://not-a-valid-url",
-          ),
+          events: [makeActivityEvent("Invalid url: https:// and https://not-a-valid-url")],
         }),
       ),
     ).not.toThrow();
 
     const html = renderToStaticMarkup(
       React.createElement(FeatureLogsPanel, {
-        feature: makeFeatureWithNote("Invalid url: https://"),
+        events: [makeActivityEvent("Invalid url: https://")],
       }),
     );
     expect(html).toContain("https://");
-    expect(html).not.toContain("data-feature-log-link");
+    expect(html).not.toContain("data-activity-feed-link");
   });
 
   it("renders multiple URLs in one note as separate links", () => {
+    const note = "PR1 https://github.com/org/repo/pull/1 and PR2 https://github.com/org/repo/pull/2";
     const html = renderToStaticMarkup(
       React.createElement(FeatureLogsPanel, {
-        feature: makeFeatureWithNote(
-          "PR1 https://github.com/org/repo/pull/1 and PR2 https://github.com/org/repo/pull/2",
-        ),
+        events: [makeActivityEvent(note)],
       }),
     );
 
-    const linkCount = (html.match(/data-feature-log-link/g) ?? []).length;
+    const linkCount = (html.match(/data-activity-feed-link/g) ?? []).length;
     expect(linkCount).toBe(2);
     expect(html).toContain('href="https://github.com/org/repo/pull/1"');
     expect(html).toContain('href="https://github.com/org/repo/pull/2"');

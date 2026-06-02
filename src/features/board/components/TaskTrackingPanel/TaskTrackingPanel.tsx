@@ -6,6 +6,9 @@ import { useBoardTrackingContext } from "../KanbanBoard/KanbanBoard.context";
 import { groupTrackedTasks } from "./groupTasks";
 import type { TrackedStatus } from "./TaskTrackingPanel.types";
 import { TaskTrackingSection } from "./TaskTrackingSection";
+import { ActivityFeed } from "../ActivityFeed";
+import { useActivity } from "../../hooks/useActivity";
+import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 
 const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
@@ -22,6 +25,9 @@ export function TaskTrackingPanel() {
     openTaskTab,
     openTaskTabNewSession,
   } = useBoardTrackingContext();
+
+  const { selectedWorkspaceId } = useWorkspaceContext();
+  const { events: activityEvents, loading: activityLoading } = useActivity(selectedWorkspaceId);
 
   const sections = useMemo(
     () => groupTrackedTasks(trackedFeatures),
@@ -86,6 +92,13 @@ export function TaskTrackingPanel() {
             onOpenTaskTabNewSession={handleOpenTaskTabNewSession}
           />
         ))}
+        <div className="border-t border-border">
+          <ActivityFeed
+            events={activityEvents}
+            loading={activityLoading}
+            title="Recent Activity"
+          />
+        </div>
       </div>
     </aside>
   );
