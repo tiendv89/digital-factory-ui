@@ -7,9 +7,11 @@ import { useSession } from "@/features/auth";
 export function EmptyState() {
   const { session, logout } = useSession();
 
+  console.log("Session in EmptyState:", session);
+
   const isPlatformAdmin =
     session.status === "authenticated" &&
-    session.data.memberships.some((m) => m.role === "platform_admin");
+    (session.data.memberships ?? []).some((m) => m.role === "platform_admin");
 
   return (
     <main
