@@ -6,6 +6,8 @@ export type {
   FeatureId,
   FeatureName,
   FeatureSummary,
+  FeatureTaskPage,
+  FeatureWithTasks,
   ImportWorkspaceRequest,
   LocalWorkspaceSummary,
   PagedFeatures,
@@ -18,6 +20,7 @@ export type {
   TaskId,
   TaskName,
   TaskSummary,
+  TaskSummaryWithUpdatedAt,
   WorkspaceDetail,
   WorkspaceId,
   WorkspaceSummary,
@@ -25,15 +28,18 @@ export type {
 
 export {
   SIDEBAR_TASK_PARAMS,
+  TASK_MODE_FEATURE_TASK_PARAMS,
   buildFeatureParams,
+  buildFeatureTaskParams,
   buildTaskParams,
 } from "./query-params";
 
-export type { FeatureSearchParams, TaskSearchParams } from "./query-params";
+export type { FeatureSearchParams, FeatureTaskParams, TaskSearchParams } from "./query-params";
 
 export {
   getFeature,
   getFeatureTask,
+  getFeatureTaskList,
   getWorkspace,
   getWorkspaceTask,
   importWorkspace,

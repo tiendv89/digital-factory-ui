@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { useRef, useState, useEffect } from "react";
 import type { ParsedTask } from "@/services/yaml-parser";
 import { getNextAction } from "../../lib/status";
+import { formatTimestamp } from "@/lib/time";
 
 type TaskCardProps = {
   task: ParsedTask;
@@ -110,6 +111,14 @@ export function TaskCard({
             {nextAction}
           </span>
         </div>
+      )}
+      {task.updatedAt && (
+        <p
+          className="mt-1 truncate text-xs text-text-muted"
+          data-task-updated-at={task.updatedAt}
+        >
+          {formatTimestamp(task.updatedAt)}
+        </p>
       )}
 
       {menuOpen && menuPosition && (

@@ -1,6 +1,7 @@
 import type {
   ApiError,
   FeatureDetail,
+  FeatureTaskPage,
   FeatureSummary,
   ImportWorkspaceRequest,
   PagedFeatures,
@@ -140,6 +141,16 @@ export async function getFeatureTask(
   return request<TaskDetail>(
     `/api/workspaces/${workspaceId}/features/${featureId}/tasks/${taskId}`,
   );
+}
+
+export async function getFeatureTaskList(
+  workspaceId: string,
+  params?: URLSearchParams,
+): Promise<FeatureTaskPage> {
+  const sp = new URLSearchParams(params);
+  if (!sp.has("include")) sp.set("include", "tasks");
+  const qs = sp.toString() ? `?${sp.toString()}` : "";
+  return request<FeatureTaskPage>(`/api/workspaces/${workspaceId}/features${qs}`);
 }
 
 function unwrapItems<T>(result: T[] | { items: T[] }): T[] {

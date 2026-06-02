@@ -6,6 +6,15 @@ export type FeatureSearchParams = {
   limit?: number;
 };
 
+export type FeatureTaskParams = {
+  status?: string | string[];
+  title?: string;
+  query?: string;
+  page?: number;
+  limit?: number;
+  sort?: string;
+};
+
 export type TaskSearchParams = {
   task_id?: string;
   title?: string;
@@ -48,3 +57,28 @@ export const SIDEBAR_TASK_PARAMS: URLSearchParams = buildTaskParams({
   page: 1,
   limit: 50,
 });
+
+export function buildFeatureTaskParams(params: FeatureTaskParams): URLSearchParams {
+  const sp = new URLSearchParams();
+  sp.set("include", "tasks");
+  if (params.status !== undefined) {
+    const csv = Array.isArray(params.status)
+      ? [...params.status].sort().join(",")
+      : params.status;
+    if (csv) sp.set("status", csv);
+  }
+  if (params.title) sp.set("title", params.title);
+  if (params.query) sp.set("query", params.query);
+  if (params.page !== undefined) sp.set("page", String(params.page));
+  if (params.limit !== undefined) sp.set("limit", String(params.limit));
+  if (params.sort) sp.set("sort", params.sort);
+  return sp;
+
+}
+
+export const TASK_MODE_FEATURE_TASK_PARAMS: FeatureTaskParams = {
+  status: ["blocked", "in_progress", "reviewing", "in_review", "ready"],
+  sort: "task_id_asc",
+  page: 1,
+  limit: 50,
+};
