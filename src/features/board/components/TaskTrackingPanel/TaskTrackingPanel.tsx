@@ -12,6 +12,7 @@ const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
   blocked: true,
   in_progress: true,
   reviewing: true,
+  in_review: true,
   ready: true,
 };
 

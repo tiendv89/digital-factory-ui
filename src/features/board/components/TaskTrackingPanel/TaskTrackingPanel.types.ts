@@ -5,6 +5,7 @@ export type TrackedStatus =
   | "blocked"
   | "in_progress"
   | "reviewing"
+  | "in_review"
   | "ready";
 
 export type PanelSelection = "kanban_board" | TrackedStatus;
@@ -25,7 +26,11 @@ export const TRACKED_SECTIONS: ReadonlyArray<{
   label: string;
 }> = [
   { status: "blocked", label: clientStatusLabel("blocked").toUpperCase() },
-  { status: "in_progress", label: clientStatusLabel("in_progress").toUpperCase() },
+  {
+    status: "in_progress",
+    label: clientStatusLabel("in_progress").toUpperCase(),
+  },
   { status: "reviewing", label: "IN REVIEWING" },
+  { status: "in_review", label: "IN REVIEW" },
   { status: "ready", label: clientStatusLabel("ready").toUpperCase() },
 ];

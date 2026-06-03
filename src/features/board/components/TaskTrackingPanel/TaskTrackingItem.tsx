@@ -170,7 +170,7 @@ export function TaskTrackingItem({
         <div className="flex justify-end">
           <span
             aria-label={`Last updated: ${lastUpdatedLabel}`}
-            className="border border-primary-light bg-primary-light px-2 py-0.5 font-sans text-[10px] font-medium leading-4 text-text-primary"
+            className=" px-2 py-0.5 font-sans text-[10px] font-medium leading-4 text-text-primary"
           >
             {lastUpdatedLabel}
           </span>

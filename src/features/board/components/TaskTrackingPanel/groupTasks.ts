@@ -10,7 +10,7 @@ const SIDEBAR_STATUS_BUCKETS: Record<string, TrackedStatus> = {
   blocked: "blocked",
   in_progress: "in_progress",
   reviewing: "reviewing",
-  in_review: "reviewing",
+  in_review: "in_review",
   ready: "ready",
 };
 
