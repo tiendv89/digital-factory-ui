@@ -20,7 +20,7 @@ import {
   getStatusStyle,
   type StatusBadgeStyle,
 } from "../../lib/status";
-import { StatusBadge } from "../StatusBadge/StatusBadge";
+import { clientStatusLabel } from "@/features/board/lib/status";
 
 export type TaskDetailSheetProps = {
   task: ParsedTask | null;
@@ -119,6 +119,7 @@ function TaskDetailContents({
   titleId,
   descId,
 }: ContentsProps) {
+  const statusStyle = getStatusStyle(task.status);
   const lastUpdatedAt = task.execution?.last_updated_at;
   const actorType = task.execution?.actor_type;
 
@@ -127,6 +128,7 @@ function TaskDetailContents({
       <DetailHeader
         task={task}
         featureTitle={featureTitle}
+        statusStyle={statusStyle}
         onClose={onClose}
         titleId={titleId}
         descId={descId}
@@ -149,12 +151,14 @@ function TaskDetailContents({
 function DetailHeader({
   task,
   featureTitle,
+  statusStyle,
   onClose,
   titleId,
   descId,
 }: {
   task: ParsedTask;
   featureTitle: string | undefined;
+  statusStyle: StatusBadgeStyle;
   onClose: () => void;
   titleId: string;
   descId: string;
@@ -166,7 +170,16 @@ function DetailHeader({
           <span className="bg-chip-bg px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-text-secondary">
             {task.id}
           </span>
-          <StatusBadge status={task.status} />
+          <span
+            className={
+              "px-2 py-0.5 text-xs font-semibold uppercase tracking-wide " +
+              statusStyle.bg +
+              " " +
+              statusStyle.text
+            }
+          >
+            {clientStatusLabel(task.status)}
+          </span>
         </div>
         <h2
           id={titleId}

@@ -95,7 +95,7 @@ export function FeatureListRow({
       {/* Title — primary text area, wraps before truncating */}
       <div className="min-w-0 flex-1">
         <p
-          className="line-clamp-5 break-words text-sm font-semibold text-text-primary"
+          className="line-clamp-2 text-sm font-semibold text-text-primary"
           title={feature.title || feature.id}
         >
           {feature.title || feature.id}

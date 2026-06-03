@@ -219,7 +219,7 @@ describe("FeatureRow task grid", () => {
     expect(html).toContain("data-progress-tooltip");
     expect(html.match(/data-progress-segment/g) ?? []).toHaveLength(4);
     expect(html).toContain("T1: Not started");
-    expect(html).toContain("T2: Ready");
+    expect(html).toContain("T2: Ready to start");
     expect(html).toContain("T3: In review");
     expect(html).toContain("T4: In review");
     expect(html).not.toContain("blocked: 0");

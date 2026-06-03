@@ -5,7 +5,9 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  LoaderCircle,
+  Clock3,
+  Eye,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { TaskTrackingItem } from "./TaskTrackingItem";
@@ -22,14 +24,19 @@ const STATUS_ICON_STYLE: Record<
     iconClass: "text-danger",
   },
   in_progress: {
-    icon: LoaderCircle,
+    icon: Zap,
     boxClass: "bg-warning-bg",
-    iconClass: "animate-spin text-warning",
+    iconClass: "text-warning",
   },
   reviewing: {
-    icon: LoaderCircle,
+    icon: Eye,
+    boxClass: "bg-info-bg",
+    iconClass: "text-info",
+  },
+  in_review: {
+    icon: Clock3,
     boxClass: "bg-purple-bg",
-    iconClass: "animate-spin text-purple",
+    iconClass: "text-purple",
   },
   ready: {
     icon: Check,

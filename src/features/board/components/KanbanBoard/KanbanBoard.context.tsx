@@ -4,13 +4,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
   useState,
   type ReactNode,
 } from "react";
-import { useDebounce } from "@/hooks/useDebounce";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import type { WorkspaceDetail } from "@/services/workflow-backend";
 import { useBoardData } from "../../hooks/useBoardData";
@@ -166,9 +166,9 @@ export function BoardProvider({
 
   // Task Mode always uses the feature-task API. Build params from current
   // search/filter/pagination state. Sort is fixed at task_id_asc per spec.
-  const debouncedTaskSearchQuery = useDebounce(taskSearchQuery, 300);
-  const debouncedFeatureSearchQuery = useDebounce(featureSearchQuery, 300);
-  const trimmedTaskQuery = debouncedTaskSearchQuery.trim();
+  const deferredTaskSearchQuery = useDeferredValue(taskSearchQuery);
+  const deferredFeatureSearchQuery = useDeferredValue(featureSearchQuery);
+  const trimmedTaskQuery = deferredTaskSearchQuery.trim();
 
   // Reset page to 1 when search query, filters, or limit change
   const prevTaskQueryRef = useRef(trimmedTaskQuery);
@@ -235,7 +235,7 @@ export function BoardProvider({
     };
   }, [featureTaskError]);
 
-  const trimmedFeatureQuery = debouncedFeatureSearchQuery.trim();
+  const trimmedFeatureQuery = deferredFeatureSearchQuery.trim();
 
   // Feature-mode backend search activates when search text is present OR the
   // status filter is a non-default subset.  All-feature-statuses-selected

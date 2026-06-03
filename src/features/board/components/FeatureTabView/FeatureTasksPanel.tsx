@@ -9,7 +9,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useDocumentContent } from "../../hooks/useDocumentContent";
-import { StatusBadge } from "@/features/tasks/components/StatusBadge/StatusBadge";
+import { getStatusStyle } from "@/features/tasks/lib/status";
+import { clientStatusLabel } from "@/features/board/lib/status";
 import { MarkdownBlock } from "./MarkdownBlock";
 import type { FeatureDetail, TaskSummary } from "@/services/workflow-backend/types";
 
@@ -181,6 +182,8 @@ function FeatureTaskRow({
   task: TaskSummary;
   onOpenTaskTab: () => void;
 }) {
+  const statusStyle = getStatusStyle(task.status);
+
   return (
     <button
       type="button"
@@ -193,7 +196,16 @@ function FeatureTaskRow({
         <span className="shrink-0 bg-chip-bg px-2 py-0.5 font-mono text-xs font-semibold text-text-secondary">
           {task.task_name}
         </span>
-        <StatusBadge status={task.status} className="shrink-0" />
+        <span
+          className={
+            "shrink-0 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide " +
+            statusStyle.bg +
+            " " +
+            statusStyle.text
+          }
+        >
+          {clientStatusLabel(task.status)}
+        </span>
         <span className="min-w-0 truncate text-sm font-medium text-text-primary">
           {task.title || task.task_name}
         </span>

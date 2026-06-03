@@ -9,7 +9,7 @@ import {
 describe("clientStatusLabel", () => {
   const EXPECTED: Array<[string, string]> = [
     ["todo", "Not started"],
-    ["ready", "Ready"],
+    ["ready", "Ready to start"],
     ["in_progress", "In progress"],
     ["in_review", "In review"],
     ["reviewing", "In review"],

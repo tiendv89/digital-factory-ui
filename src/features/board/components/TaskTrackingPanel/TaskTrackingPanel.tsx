@@ -6,18 +6,28 @@ import { useBoardTrackingContext } from "../KanbanBoard/KanbanBoard.context";
 import { groupTrackedTasks } from "./groupTasks";
 import type { TrackedStatus } from "./TaskTrackingPanel.types";
 import { TaskTrackingSection } from "./TaskTrackingSection";
-import type { ParsedTask } from "@/services/yaml-parser";
+import { ActivityFeed } from "../ActivityFeed";
+import { useActivity } from "../../hooks/useActivity";
+import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
+import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 
 const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
   blocked: true,
   in_progress: true,
   reviewing: true,
+  in_review: true,
   ready: true,
 };
 
 export function TaskTrackingPanel() {
-  const { trackedFeatures, openTaskTab, openTaskTabNewSession } =
-    useBoardTrackingContext();
+  const {
+    trackedFeatures,
+    openTaskTab,
+    openTaskTabNewSession,
+  } = useBoardTrackingContext();
+
+  const { selectedWorkspaceId } = useWorkspaceContext();
+  const { events: activityEvents, loading: activityLoading } = useActivity(selectedWorkspaceId);
 
   const sections = useMemo(
     () => groupTrackedTasks(trackedFeatures),
@@ -32,7 +42,7 @@ export function TaskTrackingPanel() {
   }, []);
 
   const handleSelectTask = useCallback(
-    (task: ParsedTask) => {
+    (task: ParsedTask, _feature: ParsedFeature) => {
       openTaskTab(task);
     },
     [openTaskTab],
@@ -82,6 +92,13 @@ export function TaskTrackingPanel() {
             onOpenTaskTabNewSession={handleOpenTaskTabNewSession}
           />
         ))}
+        <div className="border-t border-border">
+          <ActivityFeed
+            events={activityEvents}
+            loading={activityLoading}
+            title="Recent Activity"
+          />
+        </div>
       </div>
     </aside>
   );

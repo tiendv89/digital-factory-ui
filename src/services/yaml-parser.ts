@@ -70,7 +70,6 @@ type RawTask = {
   branch?: string;
   pr?: { url?: string; status?: string };
   workspace_pr?: { url?: string; status?: string };
-  updated_at?: string;
   blocked_reason?: string;
   blocked_context?: Record<string, unknown>;
   log?: Array<{ action?: string; by?: string; at?: string; note?: string }>;
@@ -149,7 +148,6 @@ export function parseTaskYaml(id: string, raw: string): ParsedTask | null {
     ...(typeof data.branch === "string" ? { branch: data.branch } : {}),
     ...(data.pr !== undefined ? { pr: data.pr } : {}),
     ...(data.workspace_pr !== undefined ? { workspace_pr: data.workspace_pr } : {}),
-    ...(typeof data.updated_at === "string" ? { updatedAt: data.updated_at } : {}),
     ...(typeof data.blocked_reason === "string" && data.blocked_reason !== null
       ? { blockedReason: data.blocked_reason }
       : {}),

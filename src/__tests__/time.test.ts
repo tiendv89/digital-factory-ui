@@ -40,11 +40,13 @@ describe("findStatusLogEntry", () => {
 
   it("matches in_review and moved_to_review", () => {
     const a: LogEntry[] = [makeEntry("in_review", "2026-02-01T00:00:00Z")];
-    expect(findStatusLogEntry(a, "in_review")?.at).toBe("2026-02-01T00:00:00Z");
-    const b: LogEntry[] = [
-      makeEntry("moved_to_review", "2026-02-02T00:00:00Z"),
-    ];
-    expect(findStatusLogEntry(b, "in_review")?.at).toBe("2026-02-02T00:00:00Z");
+    expect(findStatusLogEntry(a, "in_review")?.at).toBe(
+      "2026-02-01T00:00:00Z",
+    );
+    const b: LogEntry[] = [makeEntry("moved_to_review", "2026-02-02T00:00:00Z")];
+    expect(findStatusLogEntry(b, "in_review")?.at).toBe(
+      "2026-02-02T00:00:00Z",
+    );
   });
 
   it("returns null when no entry matches", () => {
@@ -94,7 +96,9 @@ describe("formatElapsed", () => {
     expect(formatElapsed(0)).toBe("0h 0m");
     expect(formatElapsed(45 * 60 * 1000)).toBe("0h 45m");
     expect(formatElapsed(3 * 60 * 60 * 1000 + 12 * 60 * 1000)).toBe("3h 12m");
-    expect(formatElapsed(23 * 60 * 60 * 1000 + 59 * 60 * 1000)).toBe("23h 59m");
+    expect(formatElapsed(23 * 60 * 60 * 1000 + 59 * 60 * 1000)).toBe(
+      "23h 59m",
+    );
   });
 
   it("formats >= 24h elapsed as Xd Yh", () => {
@@ -316,14 +320,14 @@ describe("formatLastUpdatedLabel", () => {
   });
 
   it("formats hours with 'ago' suffix", () => {
-    expect(formatLastUpdatedLabel(60 * 60_000)).toBe("1 hour ago");
-    expect(formatLastUpdatedLabel(5 * 60 * 60_000)).toBe("5 hours ago");
-    expect(formatLastUpdatedLabel(23 * 60 * 60_000)).toBe("23 hours ago");
+    expect(formatLastUpdatedLabel(60 * 60_000)).toBe("1h ago");
+    expect(formatLastUpdatedLabel(5 * 60 * 60_000)).toBe("5h ago");
+    expect(formatLastUpdatedLabel(23 * 60 * 60_000)).toBe("23h ago");
   });
 
   it("formats days with 'ago' suffix", () => {
-    expect(formatLastUpdatedLabel(24 * 60 * 60_000)).toBe("1 day ago");
-    expect(formatLastUpdatedLabel(3 * 24 * 60 * 60_000)).toBe("3 days ago");
+    expect(formatLastUpdatedLabel(24 * 60 * 60_000)).toBe("1d ago");
+    expect(formatLastUpdatedLabel(3 * 24 * 60 * 60_000)).toBe("3d ago");
   });
 
   it("returns em-dash for negative elapsed", () => {
@@ -337,40 +341,25 @@ describe("computeLastUpdatedLabel", () => {
   it("computes label from execution.last_updated_at", () => {
     const now = new Date("2026-05-27T10:00:00Z");
     const task = {
-      execution: {
-        actor_type: "agent",
-        last_updated_at: "2026-05-27T08:00:00Z",
-      },
+      execution: { actor_type: "agent", last_updated_at: "2026-05-27T08:00:00Z" },
     };
-    expect(computeLastUpdatedLabel(task, now)).toBe("2 hours ago");
+    expect(computeLastUpdatedLabel(task, now)).toBe("2h ago");
   });
 
   it("computes seconds label for recent update", () => {
     const now = new Date("2026-05-27T10:00:00Z");
     const task = {
-      execution: {
-        actor_type: "agent",
-        last_updated_at: "2026-05-27T09:59:30Z",
-      },
+      execution: { actor_type: "agent", last_updated_at: "2026-05-27T09:59:30Z" },
     };
     expect(computeLastUpdatedLabel(task, now)).toBe("30s ago");
   });
 
-  it("computes label from updatedAt when execution is missing", () => {
-    const now = new Date("2026-05-27T10:00:00Z");
-    expect(
-      computeLastUpdatedLabel({ updatedAt: "2026-05-27T08:00:00Z" }, now),
-    ).toBe("2 hours ago");
-  });
-
-  it("returns null when no timestamp is present", () => {
+  it("returns null when execution is missing", () => {
     expect(computeLastUpdatedLabel({})).toBeNull();
   });
 
   it("returns null when execution has no last_updated_at", () => {
-    expect(
-      computeLastUpdatedLabel({ execution: { actor_type: "agent" } }),
-    ).toBeNull();
+    expect(computeLastUpdatedLabel({ execution: { actor_type: "agent" } })).toBeNull();
   });
 
   it("returns null for invalid ISO timestamp", () => {
