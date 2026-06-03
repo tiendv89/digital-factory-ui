@@ -23,9 +23,9 @@ describe("STATUS_COLUMNS", () => {
       "todo",
       "ready",
       "in_progress",
-      "reviewing",
       "blocked",
       "in_review",
+      "reviewing",
       "done",
       "cancelled",
     ]);
