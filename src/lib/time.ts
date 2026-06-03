@@ -47,12 +47,38 @@ export function formatStatusAgeDuration(elapsedMs: number): string {
   return `${days}d`;
 }
 
-/** Compact last-updated label reading exclusively from execution.last_updated_at. */
+export function getTaskLastUpdatedAt(
+  task: Pick<ParsedTask, "execution" | "log" | "updatedAt">,
+): string | null {
+  let latest: string | null = null;
+  let latestTime: number | null = null;
+
+  const consider = (iso: string | undefined) => {
+    if (!iso) return;
+    const time = new Date(iso).getTime();
+    if (Number.isNaN(time)) return;
+    if (latestTime === null || time > latestTime) {
+      latest = iso;
+      latestTime = time;
+    }
+  };
+
+  consider(task.execution?.last_updated_at);
+  consider(task.updatedAt);
+
+  for (const entry of task.log ?? []) {
+    consider(entry.at);
+  }
+
+  return latest;
+}
+
+/** Last-updated label using execution, task updatedAt, and log timestamps. */
 export function computeLastUpdatedLabel(
-  task: Pick<ParsedTask, "execution">,
+  task: Pick<ParsedTask, "execution" | "log" | "updatedAt">,
   now: Date = new Date(),
 ): string | null {
-  const iso = task.execution?.last_updated_at;
+  const iso = getTaskLastUpdatedAt(task);
   if (!iso) return null;
   const ms = new Date(iso).getTime();
   if (Number.isNaN(ms)) return null;
@@ -60,7 +86,7 @@ export function computeLastUpdatedLabel(
   return formatLastUpdatedLabel(elapsed);
 }
 
-/** Formats elapsed milliseconds as a compact human-readable "… ago" label. */
+/** Formats elapsed milliseconds as a human-readable "… ago" label. */
 export function formatLastUpdatedLabel(elapsedMs: number): string {
   if (elapsedMs < 0) return "—";
   if (elapsedMs < MINUTE_MS) {
@@ -73,10 +99,10 @@ export function formatLastUpdatedLabel(elapsedMs: number): string {
   }
   if (elapsedMs < DAY_MS) {
     const hours = Math.floor(elapsedMs / HOUR_MS);
-    return `${hours}h ago`;
+    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
   }
   const days = Math.floor(elapsedMs / DAY_MS);
-  return `${days}d ago`;
+  return `${days} ${days === 1 ? "day" : "days"} ago`;
 }
 
 export function computeStatusAge(
@@ -159,10 +185,7 @@ export function getFeatureLastModifiedAt(feature: ParsedFeature): string | null 
   let latest: string | null = null;
 
   for (const task of feature.tasks) {
-    latest = latestValidIsoTimestamp(
-      latest,
-      task.execution?.last_updated_at,
-    );
+    latest = latestValidIsoTimestamp(latest, task.execution?.last_updated_at);
 
     for (const entry of task.log ?? []) {
       latest = latestValidIsoTimestamp(latest, entry.at);

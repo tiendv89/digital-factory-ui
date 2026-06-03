@@ -54,11 +54,15 @@ function onSelect() {
 // ─── Assertion helpers ───────────────────────────────────────────────────────
 
 const LAST_UPDATED_CLASSES = [
-  "border-border",
-  "bg-surface",
-  "px-1.5",
-  "font-mono",
-  "text-text-secondary",
+  "border-primary-light",
+  "bg-primary-light",
+  "px-2",
+  "py-0.5",
+  "font-sans",
+  "text-[10px]",
+  "font-medium",
+  "leading-4",
+  "text-text-primary",
 ] as const;
 
 function assertLastUpdatedPresent(expectedLabel: string) {
@@ -111,7 +115,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2h ago");
+    assertLastUpdatedPresent("2 hours ago");
   });
 
   it("renders last-updated label for in_progress tasks", () => {
@@ -125,7 +129,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2h ago");
+    assertLastUpdatedPresent("2 hours ago");
   });
 
   it("renders last-updated label for reviewing tasks", () => {
@@ -139,7 +143,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2h ago");
+    assertLastUpdatedPresent("2 hours ago");
   });
 
   it("renders last-updated label for in_review tasks", () => {
@@ -153,7 +157,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2h ago");
+    assertLastUpdatedPresent("2 hours ago");
   });
 
   it("renders last-updated label for ready tasks", () => {
@@ -167,7 +171,27 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2h ago");
+    assertLastUpdatedPresent("2 hours ago");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// T9 — Backend updatedAt fallback
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("T9 — Last-updated label uses backend updatedAt fallback", () => {
+  it("renders last-updated label when execution timestamp is absent", () => {
+    const task = makeTask("T1", "in_progress", {
+      updatedAt: new Date(Date.now() - 2 * 60 * 60_000).toISOString(),
+    });
+    render(
+      React.createElement(TaskTrackingItem, {
+        task,
+        feature: makeFeature("auth"),
+        onSelect,
+      }),
+    );
+    assertLastUpdatedPresent("2 hours ago");
   });
 });
 
@@ -324,7 +348,7 @@ describe("T9 — Last-updated label format boundaries", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("5h ago");
+    assertLastUpdatedPresent("5 hours ago");
   });
 
   it("renders days label for >= 24 hours elapsed", () => {
@@ -343,6 +367,6 @@ describe("T9 — Last-updated label format boundaries", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2d ago");
+    assertLastUpdatedPresent("2 days ago");
   });
 });

@@ -13,14 +13,7 @@
  */
 
 import React from "react";
-import {
-  describe,
-  it,
-  expect,
-  vi,
-  beforeEach,
-  afterEach,
-} from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, act, cleanup } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -98,7 +91,10 @@ vi.mock("@/lib/request-sequence", () => ({
     let seq = 0;
     let current = 0;
     return {
-      next: () => { current = ++seq; return current; },
+      next: () => {
+        current = ++seq;
+        return current;
+      },
       isCurrent: (id: number) => id === current,
     };
   },
@@ -163,12 +159,9 @@ const mockBoardContextRef = vi.hoisted(() => ({
   },
 }));
 
-vi.mock(
-  "@/features/board/components/KanbanBoard/KanbanBoard.context",
-  () => ({
-    useBoardContext: () => mockBoardContextRef.current,
-  }),
-);
+vi.mock("@/features/board/components/KanbanBoard/KanbanBoard.context", () => ({
+  useBoardContext: () => mockBoardContextRef.current,
+}));
 
 const mockWorkspaceContextForSSR = vi.hoisted(() => ({
   summaries: [
@@ -208,14 +201,20 @@ const mockWorkspaceContextForSSR = vi.hoisted(() => ({
   closeFeatureTab: vi.fn(),
 }));
 
-vi.mock("@/features/workspaces/context/WorkspaceContext", async (importOriginal) => {
-  const real = await importOriginal<typeof import("@/features/workspaces/context/WorkspaceContext")>();
-  return {
-    ...real,
-    useWorkspaceContext: () => mockWorkspaceContextForSSR,
-    useWorkspaceActionsContext: () => mockWorkspaceContextForSSR,
-  };
-});
+vi.mock(
+  "@/features/workspaces/context/WorkspaceContext",
+  async (importOriginal) => {
+    const real =
+      await importOriginal<
+        typeof import("@/features/workspaces/context/WorkspaceContext")
+      >();
+    return {
+      ...real,
+      useWorkspaceContext: () => mockWorkspaceContextForSSR,
+      useWorkspaceActionsContext: () => mockWorkspaceContextForSSR,
+    };
+  },
+);
 
 import { BoardHeader } from "../features/board/components/BoardHeader/BoardHeader";
 
@@ -256,7 +255,9 @@ describe("T7 — BoardHeader has a Refresh button", () => {
     mockWorkspaceContextForSSR.refreshingWorkspace = false;
     const html = renderToStaticMarkup(React.createElement(BoardHeader));
     // Should not have the HTML disabled attribute (note: CSS class "disabled:opacity-50" is expected)
-    expect(html).not.toMatch(/aria-label="Refresh workspace data"[^>]*disabled[^:]/);
+    expect(html).not.toMatch(
+      /aria-label="Refresh workspace data"[^>]*disabled[^:]/,
+    );
   });
 
   it("renders the Refresh button with disabled attribute when refreshingWorkspace is true", () => {
@@ -265,7 +266,9 @@ describe("T7 — BoardHeader has a Refresh button", () => {
     expect(html).toContain('aria-label="Refresh workspace data"');
     expect(html).toMatch(/aria-label="Refresh workspace data"/);
     // The button element should have disabled=""
-    expect(html).toMatch(/<button[^>]*aria-label="Refresh workspace data"[^>]*disabled/);
+    expect(html).toMatch(
+      /<button[^>]*aria-label="Refresh workspace data"[^>]*disabled/,
+    );
     // reset
     mockWorkspaceContextForSSR.refreshingWorkspace = false;
   });
@@ -331,7 +334,9 @@ describe("T7 — polling timer scheduled / cleared on visibility transitions", (
 
     await act(async () => {
       render(
-        React.createElement(WorkspaceProvider, null,
+        React.createElement(
+          WorkspaceProvider,
+          null,
           React.createElement("div", null, "child"),
         ),
       );
@@ -348,7 +353,9 @@ describe("T7 — polling timer scheduled / cleared on visibility transitions", (
 
     await act(async () => {
       render(
-        React.createElement(WorkspaceProvider, null,
+        React.createElement(
+          WorkspaceProvider,
+          null,
           React.createElement("div", null, "child"),
         ),
       );
@@ -368,7 +375,9 @@ describe("T7 — polling timer scheduled / cleared on visibility transitions", (
 
     await act(async () => {
       render(
-        React.createElement(WorkspaceProvider, null,
+        React.createElement(
+          WorkspaceProvider,
+          null,
           React.createElement("div", null, "child"),
         ),
       );
@@ -396,7 +405,9 @@ describe("T7 — polling timer scheduled / cleared on visibility transitions", (
   it("calls getWorkspace immediately on return to visible (after being hidden)", async () => {
     await act(async () => {
       render(
-        React.createElement(WorkspaceProvider, null,
+        React.createElement(
+          WorkspaceProvider,
+          null,
           React.createElement("div", null, "child"),
         ),
       );
@@ -419,7 +430,9 @@ describe("T7 — polling timer scheduled / cleared on visibility transitions", (
   it("fires getWorkspace after 30s tick while tab is visible", async () => {
     await act(async () => {
       render(
-        React.createElement(WorkspaceProvider, null,
+        React.createElement(
+          WorkspaceProvider,
+          null,
           React.createElement("div", null, "child"),
         ),
       );
@@ -437,7 +450,9 @@ describe("T7 — polling timer scheduled / cleared on visibility transitions", (
   it("does NOT fire getWorkspace after 30s when tab is hidden", async () => {
     await act(async () => {
       render(
-        React.createElement(WorkspaceProvider, null,
+        React.createElement(
+          WorkspaceProvider,
+          null,
           React.createElement("div", null, "child"),
         ),
       );

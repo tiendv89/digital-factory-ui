@@ -119,15 +119,15 @@ describe("TaskTrackingPanel — companion panel", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
     expect(html).toContain("BLOCKED");
     expect(html).toContain("IN PROGRESS");
-    expect(html).toContain("IN REVIEW");
+    expect(html).toContain("IN REVIEWING");
     expect(html).toContain("READY");
   });
 
-  it("renders sections in product order: BLOCKED, IN PROGRESS, IN REVIEW, READY", () => {
+  it("renders sections in product order: BLOCKED, IN PROGRESS, IN REVIEWING, READY", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
     const blockedIdx = html.indexOf("BLOCKED");
     const inProgressIdx = html.indexOf("IN PROGRESS");
-    const inReviewIdx = html.indexOf("IN REVIEW");
+    const inReviewIdx = html.indexOf("IN REVIEWING");
     const readyIdx = html.indexOf("READY");
     expect(blockedIdx).toBeLessThan(inProgressIdx);
     expect(inProgressIdx).toBeLessThan(inReviewIdx);
@@ -137,7 +137,7 @@ describe("TaskTrackingPanel — companion panel", () => {
   it("starts all sections expanded by default", () => {
     const html = renderToStaticMarkup(React.createElement(TaskTrackingPanel));
     const expandedMatches = [...html.matchAll(/aria-expanded="true"/g)];
-    expect(expandedMatches.length).toBe(5);
+    expect(expandedMatches.length).toBe(4);
   });
 
   it("shows task cards inside sections when tasks exist", () => {
@@ -448,7 +448,7 @@ describe("groupTrackedTasks — filtering", () => {
   it("groups tasks by sidebar statuses only", () => {
     const sections = groupTrackedTasks(mockData.features);
     const inProgress = sections.find((s) => s.status === "in_progress")!;
-    const inReview = sections.find((s) => s.status === "in_review")!;
+    const inReview = sections.find((s) => s.status === "reviewing")!;
     const ready = sections.find((s) => s.status === "ready")!;
 
     expect(inProgress.items).toHaveLength(1);
@@ -461,7 +461,7 @@ describe("groupTrackedTasks — filtering", () => {
 
   it("applies search query to filter tasks and features", () => {
     const sections = groupTrackedTasks(mockData.features, "jwt");
-    const inReview = sections.find((s) => s.status === "in_review")!;
+    const inReview = sections.find((s) => s.status === "reviewing")!;
     const ready = sections.find((s) => s.status === "ready")!;
     expect(inReview.items).toHaveLength(1);
     expect(ready.items).toHaveLength(0);
@@ -472,7 +472,7 @@ describe("groupTrackedTasks — filtering", () => {
       statuses: ["in_review"],
     });
     const inProgress = sections.find((s) => s.status === "in_progress")!;
-    const inReview = sections.find((s) => s.status === "in_review")!;
+    const inReview = sections.find((s) => s.status === "reviewing")!;
     expect(inProgress.items).toHaveLength(0);
     expect(inReview.items).toHaveLength(1);
   });
@@ -483,12 +483,11 @@ describe("groupTrackedTasks — filtering", () => {
     expect(total).toBe(3);
   });
 
-  it("returns sections in product order: blocked, in_progress, reviewing, in_review, ready", () => {
+  it("returns sections in product order: blocked, in_progress, reviewing, ready", () => {
     const sections = groupTrackedTasks(mockData.features);
     expect(sections[0].status).toBe("blocked");
     expect(sections[1].status).toBe("in_progress");
     expect(sections[2].status).toBe("reviewing");
-    expect(sections[3].status).toBe("in_review");
-    expect(sections[4].status).toBe("ready");
+    expect(sections[3].status).toBe("ready");
   });
 });

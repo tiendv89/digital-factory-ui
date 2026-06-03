@@ -1,9 +1,9 @@
 "use client";
 
 import { getNextAction } from "@/features/board/lib/status";
-import { useLastUpdatedTimer } from "@/features/board/hooks/useLastUpdatedTimer";
+import { useRelativeTime } from "@/hooks/useRelativeTime";
 import { createSingleDoubleClickController } from "@/lib/click-intent";
-import { computeLastUpdatedLabel, computeStatusAge } from "@/lib/time";
+import { computeStatusAge, getTaskLastUpdatedAt } from "@/lib/time";
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import { ArrowRight, Bot, Layers } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -35,8 +35,8 @@ export function TaskTrackingItem({
 
   const statusAge = computeStatusAge(task);
 
-  useLastUpdatedTimer();
-  const lastUpdatedLabel = computeLastUpdatedLabel(task);
+  const lastUpdatedAt = getTaskLastUpdatedAt(task);
+  const lastUpdatedLabel = useRelativeTime(lastUpdatedAt);
 
   const priorityLabel = task.priority?.trim()
     ? task.priority.trim().toUpperCase()
@@ -127,17 +127,17 @@ export function TaskTrackingItem({
       <div className="flex min-w-0 items-start gap-2">
         <span
           aria-label={`Task ${task.id}`}
-          className="shrink-0 border border-primary-light bg-primary-light px-2 py-0.5 font-mono text-[11px] font-bold leading-4 text-primary"
+          className="shrink-0 border border-primary-light bg-primary-light px-2 py-0.5 font-mono text-[13px] font-bold leading-5 text-primary"
         >
           {task.id}
         </span>
-        <p className="line-clamp-2 min-w-0 text-xs font-semibold leading-snug text-text-primary">
+        <p className="line-clamp-5 min-w-0 break-words text-sm font-semibold leading-snug text-text-primary">
           {task.title || "Untitled task"}
         </p>
       </div>
-      <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[10px] leading-4 text-text-secondary">
+      <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-xs leading-5 text-text-secondary">
         <span className="flex max-w-full items-center gap-1 bg-chip-bg px-1.5">
-          <Layers className="h-2.5 w-2.5 shrink-0 text-text-secondary" />
+          <Layers className="h-3 w-3 shrink-0 text-text-secondary" />
           <span className="truncate">{feature.title || feature.id}</span>
         </span>
         {statusAge !== "—" && (
@@ -148,14 +148,6 @@ export function TaskTrackingItem({
             {statusAge}
           </span>
         )}
-        {lastUpdatedLabel && (
-          <span
-            aria-label={`Last updated: ${lastUpdatedLabel}`}
-            className="border border-border bg-surface px-1.5 font-mono text-text-secondary"
-          >
-            {lastUpdatedLabel}
-          </span>
-        )}
         {priorityLabel && (
           <span className="bg-chip-bg px-1.5 font-mono text-text-secondary">
             {priorityLabel}
@@ -163,16 +155,26 @@ export function TaskTrackingItem({
         )}
         {actorLabel && (
           <span className="flex items-center gap-1 bg-chip-bg px-1.5">
-            <Bot className="h-2.5 w-2.5 shrink-0 text-ready" />
+            <Bot className="h-3 w-3 shrink-0 text-ready" />
             {actorLabel}
           </span>
         )}
       </div>
       {nextInfo && (
-        <p className="flex min-w-0 items-center gap-1 text-[10px] leading-4 text-text-muted">
-          <ArrowRight className="h-3 w-3 shrink-0 text-success" />
+        <p className="flex min-w-0 items-center gap-1 text-xs leading-5 text-text-muted">
+          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-success" />
           <span className="truncate">{nextInfo}</span>
         </p>
+      )}
+      {lastUpdatedLabel && (
+        <div className="flex justify-end">
+          <span
+            aria-label={`Last updated: ${lastUpdatedLabel}`}
+            className="  px-2 py-0.5 font-sans text-[10px] font-medium leading-4 text-text-primary "
+          >
+            {lastUpdatedLabel}
+          </span>
+        </div>
       )}
 
       {menuOpen && menuPosition && (
