@@ -280,8 +280,8 @@ describe("T6 Browser QA — Sidebar task timestamp rendering", () => {
 describe("T6 Browser QA — Status rendering", () => {
   it("STATUS_COLUMNS includes reviewing with correct position", async () => {
     const { STATUS_COLUMNS } = await import("../features/board/lib/status");
-    expect(STATUS_COLUMNS[3].key).toBe("reviewing");
-    expect(STATUS_COLUMNS[3].label).toBe("In Reviewing");
+    expect(STATUS_COLUMNS[5].key).toBe("reviewing");
+    expect(STATUS_COLUMNS[5].label).toBe("In Reviewing");
   });
 
   it("FEATURE_STATUS_OPTIONS excludes reviewing", async () => {
@@ -313,16 +313,16 @@ describe("T6 Browser QA — Sort button removal", () => {
     expect(BOARD_DEFAULT_SORT).toBe("updated_at_desc");
   });
 
-  it("STATUS_COLUMNS order unchanged (todo through cancelled)", async () => {
+  it("STATUS_COLUMNS order matches product spec (todo through cancelled)", async () => {
     const { STATUS_COLUMNS } = await import("../features/board/lib/status");
     const keys = STATUS_COLUMNS.map((c) => c.key);
     expect(keys).toEqual([
       "todo",
       "ready",
       "in_progress",
-      "reviewing",
       "blocked",
       "in_review",
+      "reviewing",
       "done",
       "cancelled",
     ]);

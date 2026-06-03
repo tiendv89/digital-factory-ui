@@ -33,13 +33,26 @@ export type FeatureStatusOption = {
   color: string;
 };
 
+// Task Mode kanban allowlist — canonical order per product spec.
+// T2 (kanban column wiring) and T3 (filter wiring) consume TASK_MODE_STATUSES directly.
+export const TASK_MODE_STATUSES: TaskStatus[] = [
+  "todo",
+  "ready",
+  "in_progress",
+  "blocked",
+  "in_review",
+  "reviewing",
+  "done",
+  "cancelled",
+];
+
 export const STATUS_COLUMNS: StatusColumn[] = [
   { key: "todo", label: "Todo", color: "#3274b4" },
   { key: "ready", label: "Ready", color: "#6e6de7" },
   { key: "in_progress", label: "In Progress", color: "#e08500" },
-  { key: "reviewing", label: "In Reviewing", color: "#b45fbd" },
   { key: "blocked", label: "Blocked", color: "#e62a34" },
   { key: "in_review", label: "In Review", color: "#8e67cb" },
+  { key: "reviewing", label: "In Reviewing", color: "#b45fbd" },
   { key: "done", label: "Done", color: "#009252" },
   { key: "cancelled", label: "Cancelled", color: "#5c636e" },
 ];
@@ -99,6 +112,27 @@ export const FEATURE_STATUS_OPTIONS: FeatureStatusOption[] = [
   { key: "blocked", label: "Blocked", color: "#e62a34" },
   { key: "cancelled", label: "Cancelled", color: "#5c636e" },
 ];
+
+// Feature Mode kanban allowlist — canonical order per product spec.
+// T2 (kanban column wiring) and T3 (filter wiring) consume FEATURE_MODE_STATUSES directly.
+export const FEATURE_MODE_STATUSES: FeatureStatus[] = [
+  "in_design",
+  "in_tdd",
+  "ready_for_implementation",
+  "in_implementation",
+  "in_handoff",
+  "done",
+  "blocked",
+  "cancelled",
+];
+
+const TASK_STATUS_LABELS: Record<string, string> = Object.fromEntries(
+  STATUS_COLUMNS.map((c) => [c.key, c.label]),
+);
+
+export function getTaskStatusLabel(status: string): string {
+  return TASK_STATUS_LABELS[status] ?? status.replace(/_/g, " ");
+}
 
 const VALID_FEATURE_STATUSES = new Set<string>([
   "in_design",
