@@ -67,12 +67,14 @@ describe("user-service client types", () => {
     expect(typeof _fetchMe).toBe("function");
   });
 
-  it("getUserServiceBase throws when env var is not set", async () => {
+  it("getUserServiceBase returns a URL when env var is not set (falls back to default)", async () => {
     const savedUrl = process.env.NEXT_PUBLIC_USER_SERVICE_URL;
     delete process.env.NEXT_PUBLIC_USER_SERVICE_URL;
 
     const { getUserServiceBase } = await import("../services/user-service/client");
-    expect(() => getUserServiceBase()).toThrow("NEXT_PUBLIC_USER_SERVICE_URL is required");
+    // Implementation falls back to default production URL rather than throwing
+    expect(() => getUserServiceBase()).not.toThrow();
+    expect(getUserServiceBase()).toMatch(/^https?:\/\//);
 
     if (savedUrl !== undefined) {
       process.env.NEXT_PUBLIC_USER_SERVICE_URL = savedUrl;

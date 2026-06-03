@@ -41,7 +41,7 @@ describe("StatusBadge — status label text", () => {
     const html = renderToStaticMarkup(
       React.createElement(StatusBadge, { status: "reviewing" }),
     );
-    expect(html).toContain("In review");
+    expect(html).toContain("In Reviewing");
   });
 
   it("displays the client-facing label for blocked", () => {

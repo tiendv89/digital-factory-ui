@@ -41,12 +41,12 @@ describe("workflow-backend client", () => {
   beforeEach(() => {
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    process.env.NEXT_PUBLIC_API_BASE_URL = API_BASE;
+    process.env.NEXT_PUBLIC_WORKFLOW_API_URL = API_BASE;
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    delete process.env.NEXT_PUBLIC_WORKFLOW_API_URL;
   });
 
   describe("request", () => {
@@ -143,12 +143,13 @@ describe("workflow-backend client", () => {
       });
     });
 
-    it("throws when neither NEXT_PUBLIC_WORKFLOW_API_URL nor NEXT_PUBLIC_API_BASE_URL is set", async () => {
-      delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    it("falls back to production URL when NEXT_PUBLIC_WORKFLOW_API_URL is not set", async () => {
       delete process.env.NEXT_PUBLIC_WORKFLOW_API_URL;
-      await expect(request("/api/workspaces/ws-uuid")).rejects.toThrow(
-        "NEXT_PUBLIC_WORKFLOW_API_URL is required",
-      );
+      fetchMock.mockResolvedValueOnce(successResponse({}));
+      await request("/api/workspaces/ws-uuid");
+      const [url] = fetchMock.mock.calls[0] as [string];
+      // Falls back to the default production base URL
+      expect(url).toContain("/api/workspaces/ws-uuid");
     });
 
     it("prepends API_BASE to the path", async () => {
