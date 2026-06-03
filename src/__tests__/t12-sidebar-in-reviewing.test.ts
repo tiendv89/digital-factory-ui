@@ -28,7 +28,7 @@ const makeFeature = (id: string, tasks: ParsedTask[]): ParsedFeature => ({
 describe("TRACKED_SECTIONS — includes reviewing", () => {
   it("has reviewing as the third section (index 2)", () => {
     expect(TRACKED_SECTIONS[2].status).toBe("reviewing");
-    expect(TRACKED_SECTIONS[2].label).toBe("IN REVIEW");
+    expect(TRACKED_SECTIONS[2].label).toBe("IN REVIEWING");
   });
 
   it("positions reviewing directly after in_progress (index 1)", () => {
@@ -36,16 +36,15 @@ describe("TRACKED_SECTIONS — includes reviewing", () => {
     expect(TRACKED_SECTIONS[2].status).toBe("reviewing");
   });
 
-  it("contains 5 sections total", () => {
-    expect(TRACKED_SECTIONS).toHaveLength(5);
+  it("contains 4 sections total", () => {
+    expect(TRACKED_SECTIONS).toHaveLength(4);
   });
 
-  it("preserves full section order: blocked, in_progress, reviewing, in_review, ready", () => {
+  it("preserves full section order: blocked, in_progress, reviewing, ready", () => {
     expect(TRACKED_SECTIONS.map((s) => s.status)).toEqual([
       "blocked",
       "in_progress",
       "reviewing",
-      "in_review",
       "ready",
     ]);
   });
@@ -63,20 +62,18 @@ describe("groupTrackedTasks — reviewing section", () => {
     const sections = groupTrackedTasks([feature]);
 
     expect(sections[2].status).toBe("reviewing");
-    expect(sections[2].items).toHaveLength(1);
-    expect(sections[2].items[0].task.id).toBe("T2");
+    expect(sections[2].items).toHaveLength(2);
+    expect(sections[2].items.map((item) => item.task.id)).toEqual(["T2", "T3"]);
   });
 
-  it("keeps reviewing tasks out of in_progress and in_review sections", () => {
-    const feature = makeFeature("auth", [
-      makeTask("T1", "reviewing"),
-    ]);
+  it("keeps reviewing tasks out of in_progress and places them in the reviewing section", () => {
+    const feature = makeFeature("auth", [makeTask("T1", "reviewing")]);
     const sections = groupTrackedTasks([feature]);
 
     const inProgress = sections.find((s) => s.status === "in_progress")!;
-    const inReview = sections.find((s) => s.status === "in_review")!;
+    const inReviewing = sections.find((s) => s.status === "reviewing")!;
     expect(inProgress.items).toHaveLength(0);
-    expect(inReview.items).toHaveLength(0);
+    expect(inReviewing.items).toHaveLength(1);
   });
 
   it("ignores todo and done tasks — not placed in reviewing", () => {
@@ -111,7 +108,9 @@ describe("groupTrackedTasks — reviewing section", () => {
       makeTask("T1", "reviewing"),
       makeTask("T2", "in_progress"),
     ]);
-    const sections = groupTrackedTasks([feature], "", { statuses: ["in_progress"] });
+    const sections = groupTrackedTasks([feature], "", {
+      statuses: ["in_progress"],
+    });
     const inReviewing = sections.find((s) => s.status === "reviewing")!;
     const inProgress = sections.find((s) => s.status === "in_progress")!;
     expect(inReviewing.items).toHaveLength(0);

@@ -33,9 +33,9 @@ beforeEach(() => {
 
 describe("board panel selection storage", () => {
   it("persists selected task tracking detail tabs", () => {
-    savePanelSelection("in_review");
+    savePanelSelection("reviewing");
 
-    expect(getStoredPanelSelection()).toBe("in_review");
+    expect(getStoredPanelSelection()).toBe("reviewing");
   });
 
   it("persists the board selection to clear a previous detail tab", () => {

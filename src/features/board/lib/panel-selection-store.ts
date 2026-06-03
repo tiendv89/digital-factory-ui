@@ -3,7 +3,7 @@ import type { PanelSelection } from "../components/TaskTrackingPanel/TaskTrackin
 const STORAGE_KEY = "dashboard:board-panel-selection";
 const PANEL_SELECTIONS = new Set<PanelSelection>([
   "kanban_board",
-  "in_review",
+  "reviewing",
   "in_progress",
   "ready",
 ]);

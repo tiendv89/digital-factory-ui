@@ -11,18 +11,8 @@
  *   - Updates on 30s interval
  */
 
-import {
-  renderHook,
-  act,
-  cleanup,
-} from "@testing-library/react";
-import {
-  afterEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { renderHook, act, cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { useRelativeTime } from "../hooks/useRelativeTime";
 
 afterEach(() => {
@@ -64,28 +54,28 @@ describe("useRelativeTime — format boundaries", () => {
     expect(result.current).toBe("1m ago");
   });
 
-  it("returns 'Xh ago' for sub-day elapsed", () => {
+  it("returns 'X hours ago' for sub-day elapsed", () => {
     const iso = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("2h ago");
+    expect(result.current).toBe("2 hours ago");
   });
 
-  it("returns '1h ago' at exactly 60 minutes", () => {
+  it("returns '1 hour ago' at exactly 60 minutes", () => {
     const iso = new Date(Date.now() - 60 * 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("1h ago");
+    expect(result.current).toBe("1 hour ago");
   });
 
-  it("returns 'Xd ago' for >= 24 hours elapsed", () => {
+  it("returns 'X days ago' for >= 24 hours elapsed", () => {
     const iso = new Date(Date.now() - 3 * 24 * 60 * 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("3d ago");
+    expect(result.current).toBe("3 days ago");
   });
 
-  it("returns '1d ago' at exactly 24 hours", () => {
+  it("returns '1 day ago' at exactly 24 hours", () => {
     const iso = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("1d ago");
+    expect(result.current).toBe("1 day ago");
   });
 });
 
