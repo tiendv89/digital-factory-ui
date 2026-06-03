@@ -794,18 +794,16 @@ See [design doc](https://example.com/design) for details.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { FeatureRow } from "../features/board/components/FeatureRow/FeatureRow";
-import {
-  DrilldownTaskContent,
-} from "../features/board/components/FeatureTabView/FeatureTaskDrilldown";
+import { DrilldownTaskContent } from "../features/board/components/FeatureTabView/FeatureTaskDrilldown";
 
 describe("status regression: Feature row renders lifecycle status", () => {
   it("FeatureRow renders feature lifecycle status for all statuses", () => {
     const statuses = [
-      { key: "in_design", label: "Design" },
-      { key: "in_tdd", label: "Technical design" },
-      { key: "ready_for_implementation", label: "Ready to build" },
-      { key: "in_implementation", label: "Building" },
-      { key: "in_handoff", label: "Handoff" },
+      { key: "in_design", label: "In Design" },
+      { key: "in_tdd", label: "In Tdd" },
+      { key: "ready_for_implementation", label: "Ready For Implementation" },
+      { key: "in_implementation", label: "In Implementation" },
+      { key: "in_handoff", label: "In Handoff" },
       { key: "done", label: "Done" },
       { key: "blocked", label: "Blocked" },
       { key: "cancelled", label: "Cancelled" },
@@ -917,11 +915,11 @@ describe("feature-card regression: status tag suppressed in Feature mode", () =>
 
     // Status pill must not appear for any lifecycle status
     const statusLabels = [
-      "Design",
-      "Technical design",
-      "Ready to build",
-      "Building",
-      "Handoff",
+      "In Design",
+      "In Tdd",
+      "Ready For Implementation",
+      "In Implementation",
+      "In Handoff",
       "Done",
       "Blocked",
       "Cancelled",

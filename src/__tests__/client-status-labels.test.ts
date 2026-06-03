@@ -47,7 +47,7 @@ describe("clientStatusLabel", () => {
 
 describe("clientFeatureStatusLabel", () => {
   const EXPECTED: Array<[string, string]> = [
-    ["in_design", "Design"],
+    ["in_design", "In design"],
     ["in_tdd", "Technical design"],
     ["ready_for_implementation", "Ready to build"],
     ["in_implementation", "Building"],

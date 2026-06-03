@@ -18,7 +18,10 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { ParsedFeature } from "../services/yaml-parser";
-import type { ActiveFilters, FeatureActiveFilters } from "../features/board/types";
+import type {
+  ActiveFilters,
+  FeatureActiveFilters,
+} from "../features/board/types";
 import {
   TASK_MODE_STATUSES,
   FEATURE_MODE_STATUSES,
@@ -34,7 +37,10 @@ import {
 import { getAllStatusFilterKeys } from "../features/board/lib/status-filter";
 import { getAllFeatureStatusFilterKeys } from "../features/board/lib/feature-status-filter";
 import { adaptFeatureWithTasksToFeatures } from "../features/workspaces/lib/workspaceAdapter";
-import type { FeatureWithTasks, TaskSummaryWithUpdatedAt } from "../services/workflow-backend/types";
+import type {
+  FeatureWithTasks,
+  TaskSummaryWithUpdatedAt,
+} from "../services/workflow-backend/types";
 
 // ─── Board context mock ───────────────────────────────────────────────────────
 
@@ -63,7 +69,9 @@ function makeTask(id: string, title: string, status: string) {
   return { id, title, status, dependsOn: [] };
 }
 
-function makeBackendTask(overrides: Partial<TaskSummaryWithUpdatedAt> = {}): TaskSummaryWithUpdatedAt {
+function makeBackendTask(
+  overrides: Partial<TaskSummaryWithUpdatedAt> = {},
+): TaskSummaryWithUpdatedAt {
   return {
     id: "task-uuid-1",
     task_id: "task-uuid-1",
@@ -82,7 +90,9 @@ function makeBackendTask(overrides: Partial<TaskSummaryWithUpdatedAt> = {}): Tas
   };
 }
 
-function makeFeatureWithTasks(overrides: Partial<FeatureWithTasks> = {}): FeatureWithTasks {
+function makeFeatureWithTasks(
+  overrides: Partial<FeatureWithTasks> = {},
+): FeatureWithTasks {
   return {
     id: "feat-uuid-1",
     feature_id: "feat-uuid-1",
@@ -91,7 +101,14 @@ function makeFeatureWithTasks(overrides: Partial<FeatureWithTasks> = {}): Featur
     status: "in_implementation",
     current_stage: "tasks",
     updated_at: "2026-05-29T11:59:28Z",
-    task_counts: { total: 1, done: 0, in_progress: 1, blocked: 0, ready: 0, todo: 0 },
+    task_counts: {
+      total: 1,
+      done: 0,
+      in_progress: 1,
+      blocked: 0,
+      ready: 0,
+      todo: 0,
+    },
     stages: {},
     tasks: [makeBackendTask()],
     ...overrides,
@@ -268,17 +285,17 @@ describe("Sidebar label rendering — clientStatusLabel contract", () => {
 // ─── 2. Board status label rendering — getTaskStatusLabel contract ────────────
 
 describe("Board status label — getTaskStatusLabel canonical contract", () => {
-  it("in_review renders as 'In Review' in board column headers", () => {
-    expect(getTaskStatusLabel("in_review")).toBe("In Review");
+  it("in_review renders as 'In review' in board column headers", () => {
+    expect(getTaskStatusLabel("in_review")).toBe("In review");
   });
 
-  it("reviewing renders as 'In Reviewing' in board column headers", () => {
-    expect(getTaskStatusLabel("reviewing")).toBe("In Reviewing");
+  it("reviewing renders as 'In reviewing' in board column headers", () => {
+    expect(getTaskStatusLabel("reviewing")).toBe("In reviewing");
   });
 
   it("in_reviewing is NOT a board column — label fallback only", () => {
     const label = getTaskStatusLabel("in_reviewing");
-    expect(label).not.toBe("In Reviewing");
+    expect(label).not.toBe("In reviewing");
     expect(label).toBe("in reviewing");
   });
 
@@ -287,14 +304,14 @@ describe("Board status label — getTaskStatusLabel canonical contract", () => {
     expect(keys).not.toContain("in_reviewing");
   });
 
-  it("STATUS_COLUMNS in_review entry has label 'In Review'", () => {
+  it("STATUS_COLUMNS in_review entry has label 'In review'", () => {
     const col = STATUS_COLUMNS.find((c) => c.key === "in_review");
-    expect(col?.label).toBe("In Review");
+    expect(col?.label).toBe("In review");
   });
 
-  it("STATUS_COLUMNS reviewing entry has label 'In Reviewing'", () => {
+  it("STATUS_COLUMNS reviewing entry has label 'In reviewing'", () => {
     const col = STATUS_COLUMNS.find((c) => c.key === "reviewing");
-    expect(col?.label).toBe("In Reviewing");
+    expect(col?.label).toBe("In reviewing");
   });
 });
 
@@ -499,9 +516,7 @@ describe("adaptFeatureWithTasksToFeatures — handles backend-filtered results",
   });
 
   it("handles features with empty task arrays (backend may return these before T4 fix)", () => {
-    const backendFeatures = [
-      makeFeatureWithTasks({ tasks: [] }),
-    ];
+    const backendFeatures = [makeFeatureWithTasks({ tasks: [] })];
 
     const result = adaptFeatureWithTasksToFeatures(backendFeatures);
     expect(result).toHaveLength(1);
@@ -568,7 +583,9 @@ describe("Mode allowlist consistency — status contract drives all rendering su
 describe("TaskBoardView — column headers from TASK_MODE_STATUSES contract", () => {
   beforeEach(() => {
     mockContextRef.current = buildTaskModeContext({
-      features: [makeFeature({ tasks: [makeTask("T1", "Sample task", "todo")] })],
+      features: [
+        makeFeature({ tasks: [makeTask("T1", "Sample task", "todo")] }),
+      ],
     });
   });
 
@@ -618,7 +635,14 @@ describe("FeatureBoardView — column headers from FEATURE_MODE_STATUSES contrac
 
   it("does not render any Task Mode-only column headers in Feature Mode", () => {
     const html = renderToStaticMarkup(React.createElement(FeatureBoardView));
-    for (const status of ["todo", "ready", "in_progress", "in_review", "reviewing", "in_reviewing"]) {
+    for (const status of [
+      "todo",
+      "ready",
+      "in_progress",
+      "in_review",
+      "reviewing",
+      "in_reviewing",
+    ]) {
       expect(html).not.toContain(`data-feature-status-header="${status}"`);
     }
   });

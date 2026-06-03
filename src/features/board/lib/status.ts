@@ -49,10 +49,10 @@ export const TASK_MODE_STATUSES: TaskStatus[] = [
 export const STATUS_COLUMNS: StatusColumn[] = [
   { key: "todo", label: "Todo", color: "#3274b4" },
   { key: "ready", label: "Ready", color: "#6e6de7" },
-  { key: "in_progress", label: "In Progress", color: "#e08500" },
+  { key: "in_progress", label: "In progress", color: "#e08500" },
   { key: "blocked", label: "Blocked", color: "#e62a34" },
-  { key: "in_review", label: "In Review", color: "#8e67cb" },
-  { key: "reviewing", label: "In Reviewing", color: "#b45fbd" },
+  { key: "in_review", label: "In review", color: "#8e67cb" },
+  { key: "reviewing", label: "In reviewing", color: "#b45fbd" },
   { key: "done", label: "Done", color: "#009252" },
   { key: "cancelled", label: "Cancelled", color: "#5c636e" },
 ];
@@ -196,7 +196,7 @@ const CLIENT_TASK_STATUS_LABELS: Record<string, string> = {
 };
 
 const CLIENT_FEATURE_STATUS_LABELS: Record<string, string> = {
-  in_design: "Design",
+  in_design: "In design",
   in_tdd: "Technical design",
   ready_for_implementation: "Ready to build",
   in_implementation: "Building",

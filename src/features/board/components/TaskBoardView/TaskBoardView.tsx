@@ -36,7 +36,7 @@ function TaskColumnHeader({
           style={{ background: color }}
           aria-hidden="true"
         />
-        <span className="truncate text-xs font-semibold uppercase tracking-wide text-text-secondary">
+        <span className="truncate text-xs font-semibold capitalize tracking-wide text-text-secondary">
           {label}
         </span>
       </div>

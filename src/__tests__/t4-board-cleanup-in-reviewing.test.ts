@@ -212,7 +212,7 @@ describe("STATUS_COLUMNS — includes reviewing", () => {
   it("contains reviewing entry with correct label", () => {
     const col = STATUS_COLUMNS.find((c) => c.key === "reviewing");
     expect(col).toBeDefined();
-    expect(col!.label).toBe("In Reviewing");
+    expect(col!.label).toBe("In reviewing");
   });
 
   it("contains reviewing entry with valid hex color", () => {
@@ -281,7 +281,7 @@ describe("TaskBoardView — Reviewing column header rendering", () => {
   it("STATUS_COLUMNS includes reviewing with uppercase label", () => {
     const col = STATUS_COLUMNS.find((c) => c.key === "reviewing");
     expect(col).toBeDefined();
-    expect(col!.label).toBe("In Reviewing");
+    expect(col!.label).toBe("In reviewing");
   });
 
   it("STATUS_COLUMNS count matches the number of column headers in TaskBoardView", () => {

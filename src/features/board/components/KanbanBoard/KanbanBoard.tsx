@@ -16,9 +16,8 @@ import { BoardTableTitle } from "../BoardTableTitle";
 
 import {
   FEATURE_MODE_STATUSES,
+  STATUS_COLUMNS,
   TASK_MODE_STATUSES,
-  clientFeatureStatusLabel,
-  clientStatusLabel,
   getFeatureStatusColor,
   getStatusColor,
 } from "../../lib/status";
@@ -171,7 +170,10 @@ function TaskModeFilterMenu() {
             style={{ background: getStatusColor(statusKey) }}
             aria-hidden="true"
           />
-          <span>{clientStatusLabel(statusKey)}</span>
+          <span>
+            {STATUS_COLUMNS.find((c) => c.key === statusKey)?.label ??
+              statusKey}
+          </span>
         </label>
       ))}
     </div>
@@ -230,7 +232,10 @@ function FeatureModeFilterMenu() {
             style={{ background: getFeatureStatusColor(statusKey) }}
             aria-hidden="true"
           />
-          {clientFeatureStatusLabel(statusKey)}
+          {statusKey
+            .split("_")
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(" ")}
         </label>
       ))}
     </div>

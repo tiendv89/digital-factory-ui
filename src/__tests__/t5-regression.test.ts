@@ -30,7 +30,11 @@ import {
   matchesFeatureModeSearch,
   matchesFeatureModeStatusFilter,
 } from "../features/board/lib/filter";
-import { FEATURE_STATUS_OPTIONS, clientFeatureStatusLabel, getFeatureStatusLabel } from "../features/board/lib/status";
+import {
+  FEATURE_STATUS_OPTIONS,
+  clientFeatureStatusLabel,
+  getFeatureStatusLabel,
+} from "../features/board/lib/status";
 import { FeatureListRow } from "../features/board/components/FeatureBoardView/FeatureListRow";
 
 // ─── localStorage shim ─────────────────────────────────────────────────────
@@ -303,7 +307,12 @@ describe("FeatureBoardView — renders feature rows, not task rows", () => {
     expect(html).toContain('aria-label="Feature status columns"');
     for (const status of FEATURE_STATUS_OPTIONS) {
       expect(html).toContain(`data-feature-status-header="${status.key}"`);
-      expect(html).toContain(clientFeatureStatusLabel(status.key).toUpperCase());
+      expect(html).toContain(
+        status.key
+          .split("_")
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+          .join(" "),
+      );
     }
     expect(html).toMatch(
       /data-feature-status-count="in_implementation"[^>]*>1/,
@@ -633,7 +642,15 @@ describe("getFeatureStatusLabel — only renders feature lifecycle status labels
   });
 
   it("returns 'Unknown' for non-feature-lifecycle status strings", () => {
-    const invalid = ["todo", "ready", "in_progress", "in_review", "garbage", "", "pending"];
+    const invalid = [
+      "todo",
+      "ready",
+      "in_progress",
+      "in_review",
+      "garbage",
+      "",
+      "pending",
+    ];
     for (const s of invalid) {
       expect(getFeatureStatusLabel(s)).toBe("Unknown");
     }

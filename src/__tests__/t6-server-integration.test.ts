@@ -281,7 +281,7 @@ describe("T6 Browser QA — Status rendering", () => {
   it("STATUS_COLUMNS includes reviewing with correct position", async () => {
     const { STATUS_COLUMNS } = await import("../features/board/lib/status");
     expect(STATUS_COLUMNS[5].key).toBe("reviewing");
-    expect(STATUS_COLUMNS[5].label).toBe("In Reviewing");
+    expect(STATUS_COLUMNS[5].label).toBe("In reviewing");
   });
 
   it("FEATURE_STATUS_OPTIONS excludes reviewing", async () => {

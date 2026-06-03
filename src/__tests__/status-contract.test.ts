@@ -12,18 +12,18 @@ import {
 // ─── Label/value mapping ────────────────────────────────────────────────────
 
 describe("getTaskStatusLabel — shared status label contract", () => {
-  it("maps in_review → 'In Review'", () => {
-    expect(getTaskStatusLabel("in_review")).toBe("In Review");
+  it("maps in_review → 'In review'", () => {
+    expect(getTaskStatusLabel("in_review")).toBe("In review");
   });
 
-  it("maps reviewing → 'In Reviewing'", () => {
-    expect(getTaskStatusLabel("reviewing")).toBe("In Reviewing");
+  it("maps reviewing → 'In reviewing'", () => {
+    expect(getTaskStatusLabel("reviewing")).toBe("In reviewing");
   });
 
-  it("does NOT use 'in_reviewing' as a status value for In Reviewing", () => {
+  it("does NOT use 'in_reviewing' as a status value for In reviewing", () => {
     // in_reviewing is non-canonical; reviewing is the correct value
-    expect(getTaskStatusLabel("reviewing")).toBe("In Reviewing");
-    expect(getTaskStatusLabel("in_reviewing")).not.toBe("In Reviewing");
+    expect(getTaskStatusLabel("reviewing")).toBe("In reviewing");
+    expect(getTaskStatusLabel("in_reviewing")).not.toBe("In reviewing");
   });
 
   it("returns a human-readable fallback for unknown statuses", () => {
@@ -144,14 +144,14 @@ describe("STATUS_COLUMNS alignment with TASK_MODE_STATUSES", () => {
     expect(STATUS_COLUMNS.map((c) => c.key)).toEqual(TASK_MODE_STATUSES);
   });
 
-  it("in_review column has label 'In Review'", () => {
+  it("in_review column has label 'In review'", () => {
     const col = STATUS_COLUMNS.find((c) => c.key === "in_review");
-    expect(col?.label).toBe("In Review");
+    expect(col?.label).toBe("In review");
   });
 
-  it("reviewing column has label 'In Reviewing'", () => {
+  it("reviewing column has label 'In reviewing'", () => {
     const col = STATUS_COLUMNS.find((c) => c.key === "reviewing");
-    expect(col?.label).toBe("In Reviewing");
+    expect(col?.label).toBe("In reviewing");
   });
 
   it("no column uses the non-canonical in_reviewing key", () => {

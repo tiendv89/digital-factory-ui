@@ -7,12 +7,11 @@ import {
   getFeatureLastModifiedAt,
   isTodayTimestamp,
 } from "@/lib/time";
+import { Tooltip } from "@/components/ui/Tooltip";
 import { TaskCard } from "../TaskCard";
 import {
   TASK_MODE_STATUSES,
   STATUS_COLUMNS,
-  clientFeatureStatusLabel,
-  clientStatusLabel,
   getFeatureStatusColor,
 } from "../../lib/status";
 
@@ -24,59 +23,12 @@ type FeatureRowProps = {
   onOpenTaskTabNewSession?: (task: ParsedTask) => void;
 };
 
-function SegmentBar({ tasks }: { tasks: ParsedTask[] }) {
-  if (tasks.length === 0) {
-    return (
-      <div
-        className="relative h-1.5 w-24 rounded-full"
-        style={{ background: "#e4e7ef" }}
-      />
-    );
-  }
-
-  return (
-    <div
-      className="flex h-1.5 w-24 gap-0.5 overflow-visible"
-      aria-label="Task progress by status"
-    >
-      {tasks.map((task) => {
-        const col = STATUS_COLUMNS.find((c) => c.key === task.status);
-        const color = col?.color ?? "#8892b5";
-        const statusLabel = clientStatusLabel(task.status);
-
-        return (
-          <div
-            key={task.id}
-            data-progress-segment
-            className="group/segment relative h-full flex-1 rounded-full"
-            style={{ background: color }}
-            aria-label={`${task.id}: ${task.status}`}
-            tabIndex={0}
-          >
-            <div
-              data-progress-tooltip
-              role="tooltip"
-              className="pointer-events-none absolute left-1/2 top-3 z-30 -translate-x-1/2 whitespace-nowrap rounded-md border border-border bg-surface px-2.5 py-1.5 text-xs font-medium text-text-primary opacity-0 shadow-lg transition-opacity group-hover/segment:opacity-100 group-focus/segment:opacity-100"
-            >
-              <span className="flex items-center gap-2">
-                <span
-                  className="h-2 w-2 rounded-sm"
-                  style={{ background: color }}
-                  aria-hidden="true"
-                />
-                {task.id}: {statusLabel}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 function FeatureStatusPill({ status }: { status: string }) {
   const color = getFeatureStatusColor(status);
-  const label = clientFeatureStatusLabel(status);
+  const label = status
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
   return (
     <span
       className="inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium"
@@ -103,11 +55,16 @@ export function FeatureRow({
   onOpenTaskTab,
   onOpenTaskTabNewSession,
 }: FeatureRowProps) {
-  const totalTasks = feature.tasks.length;
-  const doneTasks = feature.tasks.filter((t) => t.status === "done").length;
+  const totalTasks = feature.taskCounts?.total ?? feature.tasks.length;
+  const doneTasks =
+    feature.taskCounts?.done ??
+    feature.tasks.filter((t) => t.status === "done").length;
   const lastModifiedAt = getFeatureLastModifiedAt(feature);
   const modifiedToday = lastModifiedAt
     ? isTodayTimestamp(lastModifiedAt)
+    : false;
+  const updatedToday = feature.updatedAt
+    ? isTodayTimestamp(feature.updatedAt)
     : false;
   const gridTemplateColumns = `repeat(${TASK_MODE_STATUSES.length}, minmax(0, 1fr))`;
 
@@ -151,10 +108,21 @@ export function FeatureRow({
         </div>
         <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2 sm:gap-3">
           <FeatureStatusPill status={feature.featureStatus} />
-          <span className="shrink-0 text-xs font-medium text-text-secondary">
-            {doneTasks}/{totalTasks}
-          </span>
-          <SegmentBar tasks={feature.tasks} />
+          <Tooltip content={`${doneTasks} done / ${totalTasks} total tasks`}>
+            <span className="shrink-0 text-xs font-medium text-text-secondary">
+              {doneTasks}/{totalTasks}
+            </span>
+          </Tooltip>
+          {updatedToday && feature.updatedAt && (
+            <span className="shrink-0 rounded bg-success-bg px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-success">
+              Modify{" "}
+              {new Date(feature.updatedAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+          )}
+
           {lastModifiedAt && (
             <span
               data-feature-modified-at={lastModifiedAt}
@@ -185,10 +153,11 @@ export function FeatureRow({
           {feature.tasks.map((task) => {
             // Group task into its status column; fall back to first allowed column
             // for any status outside the Task Mode allowlist (e.g. review_passed).
-            const taskColumnKey =
-              (TASK_MODE_STATUSES as readonly string[]).includes(task.status)
-                ? task.status
-                : TASK_MODE_STATUSES[0];
+            const taskColumnKey = (
+              TASK_MODE_STATUSES as readonly string[]
+            ).includes(task.status)
+              ? task.status
+              : TASK_MODE_STATUSES[0];
 
             return (
               <div

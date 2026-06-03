@@ -7,7 +7,6 @@ import { PaginationControls } from "../PaginationControls";
 import {
   FEATURE_MODE_STATUSES,
   FEATURE_STATUS_OPTIONS,
-  clientFeatureStatusLabel,
   isValidFeatureStatus,
 } from "../../lib/status";
 import {
@@ -36,7 +35,10 @@ const FEATURE_STATUS_COLOR_MAP = new Map(
 function getFeatureStatusColumns(): FeatureStatusColumn[] {
   return FEATURE_MODE_STATUSES.map((status) => ({
     key: status,
-    label: clientFeatureStatusLabel(status),
+    label: status
+      .split("_")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join(" "),
     color: FEATURE_STATUS_COLOR_MAP.get(status) ?? "#8892b5",
   }));
 }
@@ -65,7 +67,7 @@ function FeatureColumnHeader({
           aria-hidden="true"
         />
         <span className="truncate text-xs font-semibold tracking-wide text-text-secondary">
-          {label.toUpperCase()}
+          {label}
         </span>
       </div>
       <span
@@ -107,7 +109,8 @@ export function FeatureBoardView() {
   // Only features with valid lifecycle statuses are shown in Feature/Kanban mode —
   // task-derived statuses (todo, ready, in_progress, in_review) are never columns.
   const visibleFeatures = useMemo(() => {
-    const source = backendFeatureResults != null ? backendFeatureResults : features;
+    const source =
+      backendFeatureResults != null ? backendFeatureResults : features;
     return source.filter((f) => isValidFeatureStatus(f.featureStatus));
   }, [features, backendFeatureResults]);
 

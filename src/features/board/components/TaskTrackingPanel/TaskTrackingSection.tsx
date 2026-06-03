@@ -5,6 +5,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
+  Eye,
   LoaderCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -30,6 +31,11 @@ const STATUS_ICON_STYLE: Record<
     icon: LoaderCircle,
     boxClass: "bg-purple-bg",
     iconClass: "animate-spin text-purple",
+  },
+  in_review: {
+    icon: Eye,
+    boxClass: "bg-purple-bg",
+    iconClass: "text-purple",
   },
   ready: {
     icon: Check,
@@ -58,6 +64,11 @@ export function TaskTrackingSection({
   const { label, status, items } = section;
   const ChevronIcon = isExpanded ? ChevronDown : ChevronRight;
   const StatusIcon = STATUS_ICON_STYLE[status].icon;
+  // Only show spinning animation when there is at least 1 task
+  const iconClass = STATUS_ICON_STYLE[status].iconClass.replace(
+    items.length === 0 ? "animate-spin " : "",
+    "",
+  );
 
   return (
     <section
@@ -82,9 +93,7 @@ export function TaskTrackingSection({
             }
             aria-hidden="true"
           >
-            <StatusIcon
-              className={"h-3 w-3 " + STATUS_ICON_STYLE[status].iconClass}
-            />
+            <StatusIcon className={"h-3 w-3 " + iconClass} />
           </span>
           <span className="text-[11px] font-semibold uppercase tracking-wider text-text-secondary">
             {label}
