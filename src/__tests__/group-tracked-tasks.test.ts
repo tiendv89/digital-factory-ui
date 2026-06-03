@@ -28,13 +28,12 @@ const makeFeature = (
 });
 
 describe("groupTrackedTasks", () => {
-  it("returns five sections in product order regardless of input", () => {
+  it("returns four sections in product order regardless of input", () => {
     const sections = groupTrackedTasks([]);
     expect(sections.map((s) => s.status)).toEqual([
       "blocked",
       "in_progress",
       "reviewing",
-      "in_review",
       "ready",
     ]);
     expect(sections.map((s) => s.label)).toEqual(
@@ -64,7 +63,7 @@ describe("groupTrackedTasks", () => {
     const sections = groupTrackedTasks([f1, f2]);
     const inProgress = sections.find((s) => s.status === "in_progress")!;
     const ready = sections.find((s) => s.status === "ready")!;
-    const inReview = sections.find((s) => s.status === "in_review")!;
+    const inReview = sections.find((s) => s.status === "reviewing")!;
 
     expect(inProgress.items.map((i) => `${i.feature.id}/${i.task.id}`)).toEqual(
       ["alpha/T1"],
@@ -128,7 +127,7 @@ describe("groupTrackedTasks", () => {
     ]);
 
     const sections = groupTrackedTasks([f]);
-    const inReview = sections.find((s) => s.status === "in_review")!;
+    const inReview = sections.find((s) => s.status === "reviewing")!;
     const ready = sections.find((s) => s.status === "ready")!;
     const inProgress = sections.find((s) => s.status === "in_progress")!;
 
@@ -155,7 +154,7 @@ describe("groupTrackedTasks", () => {
     ]);
     const sections = groupTrackedTasks([f], "jwt");
     const inProgress = sections.find((s) => s.status === "in_progress")!;
-    const inReview = sections.find((s) => s.status === "in_review")!;
+    const inReview = sections.find((s) => s.status === "reviewing")!;
     expect(inProgress.items).toHaveLength(0);
     expect(inReview.items).toHaveLength(1);
     expect(inReview.items[0].task.id).toBe("T2");
@@ -182,7 +181,7 @@ describe("groupTrackedTasks", () => {
     ]);
     const sections = groupTrackedTasks([f], "", { statuses: ["in_review"] });
     const inProgress = sections.find((s) => s.status === "in_progress")!;
-    const inReview = sections.find((s) => s.status === "in_review")!;
+    const inReview = sections.find((s) => s.status === "reviewing")!;
     const ready = sections.find((s) => s.status === "ready")!;
     expect(inProgress.items).toHaveLength(0);
     expect(inReview.items).toHaveLength(1);
@@ -192,14 +191,10 @@ describe("groupTrackedTasks", () => {
   it("sorts tasks in each section by newest task time first", () => {
     const f = makeFeature("alpha", [
       makeTask("T1", "in_review", "Older review", {
-        log: [
-          { action: "in_review", by: "agent", at: "2026-05-01T00:00:00Z" },
-        ],
+        log: [{ action: "in_review", by: "agent", at: "2026-05-01T00:00:00Z" }],
       }),
       makeTask("T2", "in_review", "Newest review", {
-        log: [
-          { action: "in_review", by: "agent", at: "2026-05-03T00:00:00Z" },
-        ],
+        log: [{ action: "in_review", by: "agent", at: "2026-05-03T00:00:00Z" }],
       }),
       makeTask("T3", "in_review", "Middle review", {
         execution: {
@@ -210,7 +205,7 @@ describe("groupTrackedTasks", () => {
     ]);
 
     const sections = groupTrackedTasks([f]);
-    const inReview = sections.find((s) => s.status === "in_review")!;
+    const inReview = sections.find((s) => s.status === "reviewing")!;
 
     expect(inReview.items.map((item) => item.task.id)).toEqual([
       "T2",
@@ -233,9 +228,7 @@ describe("groupTrackedTasks", () => {
           actor_type: "agent",
           last_updated_at: "2026-05-01T00:00:00Z",
         },
-        log: [
-          { action: "ready", by: "agent", at: "2026-05-04T00:00:00Z" },
-        ],
+        log: [{ action: "ready", by: "agent", at: "2026-05-04T00:00:00Z" }],
       }),
       makeTask("T4", "ready", "Invalid timestamp", {
         execution: {

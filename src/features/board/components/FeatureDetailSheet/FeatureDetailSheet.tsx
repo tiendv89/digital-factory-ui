@@ -20,6 +20,7 @@ import {
   getStatusStyle,
   type StatusBadgeStyle,
 } from "@/features/tasks/lib/status";
+import { StatusBadge } from "@/features/tasks/components/StatusBadge/StatusBadge";
 import {
   clientFeatureStatusLabel,
   clientStatusLabel,
@@ -299,20 +300,7 @@ function FeatureTaskCard({ task }: { task: ParsedTask }) {
 }
 
 function TaskStatusBadge({ status }: { status: string }) {
-  const statusStyle = getStatusStyle(status);
-
-  return (
-    <span
-      className={
-        "border border-border px-2 py-0.5 text-xs font-semibold uppercase tracking-wide " +
-        statusStyle.bg +
-        " " +
-        statusStyle.text
-      }
-    >
-      {clientStatusLabel(status)}
-    </span>
-  );
+  return <StatusBadge status={status} />;
 }
 
 function getTaskLastUpdatedAt(task: ParsedTask): string | null {

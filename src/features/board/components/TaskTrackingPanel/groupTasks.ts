@@ -6,13 +6,13 @@ import {
   type TrackedStatus,
 } from "./TaskTrackingPanel.types";
 
-const SIDEBAR_STATUSES = new Set<TrackedStatus>([
-  "blocked",
-  "in_progress",
-  "reviewing",
-  "in_review",
-  "ready",
-]);
+const SIDEBAR_STATUS_BUCKETS: Record<string, TrackedStatus> = {
+  blocked: "blocked",
+  in_progress: "in_progress",
+  reviewing: "reviewing",
+  in_review: "reviewing",
+  ready: "ready",
+};
 
 function parseTimestampMs(timestamp: string | undefined): number | null {
   if (!timestamp) return null;
@@ -22,6 +22,10 @@ function parseTimestampMs(timestamp: string | undefined): number | null {
 
 function getTaskTimeMs(task: ParsedFeature["tasks"][number]): number | null {
   let latest = parseTimestampMs(task.execution?.last_updated_at);
+  const updatedAtMs = parseTimestampMs(task.updatedAt);
+  if (updatedAtMs !== null && (latest === null || updatedAtMs > latest)) {
+    latest = updatedAtMs;
+  }
 
   for (const entry of task.log ?? []) {
     const entryMs = parseTimestampMs(entry.at);
@@ -77,8 +81,8 @@ export function groupTrackedTasks(
 
   for (const feature of features) {
     for (const task of feature.tasks) {
-      const status = task.status as TrackedStatus;
-      if (!SIDEBAR_STATUSES.has(status)) continue;
+      const status = SIDEBAR_STATUS_BUCKETS[task.status];
+      if (!status) continue;
       if (
         activeFilters.statuses.length > 0 &&
         !activeFilters.statuses.includes(task.status)

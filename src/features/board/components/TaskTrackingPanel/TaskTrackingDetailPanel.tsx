@@ -24,15 +24,9 @@ const DETAIL_COPY = {
     secondary: "Blocked reason",
   },
   reviewing: {
-    title: clientStatusLabel("reviewing"),
+    title: "In reviewing",
     metric: "Review time",
-    empty: "No tasks in review",
-    secondary: "Pull request",
-  },
-  in_review: {
-    title: clientStatusLabel("in_review"),
-    metric: "Review time",
-    empty: "No tasks in review",
+    empty: "No tasks in reviewing",
     secondary: "Pull request",
   },
   in_progress: {
@@ -44,7 +38,7 @@ const DETAIL_COPY = {
   ready: {
     title: clientStatusLabel("ready"),
     metric: "Wait time",
-    empty: "No tasks ready to start",
+    empty: "No tasks ready",
     secondary: "Dependencies",
   },
 } satisfies Record<
@@ -63,7 +57,7 @@ function getSecondaryValue(status: TrackedStatus, item: TrackedTaskItem): string
       : "None";
   }
 
-  if (status === "in_review") {
+  if (status === "reviewing") {
     return (
       item.task.workspace_pr?.status || item.task.pr?.status || "Not linked"
     );

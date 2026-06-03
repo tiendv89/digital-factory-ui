@@ -88,7 +88,10 @@ describe("computeStatusAge", () => {
   it("falls back to execution.last_updated_at when log is empty", () => {
     const now = new Date("2026-05-27T13:00:00Z");
     const task = makeTask("T1", "in_progress", {
-      execution: { actor_type: "agent", last_updated_at: "2026-05-27T12:00:00Z" },
+      execution: {
+        actor_type: "agent",
+        last_updated_at: "2026-05-27T12:00:00Z",
+      },
     });
     expect(computeStatusAge(task, now)).toBe("1h");
   });
@@ -137,8 +140,8 @@ describe("TRACKED_SECTIONS — includes blocked at the top", () => {
     expect(TRACKED_SECTIONS[0].label).toBe("BLOCKED");
   });
 
-  it("contains 5 sections total", () => {
-    expect(TRACKED_SECTIONS).toHaveLength(5);
+  it("contains 4 sections total", () => {
+    expect(TRACKED_SECTIONS).toHaveLength(4);
   });
 });
 
@@ -193,4 +196,3 @@ describe("groupTrackedTasks — blocked section", () => {
     expect(ready.items).toHaveLength(1);
   });
 });
-
