@@ -241,8 +241,8 @@ describe("Sidebar label rendering — clientStatusLabel contract", () => {
     expect(clientStatusLabel("in_review")).toBe("In review");
   });
 
-  it("maps reviewing to 'In review' (sidebar/client label)", () => {
-    expect(clientStatusLabel("reviewing")).toBe("In review");
+  it("maps reviewing to 'In Reviewing' (sidebar/client label)", () => {
+    expect(clientStatusLabel("reviewing")).toBe("In Reviewing");
   });
 
   it("does NOT map in_reviewing to 'In review' — in_reviewing is non-canonical", () => {

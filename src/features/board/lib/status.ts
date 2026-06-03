@@ -186,7 +186,7 @@ const CLIENT_TASK_STATUS_LABELS: Record<string, string> = {
   ready: "Ready",
   in_progress: "In progress",
   in_review: "In review",
-  reviewing: "In review",
+  reviewing: "In Reviewing",
   review_passed: "In review",
   change_requested: "Revisions in progress",
   review_incomplete: "In review",
