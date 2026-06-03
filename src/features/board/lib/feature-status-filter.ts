@@ -1,14 +1,14 @@
-import { FEATURE_STATUS_OPTIONS, type FeatureStatus } from "./status";
+import { FEATURE_MODE_STATUSES, type FeatureStatus } from "./status";
 
 export function getAllFeatureStatusFilterKeys(): FeatureStatus[] {
-  return FEATURE_STATUS_OPTIONS.map((s) => s.key);
+  return [...FEATURE_MODE_STATUSES];
 }
 
 export function isAllFeatureStatusFilterSelected(
   selectedStatuses: readonly string[],
 ): boolean {
   const selected = new Set(selectedStatuses);
-  return getAllFeatureStatusFilterKeys().every((s) => selected.has(s));
+  return FEATURE_MODE_STATUSES.every((s) => selected.has(s));
 }
 
 export function toggleAllFeatureStatusFilter(

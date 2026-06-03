@@ -1,19 +1,19 @@
 import {
-  FEATURE_STATUS_OPTIONS,
-  STATUS_COLUMNS,
+  FEATURE_MODE_STATUSES,
+  TASK_MODE_STATUSES,
   type FeatureStatus,
   type TaskStatus,
 } from "./status";
 
 export function getAllStatusFilterKeys(): TaskStatus[] {
-  return STATUS_COLUMNS.map((status) => status.key);
+  return [...TASK_MODE_STATUSES];
 }
 
 export function isAllStatusFilterSelected(
   selectedStatuses: readonly string[],
 ): boolean {
   const selected = new Set(selectedStatuses);
-  return getAllStatusFilterKeys().every((status) => selected.has(status));
+  return TASK_MODE_STATUSES.every((status) => selected.has(status));
 }
 
 export function toggleAllStatusFilter(
@@ -38,14 +38,14 @@ export function toggleStatusFilter(
 }
 
 export function getAllFeatureStatusFilterKeys(): FeatureStatus[] {
-  return FEATURE_STATUS_OPTIONS.map((s) => s.key);
+  return [...FEATURE_MODE_STATUSES];
 }
 
 export function isAllFeatureStatusFilterSelected(
   selectedStatuses: readonly string[],
 ): boolean {
   const selected = new Set(selectedStatuses);
-  return getAllFeatureStatusFilterKeys().every((status) => selected.has(status));
+  return FEATURE_MODE_STATUSES.every((status) => selected.has(status));
 }
 
 export function toggleAllFeatureStatusFilter(
