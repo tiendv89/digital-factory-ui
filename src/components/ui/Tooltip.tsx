@@ -4,7 +4,7 @@ import React, { useState, useRef } from "react";
 
 interface TooltipProps {
   content: React.ReactNode;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   /** Tooltip position relative to trigger. Default: "top" */
   position?: "top" | "bottom" | "left" | "right";
 }
@@ -18,14 +18,18 @@ const POSITION_STYLES: Record<string, string> = {
 
 const ARROW_STYLES: Record<string, string> = {
   top: "-bottom-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-t-4 border-t-gray-800 border-l-transparent border-r-transparent",
-  bottom: "-top-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-b-gray-800 border-l-transparent border-r-transparent",
+  bottom:
+    "-top-1 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-b-gray-800 border-l-transparent border-r-transparent",
   left: "-right-1 top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-l-4 border-l-gray-800 border-t-transparent border-b-transparent",
-  right: "-left-1 top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-r-4 border-r-gray-800 border-t-transparent border-b-transparent",
+  right:
+    "-left-1 top-1/2 -translate-y-1/2 border-t-4 border-b-4 border-r-4 border-r-gray-800 border-t-transparent border-b-transparent",
 };
 
 export function Tooltip({ content, children, position = "top" }: TooltipProps) {
   const [visible, setVisible] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   const show = () => {
     clearTimeout(timeoutRef.current);

@@ -109,7 +109,14 @@ describe("Tooltip component", () => {
 describe("FeatureRow — task count tooltip", () => {
   it("renders doneTasks/totalTasks format", () => {
     const feature = makeFeature({
-      taskCounts: { total: 8, done: 7 },
+      taskCounts: {
+        total: 8,
+        done: 7,
+        in_progress: 1,
+        blocked: 0,
+        ready: 0,
+        todo: 0,
+      },
     });
     const html = renderToStaticMarkup(
       React.createElement(FeatureRow, {
@@ -123,7 +130,14 @@ describe("FeatureRow — task count tooltip", () => {
 
   it("tooltip content includes 'done / total tasks' text", () => {
     const feature = makeFeature({
-      taskCounts: { total: 8, done: 7 },
+      taskCounts: {
+        total: 8,
+        done: 7,
+        in_progress: 1,
+        blocked: 0,
+        ready: 0,
+        todo: 0,
+      },
     });
     const html = renderToStaticMarkup(
       React.createElement(FeatureRow, {
@@ -278,7 +292,7 @@ describe("TaskTrackingSection — loading animation only with items", () => {
     const feature = makeFeature();
     const task = makeTask("T1", "in_review");
     const section = makeSection({
-      status: "in_review",
+      status: "in_review" as TrackedStatus,
       items: [{ task, feature }],
     });
     const html = renderToStaticMarkup(
