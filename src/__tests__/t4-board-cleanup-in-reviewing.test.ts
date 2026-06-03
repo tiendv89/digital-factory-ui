@@ -212,7 +212,7 @@ describe("STATUS_COLUMNS — includes reviewing", () => {
   it("contains reviewing entry with correct label", () => {
     const col = STATUS_COLUMNS.find((c) => c.key === "reviewing");
     expect(col).toBeDefined();
-    expect(col!.label).toBe("In Reviewing");
+    expect(col!.label).toBe("In reviewing");
   });
 
   it("contains reviewing entry with valid hex color", () => {
@@ -221,10 +221,11 @@ describe("STATUS_COLUMNS — includes reviewing", () => {
     expect(col!.color).toMatch(/^#[0-9a-fA-F]{6}$/);
   });
 
-  it("places reviewing between in_progress and blocked (index 3)", () => {
+  it("places reviewing after in_review (index 5) per product spec order", () => {
     expect(STATUS_COLUMNS[2].key).toBe("in_progress");
-    expect(STATUS_COLUMNS[3].key).toBe("reviewing");
-    expect(STATUS_COLUMNS[4].key).toBe("blocked");
+    expect(STATUS_COLUMNS[3].key).toBe("blocked");
+    expect(STATUS_COLUMNS[4].key).toBe("in_review");
+    expect(STATUS_COLUMNS[5].key).toBe("reviewing");
   });
 
   it("keeps all original STATUS_COLUMNS entries", () => {
@@ -280,7 +281,7 @@ describe("TaskBoardView — Reviewing column header rendering", () => {
   it("STATUS_COLUMNS includes reviewing with uppercase label", () => {
     const col = STATUS_COLUMNS.find((c) => c.key === "reviewing");
     expect(col).toBeDefined();
-    expect(col!.label).toBe("In Reviewing");
+    expect(col!.label).toBe("In reviewing");
   });
 
   it("STATUS_COLUMNS count matches the number of column headers in TaskBoardView", () => {
@@ -350,15 +351,15 @@ describe("T8 — Default board ordering preserved after sort removal", () => {
     expect(BOARD_DEFAULT_SORT).toBe("updated_at_desc");
   });
 
-  it("STATUS_COLUMNS order is preserved (todo → cancelled)", () => {
+  it("STATUS_COLUMNS order is preserved (todo → cancelled) per product spec", () => {
     const keys = STATUS_COLUMNS.map((c) => c.key);
     expect(keys).toEqual([
       "todo",
       "ready",
       "in_progress",
-      "reviewing",
       "blocked",
       "in_review",
+      "reviewing",
       "done",
       "cancelled",
     ]);

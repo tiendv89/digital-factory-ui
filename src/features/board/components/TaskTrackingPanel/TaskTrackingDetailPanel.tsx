@@ -23,17 +23,23 @@ const DETAIL_COPY = {
     empty: "No blocked tasks",
     secondary: "Blocked reason",
   },
+  in_progress: {
+    title: clientStatusLabel("in_progress"),
+    metric: "Active time",
+    empty: "No tasks in progress",
+    secondary: "Branch",
+  },
   reviewing: {
     title: "In reviewing",
     metric: "Review time",
     empty: "No tasks in reviewing",
     secondary: "Pull request",
   },
-  in_progress: {
-    title: clientStatusLabel("in_progress"),
-    metric: "Active time",
-    empty: "No tasks in progress",
-    secondary: "Branch",
+  in_review: {
+    title: "In review",
+    metric: "Cycle time",
+    empty: "No tasks in review",
+    secondary: "Pull request",
   },
   ready: {
     title: clientStatusLabel("ready"),
@@ -46,7 +52,10 @@ const DETAIL_COPY = {
   { title: string; metric: string; empty: string; secondary: string }
 >;
 
-function getSecondaryValue(status: TrackedStatus, item: TrackedTaskItem): string {
+function getSecondaryValue(
+  status: TrackedStatus,
+  item: TrackedTaskItem,
+): string {
   if (status === "blocked") {
     return item.task.blockedReason || "Unknown";
   }
@@ -159,7 +168,10 @@ export function TaskTrackingDetailPanel({
                       <div className="min-w-0 border border-border bg-surface px-2 py-1.5">
                         <dt className="flex items-center gap-1.5 text-text-muted">
                           {selectedSection.status === "ready" ? (
-                            <ListChecks className="h-3 w-3" aria-hidden="true" />
+                            <ListChecks
+                              className="h-3 w-3"
+                              aria-hidden="true"
+                            />
                           ) : (
                             <GitBranch className="h-3 w-3" aria-hidden="true" />
                           )}

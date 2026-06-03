@@ -1,13 +1,11 @@
-import { FEATURE_STATUS_OPTIONS, STATUS_COLUMNS, type FeatureStatus, type TaskStatus } from "./status";
+import { FEATURE_MODE_STATUSES, TASK_MODE_STATUSES, type FeatureStatus, type TaskStatus } from "./status";
 
 const TASK_STORAGE_KEY = "dashboard:board-status-filter";
 const FEATURE_STORAGE_KEY = "dashboard:board-feature-status-filter";
 const BOARD_MODE_STORAGE_KEY = "dashboard:board-mode";
 
-const VALID_TASK_STATUSES = new Set<string>(STATUS_COLUMNS.map((s) => s.key));
-const VALID_FEATURE_STATUSES = new Set<string>(
-  FEATURE_STATUS_OPTIONS.map((s) => s.key),
-);
+const VALID_TASK_STATUSES = new Set<string>(TASK_MODE_STATUSES);
+const VALID_FEATURE_STATUSES = new Set<string>(FEATURE_MODE_STATUSES);
 const VALID_BOARD_MODES = new Set(["task", "feature"]);
 
 function isValidTaskStatusArray(value: unknown): value is TaskStatus[] {
@@ -25,7 +23,7 @@ function isValidFeatureStatusArray(value: unknown): value is FeatureStatus[] {
 }
 
 export function getDefaultStatusFilter(): TaskStatus[] {
-  return STATUS_COLUMNS.filter((s) => s.key !== "done").map((s) => s.key);
+  return TASK_MODE_STATUSES.filter((s) => s !== "done");
 }
 
 export function getStoredStatusFilter(): TaskStatus[] | null {
@@ -50,9 +48,7 @@ export function saveStatusFilter(statuses: string[]): void {
 }
 
 export function getDefaultFeatureStatusFilter(): FeatureStatus[] {
-  return FEATURE_STATUS_OPTIONS.filter((s) => s.key !== "done").map(
-    (s) => s.key,
-  );
+  return FEATURE_MODE_STATUSES.filter((s) => s !== "done");
 }
 
 export function getStoredFeatureStatusFilter(): FeatureStatus[] | null {

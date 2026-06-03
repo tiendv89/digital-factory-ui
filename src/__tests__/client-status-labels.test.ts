@@ -12,7 +12,7 @@ describe("clientStatusLabel", () => {
     ["ready", "Ready"],
     ["in_progress", "In progress"],
     ["in_review", "In review"],
-    ["reviewing", "In review"],
+    ["reviewing", "In Reviewing"],
     ["review_passed", "In review"],
     ["change_requested", "Revisions in progress"],
     ["review_incomplete", "In review"],
@@ -31,8 +31,8 @@ describe("clientStatusLabel", () => {
     });
   }
 
-  it("collapses reviewing, review_passed, review_incomplete to 'In review'", () => {
-    expect(clientStatusLabel("reviewing")).toBe("In review");
+  it("maps review_passed, review_incomplete to 'In review'; reviewing to 'In Reviewing'", () => {
+    expect(clientStatusLabel("reviewing")).toBe("In Reviewing");
     expect(clientStatusLabel("review_passed")).toBe("In review");
     expect(clientStatusLabel("review_incomplete")).toBe("In review");
   });
@@ -47,7 +47,7 @@ describe("clientStatusLabel", () => {
 
 describe("clientFeatureStatusLabel", () => {
   const EXPECTED: Array<[string, string]> = [
-    ["in_design", "Design"],
+    ["in_design", "In design"],
     ["in_tdd", "Technical design"],
     ["ready_for_implementation", "Ready to build"],
     ["in_implementation", "Building"],

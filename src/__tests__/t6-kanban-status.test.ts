@@ -48,12 +48,7 @@ const ALL_VALID_FEATURE_STATUSES: FeatureStatus[] = [
   "cancelled",
 ];
 
-const TASK_STATUSES = [
-  "todo",
-  "ready",
-  "in_progress",
-  "in_review",
-] as const;
+const TASK_STATUSES = ["todo", "ready", "in_progress", "in_review"] as const;
 
 // ─── 1. isValidFeatureStatus ────────────────────────────────────────────────
 
@@ -177,11 +172,11 @@ describe("FeatureListRow — Kanban card status data attribute", () => {
 describe("FeatureRow — lifecycle status rendering", () => {
   it("renders all 8 valid feature lifecycle status labels", () => {
     const labels: Record<FeatureStatus, string> = {
-      in_design: "Design",
-      in_tdd: "Technical design",
-      ready_for_implementation: "Ready to build",
-      in_implementation: "Building",
-      in_handoff: "Handoff",
+      in_design: "In Design",
+      in_tdd: "In Tdd",
+      ready_for_implementation: "Ready For Implementation",
+      in_implementation: "In Implementation",
+      in_handoff: "In Handoff",
       done: "Done",
       blocked: "Blocked",
       cancelled: "Cancelled",
@@ -251,9 +246,7 @@ describe("FeatureRow — lifecycle status rendering", () => {
     );
     expect(html).toContain("Done");
     // Must NOT show any task lifecycle label as the feature status
-    expect(html).not.toMatch(
-      /data-feature-status="[^"]*"\s*>\s*Todo\s*<\//,
-    );
+    expect(html).not.toMatch(/data-feature-status="[^"]*"\s*>\s*Todo\s*<\//);
   });
 });
 
@@ -323,9 +316,9 @@ describe("T6 regression — task statuses are not feature lifecycle statuses", (
         onOpenTaskTab: () => undefined,
       }),
     );
-    // clientFeatureStatusLabel("todo") falls back to "todo" (not a feature lifecycle status)
-    expect(html).toContain("todo");
+    // FeatureStatusPill formats status: splits on "_", capitalizes each word
+    expect(html).toContain("Todo");
     // Must not be a human-readable feature lifecycle label
-    expect(html).not.toContain("Design");
+    expect(html).not.toContain("In Design");
   });
 });

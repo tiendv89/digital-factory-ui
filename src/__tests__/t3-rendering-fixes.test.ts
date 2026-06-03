@@ -43,7 +43,7 @@ function makeTask(overrides: Partial<ParsedTask> = {}): ParsedTask {
 // ═══ Task-mode feature lifecycle status ═══════════════════════════════════
 
 describe("task-mode feature lifecycle status", () => {
-  it("uses real feature lifecycle status (in_implementation → Building label)", () => {
+  it("uses real feature lifecycle status (in_implementation → In Implementation label)", () => {
     const feature = makeFeature({
       id: "my-feature",
       featureStatus: "in_implementation",
@@ -57,8 +57,8 @@ describe("task-mode feature lifecycle status", () => {
         onOpenTaskTab: () => undefined,
       }),
     );
-    // The FeatureRow in task mode should show the real feature status label
-    expect(html).toContain("Building");
+    // The FeatureRow in task mode should show the formatted feature status
+    expect(html).toContain("In Implementation");
   });
 
   it("renders feature status for done lifecycle status", () => {
@@ -242,7 +242,8 @@ describe("feature mode card title/ID hierarchy", () => {
   });
 
   it("allows title to wrap when it is long", () => {
-    const longTitle = "This is a very long feature title that should wrap across multiple lines rather than being truncated";
+    const longTitle =
+      "This is a very long feature title that should wrap across multiple lines rather than being truncated";
     const feature = makeFeature({
       id: "LONG-1",
       title: longTitle,
