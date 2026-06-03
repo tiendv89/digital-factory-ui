@@ -24,12 +24,12 @@ describe("searchFeaturesPage", () => {
   beforeEach(() => {
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    process.env.NEXT_PUBLIC_API_BASE_URL = API_BASE;
+    process.env.NEXT_PUBLIC_WORKFLOW_API_URL = API_BASE;
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    delete process.env.NEXT_PUBLIC_WORKFLOW_API_URL;
   });
 
   it("returns full PagedFeatures from the backend", async () => {
@@ -83,12 +83,12 @@ describe("searchWorkspaceTasksPage", () => {
   beforeEach(() => {
     fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    process.env.NEXT_PUBLIC_API_BASE_URL = API_BASE;
+    process.env.NEXT_PUBLIC_WORKFLOW_API_URL = API_BASE;
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    delete process.env.NEXT_PUBLIC_API_BASE_URL;
+    delete process.env.NEXT_PUBLIC_WORKFLOW_API_URL;
   });
 
   it("returns full PagedTasks from the backend", async () => {
