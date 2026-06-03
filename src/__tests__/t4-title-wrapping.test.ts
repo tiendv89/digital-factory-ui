@@ -27,6 +27,7 @@ vi.mock("../lib/time", () => ({
   isTodayTimestamp: () => false,
   computeStatusAge: () => "—",
   computeLastUpdatedLabel: () => null,
+  getTaskLastUpdatedAt: () => null,
 }));
 
 vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
