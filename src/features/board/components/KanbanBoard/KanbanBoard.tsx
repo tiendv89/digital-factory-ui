@@ -14,7 +14,14 @@ import { TaskBoardView } from "../TaskBoardView";
 import { FeatureBoardView } from "../FeatureBoardView";
 import { BoardTableTitle } from "../BoardTableTitle";
 
-import { FEATURE_STATUS_OPTIONS, STATUS_COLUMNS, clientFeatureStatusLabel, clientStatusLabel } from "../../lib/status";
+import {
+  FEATURE_MODE_STATUSES,
+  TASK_MODE_STATUSES,
+  clientFeatureStatusLabel,
+  clientStatusLabel,
+  getFeatureStatusColor,
+  getStatusColor,
+} from "../../lib/status";
 import {
   isAllFeatureStatusFilterSelected,
   isAllStatusFilterSelected,
@@ -148,23 +155,23 @@ function TaskModeFilterMenu() {
         />
         All
       </label>
-      {STATUS_COLUMNS.map((status) => (
+      {TASK_MODE_STATUSES.map((statusKey) => (
         <label
-          key={status.key}
+          key={statusKey}
           className="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:bg-surface-subtle"
         >
           <input
             type="checkbox"
-            checked={selectedStatuses.has(status.key)}
-            onChange={() => toggleStatus(status.key)}
+            checked={selectedStatuses.has(statusKey)}
+            onChange={() => toggleStatus(statusKey)}
             className="h-3 w-3 accent-primary"
           />
           <span
             className="h-2 w-2 rounded-sm"
-            style={{ background: status.color }}
+            style={{ background: getStatusColor(statusKey) }}
             aria-hidden="true"
           />
-          <span>{clientStatusLabel(status.key)}</span>
+          <span>{clientStatusLabel(statusKey)}</span>
         </label>
       ))}
     </div>
@@ -207,23 +214,23 @@ function FeatureModeFilterMenu() {
         />
         All
       </label>
-      {FEATURE_STATUS_OPTIONS.map((status) => (
+      {FEATURE_MODE_STATUSES.map((statusKey) => (
         <label
-          key={status.key}
+          key={statusKey}
           className="flex cursor-pointer items-center gap-2 px-2 py-1.5 text-xs text-text-secondary hover:bg-surface-subtle"
         >
           <input
             type="checkbox"
-            checked={selectedStatuses.has(status.key)}
-            onChange={() => toggleStatus(status.key)}
+            checked={selectedStatuses.has(statusKey)}
+            onChange={() => toggleStatus(statusKey)}
             className="h-3 w-3 accent-primary"
           />
           <span
             className="h-2 w-2 rounded-sm"
-            style={{ background: status.color }}
+            style={{ background: getFeatureStatusColor(statusKey) }}
             aria-hidden="true"
           />
-          {clientFeatureStatusLabel(status.key)}
+          {clientFeatureStatusLabel(statusKey)}
         </label>
       ))}
     </div>

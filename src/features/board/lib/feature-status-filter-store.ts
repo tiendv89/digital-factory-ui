@@ -1,10 +1,8 @@
-import { FEATURE_STATUS_OPTIONS, type FeatureStatus } from "./status";
+import { FEATURE_MODE_STATUSES, type FeatureStatus } from "./status";
 
 const STORAGE_KEY = "dashboard:board-feature-status-filter";
 
-const VALID_FEATURE_STATUSES = new Set<string>(
-  FEATURE_STATUS_OPTIONS.map((s) => s.key),
-);
+const VALID_FEATURE_STATUSES = new Set<string>(FEATURE_MODE_STATUSES);
 
 function isValidFeatureStatusArray(value: unknown): value is FeatureStatus[] {
   return (
@@ -14,9 +12,7 @@ function isValidFeatureStatusArray(value: unknown): value is FeatureStatus[] {
 }
 
 export function getDefaultFeatureStatusFilter(): FeatureStatus[] {
-  return FEATURE_STATUS_OPTIONS.filter((s) => s.key !== "done").map(
-    (s) => s.key,
-  );
+  return FEATURE_MODE_STATUSES.filter((s) => s !== "done");
 }
 
 export function getStoredFeatureStatusFilter(): FeatureStatus[] | null {
