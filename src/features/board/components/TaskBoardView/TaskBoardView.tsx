@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureRow } from "../FeatureRow";
 import { PaginationControls } from "../PaginationControls";
-import { STATUS_COLUMNS, clientStatusLabel } from "../../lib/status";
+import { TASK_MODE_STATUSES, STATUS_COLUMNS } from "../../lib/status";
 import {
   AccessDeniedState,
   EmptyBoardState,
@@ -15,16 +15,21 @@ import {
 import type { ParsedFeature } from "@/services/yaml-parser";
 
 function TaskColumnHeader({
+  statusKey,
   label,
   color,
   count,
 }: {
+  statusKey: string;
   label: string;
   color: string;
   count: number;
 }) {
   return (
-    <div className="flex min-w-0 flex-1 items-center justify-between border-r border-border bg-surface-secondary px-3 py-2.5 last:border-r-0">
+    <div
+      data-task-status-header={statusKey}
+      className="flex min-w-0 flex-1 items-center justify-between border-r border-border bg-surface-secondary px-3 py-2.5 last:border-r-0"
+    >
       <div className="flex min-w-0 items-center gap-2">
         <div
           className="h-2 w-2 rounded-sm"
@@ -82,9 +87,15 @@ export function TaskBoardView() {
     return features;
   }, [features, backendTaskResults]);
 
+  // Build column lookup from STATUS_COLUMNS (aligned with TASK_MODE_STATUSES).
+  const statusColumnMap = useMemo(
+    () => new Map(STATUS_COLUMNS.map((c) => [c.key, c])),
+    [],
+  );
+
   const columnCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const col of STATUS_COLUMNS) counts[col.key] = 0;
+    for (const status of TASK_MODE_STATUSES) counts[status] = 0;
     for (const feature of visibleFeatures) {
       for (const task of feature.tasks) {
         if (task.status in counts) counts[task.status]++;
@@ -137,14 +148,18 @@ export function TaskBoardView() {
             role="row"
             aria-label="Status columns"
           >
-            {STATUS_COLUMNS.map((col) => (
-              <TaskColumnHeader
-                key={col.key}
-                label={clientStatusLabel(col.key)}
-                color={col.color}
-                count={columnCounts[col.key] ?? 0}
-              />
-            ))}
+            {TASK_MODE_STATUSES.map((status) => {
+              const col = statusColumnMap.get(status)!;
+              return (
+                <TaskColumnHeader
+                  key={status}
+                  statusKey={status}
+                  label={col.label}
+                  color={col.color}
+                  count={columnCounts[status] ?? 0}
+                />
+              );
+            })}
           </div>
 
           <div role="list" aria-label="Features" className="bg-surface">
