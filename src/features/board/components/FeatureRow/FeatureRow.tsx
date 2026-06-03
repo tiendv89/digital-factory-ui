@@ -9,6 +9,7 @@ import {
 } from "@/lib/time";
 import { TaskCard } from "../TaskCard";
 import {
+  TASK_MODE_STATUSES,
   STATUS_COLUMNS,
   clientFeatureStatusLabel,
   clientStatusLabel,
@@ -108,7 +109,7 @@ export function FeatureRow({
   const modifiedToday = lastModifiedAt
     ? isTodayTimestamp(lastModifiedAt)
     : false;
-  const gridTemplateColumns = `repeat(${STATUS_COLUMNS.length}, minmax(0, 1fr))`;
+  const gridTemplateColumns = `repeat(${TASK_MODE_STATUSES.length}, minmax(0, 1fr))`;
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
@@ -182,11 +183,12 @@ export function FeatureRow({
           className="w-full border-t border-border"
         >
           {feature.tasks.map((task) => {
-            const taskColumnKey = STATUS_COLUMNS.some(
-              (col) => col.key === task.status,
-            )
-              ? task.status
-              : STATUS_COLUMNS[0].key;
+            // Group task into its status column; fall back to first allowed column
+            // for any status outside the Task Mode allowlist (e.g. review_passed).
+            const taskColumnKey =
+              (TASK_MODE_STATUSES as readonly string[]).includes(task.status)
+                ? task.status
+                : TASK_MODE_STATUSES[0];
 
             return (
               <div
@@ -197,25 +199,28 @@ export function FeatureRow({
                 role="row"
                 aria-label={`${task.id} ${task.title}`}
               >
-                {STATUS_COLUMNS.map((col) => (
-                  <div
-                    key={`${task.id}-${col.key}`}
-                    data-status-cell
-                    className="min-w-0 border-r border-border p-2 last:border-r-0"
-                    role="cell"
-                    aria-label={`${col.label} cell for ${task.id}`}
-                  >
-                    {col.key === taskColumnKey && (
-                      <TaskCard
-                        task={task}
-                        featureId={feature.id}
-                        featureTitle={feature.title || feature.id}
-                        onOpenTab={onOpenTaskTab}
-                        onOpenNewTab={onOpenTaskTabNewSession}
-                      />
-                    )}
-                  </div>
-                ))}
+                {TASK_MODE_STATUSES.map((colStatus) => {
+                  const col = STATUS_COLUMNS.find((c) => c.key === colStatus)!;
+                  return (
+                    <div
+                      key={`${task.id}-${colStatus}`}
+                      data-status-cell
+                      className="min-w-0 border-r border-border p-2 last:border-r-0"
+                      role="cell"
+                      aria-label={`${col.label} cell for ${task.id}`}
+                    >
+                      {colStatus === taskColumnKey && (
+                        <TaskCard
+                          task={task}
+                          featureId={feature.id}
+                          featureTitle={feature.title || feature.id}
+                          onOpenTab={onOpenTaskTab}
+                          onOpenNewTab={onOpenTaskTabNewSession}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

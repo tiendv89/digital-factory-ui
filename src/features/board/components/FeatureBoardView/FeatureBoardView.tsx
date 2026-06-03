@@ -5,6 +5,7 @@ import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
 import { FeatureListRow } from "./FeatureListRow";
 import { PaginationControls } from "../PaginationControls";
 import {
+  FEATURE_MODE_STATUSES,
   FEATURE_STATUS_OPTIONS,
   clientFeatureStatusLabel,
   isValidFeatureStatus,
@@ -25,10 +26,18 @@ type FeatureStatusColumn = {
   color: string;
 };
 
+// Build feature column lookup from FEATURE_STATUS_OPTIONS (color source).
+const FEATURE_STATUS_COLOR_MAP = new Map(
+  FEATURE_STATUS_OPTIONS.map((o) => [o.key, o.color]),
+);
+
+// Derive feature mode columns from FEATURE_MODE_STATUSES — the strict allowlist.
+// FEATURE_STATUS_OPTIONS provides the color for each entry.
 function getFeatureStatusColumns(): FeatureStatusColumn[] {
-  return FEATURE_STATUS_OPTIONS.map((opt) => ({
-    ...opt,
-    label: clientFeatureStatusLabel(opt.key),
+  return FEATURE_MODE_STATUSES.map((status) => ({
+    key: status,
+    label: clientFeatureStatusLabel(status),
+    color: FEATURE_STATUS_COLOR_MAP.get(status) ?? "#8892b5",
   }));
 }
 
