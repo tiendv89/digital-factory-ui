@@ -30,18 +30,16 @@ const FEATURE_STATUS_COLOR_MAP = new Map(
   FEATURE_STATUS_OPTIONS.map((o) => [o.key, o.color]),
 );
 
-// Derive feature mode columns from FEATURE_MODE_STATUSES — the strict allowlist.
-// FEATURE_STATUS_OPTIONS provides the color for each entry.
-function getFeatureStatusColumns(): FeatureStatusColumn[] {
-  return FEATURE_MODE_STATUSES.map((status) => ({
+const FEATURE_STATUS_COLUMNS: FeatureStatusColumn[] = FEATURE_MODE_STATUSES.map(
+  (status) => ({
     key: status,
     label: status
       .split("_")
       .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" "),
     color: FEATURE_STATUS_COLOR_MAP.get(status) ?? "#8892b5",
-  }));
-}
+  }),
+);
 
 function FeatureColumnHeader({
   statusKey,
@@ -114,11 +112,9 @@ export function FeatureBoardView() {
     return source.filter((f) => isValidFeatureStatus(f.featureStatus));
   }, [features, backendFeatureResults]);
 
-  const featureStatusColumns = useMemo(() => getFeatureStatusColumns(), []);
-
   const featureStatusCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    for (const column of featureStatusColumns) {
+    for (const column of FEATURE_STATUS_COLUMNS) {
       counts[column.key] = 0;
     }
 
@@ -128,7 +124,7 @@ export function FeatureBoardView() {
     }
 
     return counts;
-  }, [featureStatusColumns, visibleFeatures]);
+  }, [visibleFeatures]);
 
   const activeError = featureSearchError ?? error;
 
@@ -163,7 +159,7 @@ export function FeatureBoardView() {
       <EmptyState message="No features match the current search or filters." />
     );
   } else {
-    const gridTemplateColumns = `repeat(${featureStatusColumns.length}, minmax(${MIN_FEATURE_COLUMN_WIDTH}px, 1fr))`;
+    const gridTemplateColumns = `repeat(${FEATURE_STATUS_COLUMNS.length}, minmax(${MIN_FEATURE_COLUMN_WIDTH}px, 1fr))`;
 
     content = (
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
@@ -171,7 +167,7 @@ export function FeatureBoardView() {
           data-feature-kanban-board
           className="min-h-full w-full"
           style={{
-            minWidth: MIN_FEATURE_COLUMN_WIDTH * featureStatusColumns.length,
+            minWidth: MIN_FEATURE_COLUMN_WIDTH * FEATURE_STATUS_COLUMNS.length,
           }}
         >
           <div
@@ -180,7 +176,7 @@ export function FeatureBoardView() {
             aria-label="Feature status columns"
             style={{ gridTemplateColumns }}
           >
-            {featureStatusColumns.map((column) => (
+            {FEATURE_STATUS_COLUMNS.map((column) => (
               <FeatureColumnHeader
                 key={column.key}
                 statusKey={column.key}
@@ -200,7 +196,7 @@ export function FeatureBoardView() {
                 className="grid min-h-26 border-b border-border"
                 style={{ gridTemplateColumns }}
               >
-                {featureStatusColumns.map((column) => (
+                {FEATURE_STATUS_COLUMNS.map((column) => (
                   <div
                     key={`${feature.id}-${column.key}`}
                     data-feature-status-cell

@@ -11,7 +11,7 @@ export default function RootPage() {
 
   useEffect(() => {
     if (session.status !== "authenticated") return;
-    if ((session.data.accessible_workspace_ids ?? []).length > 0) {
+    if ((session.data.data.accessible_workspace_ids ?? []).length > 0) {
       router.replace("/board");
     }
   }, [router, session]);
@@ -22,7 +22,7 @@ export default function RootPage() {
 
   if (
     session.status === "authenticated" &&
-    (session.data.accessible_workspace_ids ?? []).length === 0
+    (session.data.data.accessible_workspace_ids ?? []).length === 0
   ) {
     return <EmptyState />;
   }

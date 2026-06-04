@@ -37,20 +37,22 @@ describe("formatStatusAgeDuration", () => {
   });
 
   it("formats minutes for sub-hour elapsed", () => {
-    expect(formatStatusAgeDuration(60_000)).toBe("1m");
-    expect(formatStatusAgeDuration(90_000)).toBe("1m");
-    expect(formatStatusAgeDuration(59 * 60_000)).toBe("59m");
+    expect(formatStatusAgeDuration(60_000)).toBe("1m 00s");
+    expect(formatStatusAgeDuration(90_000)).toBe("1m 30s");
+    expect(formatStatusAgeDuration(59 * 60_000)).toBe("59m 00s");
   });
 
   it("formats hours for sub-day elapsed", () => {
-    expect(formatStatusAgeDuration(60 * 60_000)).toBe("1h");
-    expect(formatStatusAgeDuration(5 * 60 * 60_000)).toBe("5h");
-    expect(formatStatusAgeDuration(23 * 60 * 60_000)).toBe("23h");
+    expect(formatStatusAgeDuration(60 * 60_000)).toBe("1h 00m 00s");
+    expect(formatStatusAgeDuration(5 * 60 * 60_000)).toBe("5h 00m 00s");
+    expect(formatStatusAgeDuration(23 * 60 * 60_000)).toBe("23h 00m 00s");
   });
 
   it("formats days for >= 24 hours elapsed", () => {
-    expect(formatStatusAgeDuration(24 * 60 * 60_000)).toBe("1d");
-    expect(formatStatusAgeDuration(3 * 24 * 60 * 60_000)).toBe("3d");
+    expect(formatStatusAgeDuration(24 * 60 * 60_000)).toBe("1d 00h 00m 00s");
+    expect(formatStatusAgeDuration(3 * 24 * 60 * 60_000)).toBe(
+      "3d 00h 00m 00s",
+    );
   });
 
   it("returns em-dash for negative elapsed", () => {
@@ -66,7 +68,7 @@ describe("computeStatusAge", () => {
     const task = makeTask("T1", "in_progress", {
       log: [{ action: "started", by: "u@e.com", at: "2026-05-27T08:00:00Z" }],
     });
-    expect(computeStatusAge(task, now)).toBe("2h");
+    expect(computeStatusAge(task, now)).toBe("2h 00m 00s");
   });
 
   it("computes age for blocked status using blocked log action", () => {
@@ -74,7 +76,7 @@ describe("computeStatusAge", () => {
     const task = makeTask("T1", "blocked", {
       log: [{ action: "blocked", by: "u@e.com", at: "2026-05-27T11:00:00Z" }],
     });
-    expect(computeStatusAge(task, now)).toBe("1h");
+    expect(computeStatusAge(task, now)).toBe("1h 00m 00s");
   });
 
   it("falls back to last log entry when no matching action found", () => {
@@ -82,7 +84,7 @@ describe("computeStatusAge", () => {
     const task = makeTask("T1", "in_progress", {
       log: [{ action: "created", by: "u@e.com", at: "2026-05-27T11:30:00Z" }],
     });
-    expect(computeStatusAge(task, now)).toBe("30m");
+    expect(computeStatusAge(task, now)).toBe("30m 00s");
   });
 
   it("falls back to execution.last_updated_at when log is empty", () => {
@@ -93,7 +95,7 @@ describe("computeStatusAge", () => {
         last_updated_at: "2026-05-27T12:00:00Z",
       },
     });
-    expect(computeStatusAge(task, now)).toBe("1h");
+    expect(computeStatusAge(task, now)).toBe("1h 00m 00s");
   });
 
   it("returns em-dash when no timestamp is available", () => {

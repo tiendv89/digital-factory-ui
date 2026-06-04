@@ -6,7 +6,6 @@ import { useBoardTrackingContext } from "../KanbanBoard/KanbanBoard.context";
 import { groupTrackedTasks } from "./groupTasks";
 import type { TrackedStatus } from "./TaskTrackingPanel.types";
 import { TaskTrackingSection } from "./TaskTrackingSection";
-import type { ParsedTask } from "@/services/yaml-parser";
 
 const ALL_EXPANDED: Record<TrackedStatus, boolean> = {
   blocked: true,
@@ -31,27 +30,6 @@ export function TaskTrackingPanel() {
   const toggleSection = useCallback((status: TrackedStatus) => {
     setExpanded((prev) => ({ ...prev, [status]: !prev[status] }));
   }, []);
-
-  const handleSelectTask = useCallback(
-    (task: ParsedTask) => {
-      openTaskTab(task);
-    },
-    [openTaskTab],
-  );
-
-  const handleOpenTaskTab = useCallback(
-    (task: ParsedTask) => {
-      openTaskTab(task);
-    },
-    [openTaskTab],
-  );
-
-  const handleOpenTaskTabNewSession = useCallback(
-    (task: ParsedTask) => {
-      openTaskTabNewSession(task);
-    },
-    [openTaskTabNewSession],
-  );
 
   return (
     <aside
@@ -78,9 +56,9 @@ export function TaskTrackingPanel() {
             section={section}
             isExpanded={expanded[section.status]}
             onToggle={() => toggleSection(section.status)}
-            onSelectTask={handleSelectTask}
-            onOpenTaskTab={handleOpenTaskTab}
-            onOpenTaskTabNewSession={handleOpenTaskTabNewSession}
+            onSelectTask={openTaskTab}
+            onOpenTaskTab={openTaskTab}
+            onOpenTaskTabNewSession={openTaskTabNewSession}
           />
         ))}
       </div>

@@ -8,7 +8,7 @@
  *   - Handles future dates (negative diff) gracefully → "just now"
  *   - Handles invalid/unparseable timestamps → empty string
  *   - Updates on window focus event
- *   - Updates on 30s interval
+ *   - Updates on 1s interval
  */
 
 import { renderHook, act, cleanup } from "@testing-library/react";
@@ -42,40 +42,40 @@ describe("useRelativeTime — format boundaries", () => {
     expect(result.current).toBe("59s ago");
   });
 
-  it("returns 'Xm ago' for sub-hour elapsed", () => {
+  it("returns 'Xm SSs ago' for sub-hour elapsed", () => {
     const iso = new Date(Date.now() - 5 * 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("5m ago");
+    expect(result.current).toBe("5m 00s ago");
   });
 
-  it("returns '1m ago' at exactly 60 seconds", () => {
+  it("returns '1m 00s ago' at exactly 60 seconds", () => {
     const iso = new Date(Date.now() - 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("1m ago");
+    expect(result.current).toBe("1m 00s ago");
   });
 
-  it("returns 'X hours ago' for sub-day elapsed", () => {
+  it("returns 'Xh MMm SSs ago' for sub-day elapsed", () => {
     const iso = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("2 hours ago");
+    expect(result.current).toBe("2h 00m 00s ago");
   });
 
-  it("returns '1 hour ago' at exactly 60 minutes", () => {
+  it("returns '1h 00m 00s ago' at exactly 60 minutes", () => {
     const iso = new Date(Date.now() - 60 * 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("1 hour ago");
+    expect(result.current).toBe("1h 00m 00s ago");
   });
 
-  it("returns 'X days ago' for >= 24 hours elapsed", () => {
+  it("returns 'Xd HHh MMm SSs ago' for >= 24 hours elapsed", () => {
     const iso = new Date(Date.now() - 3 * 24 * 60 * 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("3 days ago");
+    expect(result.current).toBe("3d 00h 00m 00s ago");
   });
 
-  it("returns '1 day ago' at exactly 24 hours", () => {
+  it("returns '1d 00h 00m 00s ago' at exactly 24 hours", () => {
     const iso = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
     const { result } = renderHook(() => useRelativeTime(iso));
-    expect(result.current).toBe("1 day ago");
+    expect(result.current).toBe("1d 00h 00m 00s ago");
   });
 });
 
@@ -123,14 +123,14 @@ describe("useRelativeTime — recalculates on window focus", () => {
       window.dispatchEvent(new Event("focus"));
     });
 
-    expect(result.current).toBe("2m ago");
+    expect(result.current).toBe("2m 00s ago");
   });
 });
 
 // ─── Interval-based refresh ──────────────────────────────────────────────────
 
-describe("useRelativeTime — updates every 30 seconds", () => {
-  it("refreshes display after 30s interval", () => {
+describe("useRelativeTime — updates every second", () => {
+  it("refreshes display after 1s interval", () => {
     vi.useFakeTimers();
     const base = Date.now();
 
@@ -139,12 +139,11 @@ describe("useRelativeTime — updates every 30 seconds", () => {
     const { result } = renderHook(() => useRelativeTime(iso));
     expect(result.current).toBe("30s ago");
 
-    // Advance 30 seconds — interval fires
+    // Advance 1 second — interval fires
     act(() => {
-      vi.setSystemTime(base + 90_000);
-      vi.advanceTimersByTime(30_000);
+      vi.advanceTimersByTime(1_000);
     });
 
-    expect(result.current).toBe("2m ago");
+    expect(result.current).toBe("31s ago");
   });
 });

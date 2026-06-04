@@ -15,6 +15,10 @@ import {
   getFeatureStatusColor,
 } from "../../lib/status";
 
+const TASK_STATUS_SET = new Set<string>(TASK_MODE_STATUSES);
+const STATUS_COLUMN_MAP = new Map(STATUS_COLUMNS.map((column) => [column.key, column]));
+const TASK_GRID_TEMPLATE_COLUMNS = `repeat(${TASK_MODE_STATUSES.length}, minmax(0, 1fr))`;
+
 type FeatureRowProps = {
   feature: ParsedFeature;
   isExpanded: boolean;
@@ -66,7 +70,6 @@ export function FeatureRow({
   const updatedToday = feature.updatedAt
     ? isTodayTimestamp(feature.updatedAt)
     : false;
-  const gridTemplateColumns = `repeat(${TASK_MODE_STATUSES.length}, minmax(0, 1fr))`;
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Enter" || e.key === " ") {
@@ -153,9 +156,7 @@ export function FeatureRow({
           {feature.tasks.map((task) => {
             // Group task into its status column; fall back to first allowed column
             // for any status outside the Task Mode allowlist (e.g. review_passed).
-            const taskColumnKey = (
-              TASK_MODE_STATUSES as readonly string[]
-            ).includes(task.status)
+            const taskColumnKey = TASK_STATUS_SET.has(task.status)
               ? task.status
               : TASK_MODE_STATUSES[0];
 
@@ -164,12 +165,12 @@ export function FeatureRow({
                 key={task.id}
                 data-task-grid-row
                 className="grid min-h-23.5 border-b border-border last:border-b-0"
-                style={{ gridTemplateColumns }}
+                style={{ gridTemplateColumns: TASK_GRID_TEMPLATE_COLUMNS }}
                 role="row"
                 aria-label={`${task.id} ${task.title}`}
               >
                 {TASK_MODE_STATUSES.map((colStatus) => {
-                  const col = STATUS_COLUMNS.find((c) => c.key === colStatus)!;
+                  const col = STATUS_COLUMN_MAP.get(colStatus)!;
                   return (
                     <div
                       key={`${task.id}-${colStatus}`}

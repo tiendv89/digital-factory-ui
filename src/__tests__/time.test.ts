@@ -266,7 +266,7 @@ describe("computeStatusAge — reviewing", () => {
       status: "reviewing",
       log: [makeEntry("reviewing", "2026-05-27T08:00:00Z")],
     };
-    expect(computeStatusAge(task, now)).toBe("2h");
+    expect(computeStatusAge(task, now)).toBe("2h 00m 00s");
   });
 
   it("falls back to 'reviewing' action alias for reviewing", () => {
@@ -275,7 +275,7 @@ describe("computeStatusAge — reviewing", () => {
       status: "reviewing",
       log: [makeEntry("reviewing", "2026-05-27T09:45:00Z")],
     };
-    expect(computeStatusAge(task, now)).toBe("15m");
+    expect(computeStatusAge(task, now)).toBe("15m 00s");
   });
 
   it("falls back to last log entry for reviewing when no specific reviewing log action matches", () => {
@@ -284,7 +284,7 @@ describe("computeStatusAge — reviewing", () => {
       status: "reviewing",
       log: [makeEntry("created", "2026-05-27T07:00:00Z")],
     };
-    expect(computeStatusAge(task, now)).toBe("3h");
+    expect(computeStatusAge(task, now)).toBe("3h 00m 00s");
   });
 
   it("uses execution.last_updated_at when both log and specific action are unavailable", () => {
@@ -296,7 +296,7 @@ describe("computeStatusAge — reviewing", () => {
         last_updated_at: "2026-05-27T09:30:00Z",
       },
     };
-    expect(computeStatusAge(task, now)).toBe("30m");
+    expect(computeStatusAge(task, now)).toBe("30m 00s");
   });
 });
 
@@ -310,20 +310,22 @@ describe("formatLastUpdatedLabel", () => {
   });
 
   it("formats minutes with 'ago' suffix", () => {
-    expect(formatLastUpdatedLabel(60_000)).toBe("1m ago");
-    expect(formatLastUpdatedLabel(90_000)).toBe("1m ago");
-    expect(formatLastUpdatedLabel(59 * 60_000)).toBe("59m ago");
+    expect(formatLastUpdatedLabel(60_000)).toBe("1m 00s ago");
+    expect(formatLastUpdatedLabel(90_000)).toBe("1m 30s ago");
+    expect(formatLastUpdatedLabel(59 * 60_000)).toBe("59m 00s ago");
   });
 
   it("formats hours with 'ago' suffix", () => {
-    expect(formatLastUpdatedLabel(60 * 60_000)).toBe("1 hour ago");
-    expect(formatLastUpdatedLabel(5 * 60 * 60_000)).toBe("5 hours ago");
-    expect(formatLastUpdatedLabel(23 * 60 * 60_000)).toBe("23 hours ago");
+    expect(formatLastUpdatedLabel(60 * 60_000)).toBe("1h 00m 00s ago");
+    expect(formatLastUpdatedLabel(5 * 60 * 60_000)).toBe("5h 00m 00s ago");
+    expect(formatLastUpdatedLabel(23 * 60 * 60_000)).toBe("23h 00m 00s ago");
   });
 
   it("formats days with 'ago' suffix", () => {
-    expect(formatLastUpdatedLabel(24 * 60 * 60_000)).toBe("1 day ago");
-    expect(formatLastUpdatedLabel(3 * 24 * 60 * 60_000)).toBe("3 days ago");
+    expect(formatLastUpdatedLabel(24 * 60 * 60_000)).toBe("1d 00h 00m 00s ago");
+    expect(formatLastUpdatedLabel(3 * 24 * 60 * 60_000)).toBe(
+      "3d 00h 00m 00s ago",
+    );
   });
 
   it("returns em-dash for negative elapsed", () => {
@@ -342,7 +344,7 @@ describe("computeLastUpdatedLabel", () => {
         last_updated_at: "2026-05-27T08:00:00Z",
       },
     };
-    expect(computeLastUpdatedLabel(task, now)).toBe("2 hours ago");
+    expect(computeLastUpdatedLabel(task, now)).toBe("2h 00m 00s ago");
   });
 
   it("computes seconds label for recent update", () => {
@@ -360,7 +362,7 @@ describe("computeLastUpdatedLabel", () => {
     const now = new Date("2026-05-27T10:00:00Z");
     expect(
       computeLastUpdatedLabel({ updatedAt: "2026-05-27T08:00:00Z" }, now),
-    ).toBe("2 hours ago");
+    ).toBe("2h 00m 00s ago");
   });
 
   it("returns null when no timestamp is present", () => {

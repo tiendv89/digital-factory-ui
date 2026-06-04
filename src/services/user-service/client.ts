@@ -1,13 +1,19 @@
-import type { MeResponse } from "./types";
+import type { MeData, MeResponse } from "./types";
 
 export function getUserServiceBase(): string {
-  const base = process.env.NEXT_PUBLIC_USER_SERVICE_URL ?? "https://workflow-user-service-api.kitelabs.io"
+  const base =
+    process.env.NEXT_PUBLIC_USER_SERVICE_URL ??
+    "https://workflow-user-service-api.kitelabs.io";
   if (!base) {
     throw new Error(
       "NEXT_PUBLIC_USER_SERVICE_URL is required for user-service API calls",
     );
   }
   return base;
+}
+
+export function getMeData(response: MeResponse | MeData): MeData {
+  return "data" in response ? response.data : response;
 }
 
 export async function fetchMe(): Promise<MeResponse> {

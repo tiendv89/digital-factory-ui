@@ -5,11 +5,13 @@ import { useEffect, useState } from "react";
 
 /**
  * Returns a human-readable relative time string for a given ISO timestamp,
- * updating every 30 seconds and on window focus.
+ * updating every second and on window focus.
  *
  * Returns empty string when isoTimestamp is null or unparseable.
  */
-export function useRelativeTime(isoTimestamp: string | null | undefined): string {
+export function useRelativeTime(
+  isoTimestamp: string | null | undefined,
+): string {
   const [display, setDisplay] = useState(() => compute(isoTimestamp));
 
   useEffect(() => {
@@ -18,7 +20,7 @@ export function useRelativeTime(isoTimestamp: string | null | undefined): string
     }
 
     tick();
-    const interval = setInterval(tick, 30_000);
+    const interval = setInterval(tick, 1_000);
     window.addEventListener("focus", tick);
 
     return () => {

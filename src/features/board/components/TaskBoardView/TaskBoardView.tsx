@@ -14,6 +14,8 @@ import {
 } from "../ErrorStates";
 import type { ParsedFeature } from "@/services/yaml-parser";
 
+const STATUS_COLUMN_MAP = new Map(STATUS_COLUMNS.map((column) => [column.key, column]));
+
 function TaskColumnHeader({
   statusKey,
   label,
@@ -80,18 +82,7 @@ export function TaskBoardView() {
   // Feature lifecycle status on each ParsedFeature is already set by
   // adaptTaskSummariesToFeatures from the featureStatusMap passed through
   // useBackendTaskSearch.
-  const visibleFeatures = useMemo<ParsedFeature[]>(() => {
-    if (backendTaskResults != null) {
-      return backendTaskResults;
-    }
-    return features;
-  }, [features, backendTaskResults]);
-
-  // Build column lookup from STATUS_COLUMNS (aligned with TASK_MODE_STATUSES).
-  const statusColumnMap = useMemo(
-    () => new Map(STATUS_COLUMNS.map((c) => [c.key, c])),
-    [],
-  );
+  const visibleFeatures: ParsedFeature[] = backendTaskResults ?? features;
 
   const columnCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -149,7 +140,7 @@ export function TaskBoardView() {
             aria-label="Status columns"
           >
             {TASK_MODE_STATUSES.map((status) => {
-              const col = statusColumnMap.get(status)!;
+              const col = STATUS_COLUMN_MAP.get(status)!;
               return (
                 <TaskColumnHeader
                   key={status}

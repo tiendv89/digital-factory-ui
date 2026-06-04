@@ -2,6 +2,7 @@
 
 import { notFound } from "next/navigation";
 import { useSession } from "@/features/auth";
+import { getMeData } from "@/services/user-service";
 
 export default function AdminLayout({
   children,
@@ -18,9 +19,12 @@ export default function AdminLayout({
     );
   }
 
+  const sessionData =
+    session.status === "authenticated" ? getMeData(session.data) : null;
+
   if (
     session.status !== "authenticated" ||
-    !(session.data.memberships ?? []).some((m) => m.role === "platform_admin")
+    !(sessionData?.memberships ?? []).some((m) => m.role === "platform_admin")
   ) {
     notFound();
   }

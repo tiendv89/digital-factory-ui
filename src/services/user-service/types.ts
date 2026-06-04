@@ -14,8 +14,12 @@ export interface MeMembership {
   role: string;
 }
 
-export interface MeResponse {
+export interface MeData {
   user: MeUser;
   memberships: MeMembership[];
   accessible_workspace_ids: string[];
+}
+
+export interface MeResponse {
+  data: MeData;
 }
