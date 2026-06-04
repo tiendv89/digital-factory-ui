@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { useSession } from "@/features/auth";
+import { getMeData } from "@/services/user-service";
 
 export function EmptyState() {
   const { session, logout } = useSession();
 
   console.log("Session in EmptyState:", session);
 
+  const sessionData =
+    session.status === "authenticated" ? getMeData(session.data) : null;
+
   const isPlatformAdmin =
     session.status === "authenticated" &&
-    (session.data.memberships ?? []).some((m) => m.role === "platform_admin");
+    (sessionData?.memberships ?? []).some((m) => m.role === "platform_admin");
 
   return (
     <main

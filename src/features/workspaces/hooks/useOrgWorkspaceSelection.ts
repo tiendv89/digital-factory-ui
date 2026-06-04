@@ -3,7 +3,7 @@
 import { useCallback, useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useSession } from "@/features/auth";
-import type { MeMembership } from "@/services/user-service";
+import { getMeData, type MeMembership } from "@/services/user-service";
 
 export type OrgWorkspaceSelection = {
   memberships: MeMembership[];
@@ -24,20 +24,19 @@ export function useOrgWorkspaceSelection(): OrgWorkspaceSelection {
 
   const isLoading = session.status === "loading";
 
-  const memberships = useMemo<MeMembership[]>(
-    () =>
-      session.status === "authenticated"
-        ? (session.data?.memberships ?? [])
-        : [],
+  const sessionData = useMemo(
+    () => (session.status === "authenticated" ? getMeData(session.data) : null),
     [session],
   );
 
+  const memberships = useMemo<MeMembership[]>(
+    () => sessionData?.memberships ?? [],
+    [sessionData],
+  );
+
   const accessibleWorkspaceIds = useMemo<string[]>(
-    () =>
-      session.status === "authenticated"
-        ? (session.data?.accessible_workspace_ids ?? [])
-        : [],
-    [session],
+    () => sessionData?.accessible_workspace_ids ?? [],
+    [sessionData],
   );
 
   const orgSlug = searchParams.get("org");

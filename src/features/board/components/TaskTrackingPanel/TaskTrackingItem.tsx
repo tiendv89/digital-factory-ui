@@ -33,7 +33,17 @@ export function TaskTrackingItem({
     ? (ACTOR_TYPE_LABEL[task.execution.actor_type] ?? task.execution.actor_type)
     : null;
 
-  const statusAge = computeStatusAge(task);
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNow(new Date());
+    }, 1_000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const statusAge = computeStatusAge(task, now);
 
   const lastUpdatedAt = getTaskLastUpdatedAt(task);
   const lastUpdatedLabel = useRelativeTime(lastUpdatedAt);
@@ -169,10 +179,10 @@ export function TaskTrackingItem({
       {lastUpdatedLabel && (
         <div className="flex justify-end">
           <span
-            aria-label={`Last updated: ${lastUpdatedLabel}`}
-            className=" px-2 py-0.5 font-sans text-[10px] font-medium leading-4 text-text-primary"
+            aria-label={`Last seen: ${lastUpdatedLabel}`}
+            className="px-2 py-0.5 font-sans text-[10px] font-medium leading-4 text-text-primary"
           >
-            {lastUpdatedLabel}
+            Last seen {lastUpdatedLabel}
           </span>
         </div>
       )}

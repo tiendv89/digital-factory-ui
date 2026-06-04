@@ -3,7 +3,7 @@
  * T9 — Sidebar task last-updated timestamps
  *
  * Uses @testing-library/react with jsdom to verify:
- *   - Last-updated label renders with correct aria-label, text, and styles
+ *   - Last-seen label renders with correct aria-label, text, and styles
  *   - Label appears for all five tracked statuses (blocked, in_progress,
  *     reviewing, in_review, ready)
  *   - Label is omitted when execution or last_updated_at is missing
@@ -12,8 +12,8 @@
  */
 
 import React from "react";
-import { render, screen, cleanup } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { render, screen, cleanup, act } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ParsedFeature, ParsedTask } from "../services/yaml-parser";
 
 import { TaskTrackingItem } from "../features/board/components/TaskTrackingPanel/TaskTrackingItem";
@@ -54,8 +54,6 @@ function onSelect() {
 // ─── Assertion helpers ───────────────────────────────────────────────────────
 
 const LAST_UPDATED_CLASSES = [
-  "border-primary-light",
-  "bg-primary-light",
   "px-2",
   "py-0.5",
   "font-sans",
@@ -66,22 +64,22 @@ const LAST_UPDATED_CLASSES = [
 ] as const;
 
 function assertLastUpdatedPresent(expectedLabel: string) {
-  const ariaLabel = `Last updated: ${expectedLabel}`;
+  const ariaLabel = `Last seen: ${expectedLabel}`;
   const el = screen.getByLabelText(ariaLabel);
   expect(el).toBeTruthy();
   expect(el.tagName).toBe("SPAN");
-  expect(el.textContent).toBe(expectedLabel);
+  expect(el.textContent).toBe(`Last seen ${expectedLabel}`);
   for (const cls of LAST_UPDATED_CLASSES) {
     expect(
       el.className,
-      `Missing class "${cls}" on last-updated element`,
+      `Missing class "${cls}" on last-seen element`,
     ).toContain(cls);
   }
   return el;
 }
 
 function assertLastUpdatedMissing() {
-  const els = screen.queryAllByLabelText(/^Last updated:/);
+  const els = screen.queryAllByLabelText(/^Last seen:/);
   expect(els).toHaveLength(0);
 }
 
@@ -95,13 +93,14 @@ function assertStatusAgePresent(label: string, text: string) {
 
 afterEach(() => {
   cleanup();
+  vi.useRealTimers();
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// T9 — Last-updated label renders across all five tracked statuses
+// T9 — Last-seen label renders across all five tracked statuses
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("T9 — Last-updated label renders for each tracked status", () => {
+describe("T9 — Last-seen label renders for each tracked status", () => {
   const timestamp = new Date(Date.now() - 2 * 60 * 60_000).toISOString();
 
   it("renders last-updated label for blocked tasks", () => {
@@ -115,7 +114,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2 hours ago");
+    assertLastUpdatedPresent("2h 00m 00s ago");
   });
 
   it("renders last-updated label for in_progress tasks", () => {
@@ -129,7 +128,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2 hours ago");
+    assertLastUpdatedPresent("2h 00m 00s ago");
   });
 
   it("renders last-updated label for reviewing tasks", () => {
@@ -143,7 +142,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2 hours ago");
+    assertLastUpdatedPresent("2h 00m 00s ago");
   });
 
   it("renders last-updated label for in_review tasks", () => {
@@ -157,7 +156,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2 hours ago");
+    assertLastUpdatedPresent("2h 00m 00s ago");
   });
 
   it("renders last-updated label for ready tasks", () => {
@@ -171,7 +170,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2 hours ago");
+    assertLastUpdatedPresent("2h 00m 00s ago");
   });
 });
 
@@ -179,7 +178,7 @@ describe("T9 — Last-updated label renders for each tracked status", () => {
 // T9 — Backend updatedAt fallback
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("T9 — Last-updated label uses backend updatedAt fallback", () => {
+describe("T9 — Last-seen label uses backend updatedAt fallback", () => {
   it("renders last-updated label when execution timestamp is absent", () => {
     const task = makeTask("T1", "in_progress", {
       updatedAt: new Date(Date.now() - 2 * 60 * 60_000).toISOString(),
@@ -191,7 +190,7 @@ describe("T9 — Last-updated label uses backend updatedAt fallback", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2 hours ago");
+    assertLastUpdatedPresent("2h 00m 00s ago");
   });
 });
 
@@ -199,7 +198,7 @@ describe("T9 — Last-updated label uses backend updatedAt fallback", () => {
 // T9 — Missing / invalid timestamps omit the label
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("T9 — Last-updated label omitted for missing or invalid timestamps", () => {
+describe("T9 — Last-seen label omitted for missing or invalid timestamps", () => {
   it("omits label when execution is missing", () => {
     const task = makeTask("T1", "in_progress");
     render(
@@ -267,8 +266,8 @@ describe("T9 — Existing task card behavior is preserved", () => {
         onSelect,
       }),
     );
-    assertStatusAgePresent("Status age: 30m", "30m");
-    assertLastUpdatedPresent("10m ago");
+    assertStatusAgePresent("Status age: 30m 00s", "30m 00s");
+    assertLastUpdatedPresent("10m 00s ago");
   });
 
   it("renders a focusable button with task title and feature name", () => {
@@ -291,7 +290,7 @@ describe("T9 — Existing task card behavior is preserved", () => {
     expect(screen.getByText("Task T1")).toBeTruthy();
     // The feature title may be rendered inside a truncated span; use a substring check.
     expect(btn.textContent).toContain("auth-f");
-    assertLastUpdatedPresent("10m ago");
+    assertLastUpdatedPresent("10m 00s ago");
   });
 });
 
@@ -299,7 +298,7 @@ describe("T9 — Existing task card behavior is preserved", () => {
 // T9 — Seconds, minutes, hours, days format boundaries
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("T9 — Last-updated label format boundaries", () => {
+describe("T9 — Last-seen label format boundaries", () => {
   it("renders seconds label for recent update", () => {
     const task = makeTask("T1", "in_progress", {
       execution: {
@@ -331,7 +330,7 @@ describe("T9 — Last-updated label format boundaries", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("15m ago");
+    assertLastUpdatedPresent("15m 00s ago");
   });
 
   it("renders hours label for sub-day elapsed", () => {
@@ -348,7 +347,7 @@ describe("T9 — Last-updated label format boundaries", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("5 hours ago");
+    assertLastUpdatedPresent("5h 00m 00s ago");
   });
 
   it("renders days label for >= 24 hours elapsed", () => {
@@ -367,6 +366,71 @@ describe("T9 — Last-updated label format boundaries", () => {
         onSelect,
       }),
     );
-    assertLastUpdatedPresent("2 days ago");
+    assertLastUpdatedPresent("2d 00h 00m 00s ago");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// T9 — Sidebar time labels update on interval
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("T9 — Sidebar time labels update on interval", () => {
+  it("refreshes the displayed relative time every second", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-27T10:00:00Z"));
+
+    const task = makeTask("T1", "in_progress", {
+      execution: {
+        actor_type: "agent",
+        last_updated_at: "2026-05-27T09:59:30Z",
+      },
+    });
+
+    render(
+      React.createElement(TaskTrackingItem, {
+        task,
+        feature: makeFeature("auth"),
+        onSelect,
+      }),
+    );
+
+    assertLastUpdatedPresent("30s ago");
+
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+
+    assertLastUpdatedPresent("31s ago");
+  });
+
+  it("refreshes the status age badge every second", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-05-27T10:00:00Z"));
+
+    const task = makeTask("T1", "in_progress", {
+      log: [
+        {
+          action: "started",
+          by: "u@e.com",
+          at: "2026-05-27T09:59:30Z",
+        },
+      ],
+    });
+
+    render(
+      React.createElement(TaskTrackingItem, {
+        task,
+        feature: makeFeature("auth"),
+        onSelect,
+      }),
+    );
+
+    assertStatusAgePresent("Status age: 30s", "30s");
+
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
+
+    assertStatusAgePresent("Status age: 31s", "31s");
   });
 });

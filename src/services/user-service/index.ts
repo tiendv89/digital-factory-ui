@@ -1,2 +1,2 @@
-export { fetchMe, logout, getUserServiceBase } from "./client";
-export type { MeResponse, MeUser, MeMembership } from "./types";
+export { fetchMe, logout, getUserServiceBase, getMeData } from "./client";
+export type { MeResponse, MeData, MeUser, MeMembership } from "./types";

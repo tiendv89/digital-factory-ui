@@ -1,4 +1,8 @@
-import type { LogEntry, ParsedFeature, ParsedTask } from "@/services/yaml-parser";
+import type {
+  LogEntry,
+  ParsedFeature,
+  ParsedTask,
+} from "@/services/yaml-parser";
 
 const STATUS_TO_LOG_ACTIONS: Record<string, readonly string[]> = {
   blocked: ["blocked"],
@@ -26,25 +30,10 @@ export function findStatusLogEntry(
   return null;
 }
 
-const MINUTE_MS = 60 * 1000;
-
 export function formatStatusAgeDuration(elapsedMs: number): string {
   if (elapsedMs < 0) return "—";
 
-  if (elapsedMs < MINUTE_MS) {
-    const secs = Math.floor(elapsedMs / 1000);
-    return `${secs}s`;
-  }
-  if (elapsedMs < HOUR_MS) {
-    const mins = Math.floor(elapsedMs / MINUTE_MS);
-    return `${mins}m`;
-  }
-  if (elapsedMs < DAY_MS) {
-    const hours = Math.floor(elapsedMs / HOUR_MS);
-    return `${hours}h`;
-  }
-  const days = Math.floor(elapsedMs / DAY_MS);
-  return `${days}d`;
+  return formatLiveElapsedDuration(elapsedMs);
 }
 
 export function getTaskLastUpdatedAt(
@@ -89,20 +78,32 @@ export function computeLastUpdatedLabel(
 /** Formats elapsed milliseconds as a human-readable "… ago" label. */
 export function formatLastUpdatedLabel(elapsedMs: number): string {
   if (elapsedMs < 0) return "—";
-  if (elapsedMs < MINUTE_MS) {
-    const secs = Math.floor(elapsedMs / 1000);
-    return `${secs}s ago`;
+  return `${formatLiveElapsedDuration(elapsedMs)} ago`;
+}
+
+function formatLiveElapsedDuration(elapsedMs: number): string {
+  const totalSeconds = Math.floor(elapsedMs / 1000);
+  const seconds = totalSeconds % 60;
+  const totalMinutes = Math.floor(totalSeconds / 60);
+  const minutes = totalMinutes % 60;
+  const totalHours = Math.floor(totalMinutes / 60);
+  const hours = totalHours % 24;
+  const days = Math.floor(totalHours / 24);
+
+  if (days > 0) {
+    return `${days}d ${pad2(hours)}h ${pad2(minutes)}m ${pad2(seconds)}s`;
   }
-  if (elapsedMs < HOUR_MS) {
-    const mins = Math.floor(elapsedMs / MINUTE_MS);
-    return `${mins}m ago`;
+  if (totalHours > 0) {
+    return `${totalHours}h ${pad2(minutes)}m ${pad2(seconds)}s`;
   }
-  if (elapsedMs < DAY_MS) {
-    const hours = Math.floor(elapsedMs / HOUR_MS);
-    return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
+  if (totalMinutes > 0) {
+    return `${totalMinutes}m ${pad2(seconds)}s`;
   }
-  const days = Math.floor(elapsedMs / DAY_MS);
-  return `${days} ${days === 1 ? "day" : "days"} ago`;
+  return `${seconds}s`;
+}
+
+function pad2(value: number): string {
+  return value.toString().padStart(2, "0");
 }
 
 export function computeStatusAge(
@@ -181,7 +182,9 @@ function latestValidIsoTimestamp(
   return candidateTime > currentTime ? candidate : current;
 }
 
-export function getFeatureLastModifiedAt(feature: ParsedFeature): string | null {
+export function getFeatureLastModifiedAt(
+  feature: ParsedFeature,
+): string | null {
   let latest: string | null = null;
 
   for (const task of feature.tasks) {
