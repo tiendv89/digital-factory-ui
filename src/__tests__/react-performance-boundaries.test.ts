@@ -117,4 +117,30 @@ describe("React performance boundaries", () => {
     expect(boardContext).not.toContain("task_id: trimmedTaskQuery");
     expect(boardContext).toContain("taskActiveFilters.statuses.join(\",\")");
   });
+
+  it("hoists static board status lookups instead of rebuilding them on render", () => {
+    const taskBoardView = readSource(
+      "src/features/board/components/TaskBoardView/TaskBoardView.tsx",
+    );
+    const featureBoardView = readSource(
+      "src/features/board/components/FeatureBoardView/FeatureBoardView.tsx",
+    );
+
+    expect(taskBoardView).toContain("const STATUS_COLUMN_MAP = new Map");
+    expect(taskBoardView).not.toContain("useMemo(\n    () => new Map");
+    expect(featureBoardView).toContain("const FEATURE_STATUS_COLUMNS");
+    expect(featureBoardView).not.toContain(
+      "useMemo(() => getFeatureStatusColumns(), [])",
+    );
+  });
+
+  it("uses constant-time status placement in feature rows", () => {
+    const featureRow = readSource(
+      "src/features/board/components/FeatureRow/FeatureRow.tsx",
+    );
+
+    expect(featureRow).toContain("const TASK_STATUS_SET = new Set");
+    expect(featureRow).not.toContain("STATUS_COLUMNS.find(");
+    expect(featureRow).not.toContain(".includes(task.status)");
+  });
 });
