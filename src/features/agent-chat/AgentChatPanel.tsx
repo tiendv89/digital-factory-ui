@@ -27,6 +27,9 @@ export function AgentChatPanel({
   const [pickerOpen, setPickerOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const msgIdCounter = useRef(0);
+  // Tracks which workspaceId:featureId we've already issued a createChatSession call
+  // for. Persists across React StrictMode's double-invocation so only one call fires.
+  const sessionInitKey = useRef<string | null>(null);
 
   const nextId = () => {
     msgIdCounter.current += 1;
@@ -34,26 +37,28 @@ export function AgentChatPanel({
   };
 
   useEffect(() => {
-    let cancelled = false;
-    setStatus("connecting");
+    const key = `${workspaceId}:${featureId}`;
+    if (sessionInitKey.current === key) return;
+    sessionInitKey.current = key;
 
-    createChatSession(workspaceId, featureId, "anonymous")
+    setStatus("connecting");
+    setSessionId(null);
+    setInitError(null);
+
+    createChatSession(workspaceId, featureId)
       .then((r) => {
-        if (!cancelled) {
+        if (sessionInitKey.current === key) {
           setSessionId(r.session_id);
           setStatus("idle");
         }
       })
       .catch((err: unknown) => {
-        if (!cancelled) {
+        if (sessionInitKey.current === key) {
+          sessionInitKey.current = null; // allow retry on error
           setInitError(err instanceof Error ? err.message : "Failed to connect to agent.");
           setStatus("error");
         }
       });
-
-    return () => {
-      cancelled = true;
-    };
   }, [workspaceId, featureId]);
 
   const handleInputChange = useCallback((value: string) => {

@@ -5,6 +5,7 @@ export type HermesEvent =
   | { type: "tool_start"; name: string; callId: string }
   | { type: "tool_result"; name: string; callId: string; output: unknown }
   | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" }
+  | { type: "usage"; inputTokens: number; outputTokens: number; cachedTokens: number }
   | { type: "error"; message: string }
   | { type: "done" };
 
@@ -15,7 +16,6 @@ function getApiBase(): string {
 export async function createChatSession(
   workspaceId: string,
   featureId: string,
-  userId: string,
 ): Promise<{ session_id: string }> {
   const res = await fetch(
     `${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/session`,
@@ -23,7 +23,7 @@ export async function createChatSession(
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ user_id: userId }),
+      body: JSON.stringify({}),
     },
   );
 
@@ -98,7 +98,7 @@ function parseHermesEvent(
   eventType: string | undefined,
   raw: Record<string, unknown>,
 ): HermesEvent | null {
-  const type = eventType || "message";
+  const type = (raw.type as string) || eventType || "message";
 
   if (type === "message_output_partial") {
     return { type: "delta", text: String(raw.content ?? "") };
@@ -122,6 +122,14 @@ function parseHermesEvent(
     return {
       type: "artifact_saved",
       artifact: raw.artifact as "product_spec" | "technical_design",
+    };
+  }
+  if (type === "usage") {
+    return {
+      type: "usage",
+      inputTokens: Number(raw.input ?? 0),
+      outputTokens: Number(raw.output ?? 0),
+      cachedTokens: Number(raw.cached ?? 0),
     };
   }
   if (type === "error") {

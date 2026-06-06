@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Wrench } from "lucide-react";
+import { ConversationContent, useConversationScroll } from "./Conversation";
 import { Message } from "./Message";
 import { Loader } from "./Loader";
 import type { HermesMessage, ChatStatus } from "./types";
@@ -12,6 +14,21 @@ type MessageThreadProps = {
 
 export function MessageThread({ messages, status }: MessageThreadProps) {
   const isStreaming = status === "streaming";
+  const { scrollRef, isAtBottomRef } = useConversationScroll();
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll as content grows during streaming, only when already at bottom
+  useEffect(() => {
+    const content = contentRef.current;
+    if (!content) return;
+    const observer = new ResizeObserver(() => {
+      if (!isAtBottomRef.current) return;
+      const el = scrollRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(content);
+    return () => observer.disconnect();
+  }, [isAtBottomRef, scrollRef]);
 
   if (messages.length === 0 && !isStreaming && status !== "connecting") {
     return (
@@ -27,7 +44,7 @@ export function MessageThread({ messages, status }: MessageThreadProps) {
   }
 
   return (
-    <div data-message-thread className="flex flex-col gap-3 px-3 py-3">
+    <ConversationContent ref={contentRef} data-message-thread>
       {messages.map((msg) => (
         <div key={msg.id} className="flex flex-col gap-1.5">
           <Message message={msg} />
@@ -47,7 +64,7 @@ export function MessageThread({ messages, status }: MessageThreadProps) {
           </div>
         </div>
       )}
-    </div>
+    </ConversationContent>
   );
 }
 

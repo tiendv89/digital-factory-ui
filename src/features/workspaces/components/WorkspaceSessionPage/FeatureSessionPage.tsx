@@ -59,7 +59,7 @@ export function FeatureSessionPage({
         <div className="min-w-0 flex-1 overflow-hidden">
           <FeatureTabView workspaceId={workspaceId} featureId={featureId} />
         </div>
-        <div className="flex w-80 shrink-0 flex-col border-l border-border">
+        <div className="flex w-96 shrink-0 flex-col border-l border-border">
           <AgentChatPanel
             workspaceId={workspaceId}
             featureId={featureId}

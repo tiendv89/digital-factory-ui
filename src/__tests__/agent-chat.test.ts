@@ -33,20 +33,18 @@ describe("createChatSession", () => {
     delete process.env.NEXT_PUBLIC_WORKFLOW_API_URL;
   });
 
-  it("POSTs to the correct session URL with user_id", async () => {
+  it("POSTs to the correct session URL", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ session_id: "sess_abc123" }),
     });
 
-    const result = await createChatSession("ws-1", "feat-1", "user-42");
+    const result = await createChatSession("ws-1", "feat-1");
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(`${API_BASE}/api/workspaces/ws-1/features/feat-1/chat/session`);
     expect(init.method).toBe("POST");
-    const body = JSON.parse(init.body as string) as { user_id: string };
-    expect(body.user_id).toBe("user-42");
     expect(result.session_id).toBe("sess_abc123");
   });
 
@@ -58,7 +56,7 @@ describe("createChatSession", () => {
     });
 
     await expect(
-      createChatSession("ws-1", "feat-1", "user-42"),
+      createChatSession("ws-1", "feat-1"),
     ).rejects.toThrow("503");
   });
 });
@@ -161,12 +159,11 @@ describe("streamChatTurn SSE parsing", () => {
     expect(events).toContainEqual({ type: "done" });
   });
 
-  it("ignores unknown event types silently", () => {
+  it("parses usage event", () => {
     const events = captureEvents([
-      { event: "usage", data: JSON.stringify({ input: 10, output: 20 }) },
+      { event: "usage", data: JSON.stringify({ type: "usage", input: 10, output: 20, cached: 5 }) },
     ]);
-    // usage events are not in the HermesEvent union — should be silently dropped
-    expect(events.filter((e) => e.type !== "done")).toHaveLength(0);
+    expect(events).toContainEqual({ type: "usage", inputTokens: 10, outputTokens: 20, cachedTokens: 5 });
   });
 });
 
