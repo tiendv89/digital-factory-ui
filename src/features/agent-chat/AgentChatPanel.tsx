@@ -5,6 +5,7 @@ import { createChatSession, streamChatTurn } from "@/services/workflow-backend/c
 import { Conversation } from "./Conversation";
 import { MessageThread } from "./MessageThread";
 import { PromptInput } from "./PromptInput";
+import { SlashCommandPicker } from "./slash-command-picker";
 import type { ChatStatus, HermesMessage, ToolCallEntry } from "./types";
 
 type AgentChatPanelProps = {
@@ -23,6 +24,7 @@ export function AgentChatPanel({
   const [inputValue, setInputValue] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const msgIdCounter = useRef(0);
 
@@ -54,10 +56,30 @@ export function AgentChatPanel({
     };
   }, [workspaceId, featureId]);
 
+  const handleInputChange = useCallback((value: string) => {
+    setInputValue(value);
+    // Open picker when the input starts with '/' and nothing else closes it
+    if (value.startsWith("/")) {
+      setPickerOpen(true);
+    } else {
+      setPickerOpen(false);
+    }
+  }, []);
+
+  const handlePickerSelect = useCallback((command: string) => {
+    setInputValue(command + " ");
+    setPickerOpen(false);
+  }, []);
+
+  const handlePickerClose = useCallback(() => {
+    setPickerOpen(false);
+  }, []);
+
   const handleSubmit = useCallback(() => {
     if (!sessionId || !inputValue.trim() || status === "connecting" || status === "streaming") {
       return;
     }
+    setPickerOpen(false);
 
     const userMsg: HermesMessage = {
       id: nextId(),
@@ -166,12 +188,21 @@ export function AgentChatPanel({
         </Conversation>
       )}
 
-      <PromptInput
-        value={inputValue}
-        onChange={setInputValue}
-        onSubmit={handleSubmit}
-        status={sessionId ? status : "connecting"}
-      />
+      <div className="relative shrink-0">
+        {pickerOpen && (
+          <SlashCommandPicker
+            query={inputValue}
+            onSelect={handlePickerSelect}
+            onClose={handlePickerClose}
+          />
+        )}
+        <PromptInput
+          value={inputValue}
+          onChange={handleInputChange}
+          onSubmit={handleSubmit}
+          status={sessionId ? status : "connecting"}
+        />
+      </div>
     </div>
   );
 }
