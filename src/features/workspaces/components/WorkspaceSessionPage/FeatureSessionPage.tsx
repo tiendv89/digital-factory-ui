@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { FeatureTabView } from "@/features/board/components/FeatureTabView/FeatureTabView";
 import { AgentChatPanel } from "@/features/agent-chat";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
+import { workspaceKeys } from "@/lib/query-keys";
 import {
   ErrorState,
   LoadingState,
@@ -20,6 +22,7 @@ export function FeatureSessionPage({
   const { markFeatureTabActive } = useWorkspaceContext();
   const { activeWorkspace, loadingWorkspace, workspaceError, isReady } =
     useWorkspaceRoute(workspaceId);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (sessionId) markFeatureTabActive(sessionId);
@@ -27,10 +30,11 @@ export function FeatureSessionPage({
 
   const handleArtifactSaved = useCallback(
     (_artifact: "product_spec" | "technical_design") => {
-      // FeatureTabView internally manages reload via useFeatureDetail.
-      // This callback is a hook for future cross-panel refresh wiring.
+      void queryClient.invalidateQueries({
+        queryKey: workspaceKeys.feature(workspaceId, featureId),
+      });
     },
-    [],
+    [queryClient, workspaceId, featureId],
   );
 
   if (!workspaceId || !featureId) {
