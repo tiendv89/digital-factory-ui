@@ -172,6 +172,14 @@ describe("streamChatTurn SSE parsing", () => {
 
 // ─── FeatureSessionPage layout ────────────────────────────────────────────────
 
+vi.mock("@tanstack/react-query", async (importOriginal) => {
+  const original = await importOriginal() as Record<string, unknown>;
+  return {
+    ...original,
+    useQueryClient: () => ({ invalidateQueries: vi.fn() }),
+  };
+});
+
 vi.mock("../features/board/components/FeatureTabView/FeatureTabView", () => ({
   FeatureTabView: () => React.createElement("div", { "data-feature-tab-view": "" }),
 }));
