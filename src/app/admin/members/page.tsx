@@ -1,6 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import {
+  Alert,
+  Button,
+  Input,
+  Label,
+  ListBox,
+  ListBoxItem,
+  Modal,
+  Select,
+  Spinner,
+  Table,
+} from "@heroui/react";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 import {
   useWorkspaceMembers,
@@ -10,75 +22,6 @@ import {
   useCancelInvitation,
 } from "@/features/admin/hooks/useAdminMembers";
 import type { Member, Invitation } from "@/services/user-service";
-
-function ConfirmDialog({
-  title,
-  message,
-  confirmLabel,
-  onConfirm,
-  onCancel,
-  dangerous,
-}: {
-  title: string;
-  message: string;
-  confirmLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  dangerous?: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-lg">
-        <h3 className="mb-2 text-base font-semibold text-text-primary">
-          {title}
-        </h3>
-        <p className="mb-6 text-sm text-text-secondary">{message}</p>
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface-subtle"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className={
-              dangerous
-                ? "rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors bg-danger hover:opacity-90"
-                : "rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors bg-primary hover:opacity-90"
-            }
-          >
-            {confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function LoadingSpinner() {
-  return (
-    <div className="flex items-center justify-center py-10">
-      <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
-    </div>
-  );
-}
-
-function ErrorMessage({ message }: { message: string }) {
-  return (
-    <div className="rounded-lg border border-danger/30 bg-danger-bg px-4 py-3 text-sm text-danger">
-      {message}
-    </div>
-  );
-}
-
-function EmptyState({ label }: { label: string }) {
-  return (
-    <div className="py-8 text-center text-sm text-text-muted">{label}</div>
-  );
-}
 
 function MembersTable({
   workspaceId,
@@ -93,14 +36,17 @@ function MembersTable({
 }) {
   const [confirmUserId, setConfirmUserId] = useState<string | null>(null);
   const removeMutation = useRemoveMember(workspaceId);
-
   const member = members.find((m) => m.user_id === confirmUserId);
+
+  function handleOpenConfirm(userId: string) {
+    removeMutation.reset();
+    setConfirmUserId(userId);
+  }
 
   function handleConfirmRemove() {
     if (!confirmUserId) return;
     removeMutation.mutate(confirmUserId, {
       onSuccess: () => setConfirmUserId(null),
-      onError: () => setConfirmUserId(null),
     });
   }
 
@@ -108,77 +54,150 @@ function MembersTable({
     <section className="rounded-xl border border-border bg-surface shadow-sm">
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <h2 className="text-sm font-semibold text-text-primary">Members</h2>
-        {loading && (
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
-        )}
+        {loading && <Spinner size="sm" />}
       </div>
 
       {error && (
         <div className="px-5 py-3">
-          <ErrorMessage message={`Failed to load members: ${error.message}`} />
+          <Alert status="danger">
+            <Alert.Content>
+              <Alert.Description>
+                Failed to load members: {error.message}
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
         </div>
       )}
 
-      {!error && !loading && members.length === 0 && (
-        <EmptyState label="No members found." />
-      )}
-
-      {members.length > 0 && (
+      {!error && (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-surface-subtle text-xs font-semibold uppercase tracking-wide text-text-muted">
-                <th className="px-5 py-3 text-left">Name</th>
-                <th className="px-5 py-3 text-left">Email</th>
-                <th className="px-5 py-3 text-left">Role</th>
-                <th className="px-5 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+          <Table.Content
+            aria-label="Members"
+            className="w-full text-sm"
+          >
+            <Table.Header>
+              <Table.Column
+                id="name"
+                className="border-b border-border bg-surface-subtle px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Name
+              </Table.Column>
+              <Table.Column
+                id="email"
+                className="border-b border-border bg-surface-subtle px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Email
+              </Table.Column>
+              <Table.Column
+                id="role"
+                className="border-b border-border bg-surface-subtle px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Role
+              </Table.Column>
+              <Table.Column
+                id="actions"
+                className="border-b border-border bg-surface-subtle px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Actions
+              </Table.Column>
+            </Table.Header>
+            <Table.Body
+              renderEmptyState={() =>
+                loading ? null : (
+                  <div className="py-8 text-center text-sm text-text-muted">
+                    No members found.
+                  </div>
+                )
+              }
+            >
               {members.map((m) => (
-                <tr key={m.user_id} className="hover:bg-surface-subtle">
-                  <td className="px-5 py-3 font-medium text-text-primary">
+                <Table.Row
+                  key={m.user_id}
+                  id={m.user_id}
+                  className="border-b border-border last:border-0 hover:bg-surface-subtle"
+                >
+                  <Table.Cell className="px-5 py-3 font-medium text-text-primary">
                     {m.display_name ?? "—"}
-                  </td>
-                  <td className="px-5 py-3 text-text-secondary">{m.email}</td>
-                  <td className="px-5 py-3">
+                  </Table.Cell>
+                  <Table.Cell className="px-5 py-3 text-text-secondary">
+                    {m.email}
+                  </Table.Cell>
+                  <Table.Cell className="px-5 py-3">
                     <span className="rounded-full border border-border bg-chip-bg px-2 py-0.5 text-xs font-medium text-text-secondary capitalize">
                       {m.role}
                     </span>
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => setConfirmUserId(m.user_id)}
-                      className="rounded-lg border border-danger/40 px-3 py-1 text-xs font-medium text-danger transition-colors hover:bg-danger-bg"
+                  </Table.Cell>
+                  <Table.Cell className="px-5 py-3 text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-danger/40 text-danger hover:bg-danger-bg"
+                      onPress={() => handleOpenConfirm(m.user_id)}
                     >
                       Remove
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </tbody>
-          </table>
+            </Table.Body>
+          </Table.Content>
         </div>
       )}
 
-      {confirmUserId && member && (
-        <ConfirmDialog
-          title="Remove member"
-          message={`Remove ${member.display_name ?? member.email} from this workspace? They will lose access immediately.`}
-          confirmLabel="Remove"
-          onConfirm={handleConfirmRemove}
-          onCancel={() => setConfirmUserId(null)}
-          dangerous
-        />
-      )}
+      <Modal
+        isOpen={confirmUserId !== null && member !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setConfirmUserId(null);
+        }}
+      >
+        <Modal.Backdrop>
+          <Modal.Container>
+            <Modal.Dialog>
+              <Modal.Header>
+                <Modal.Heading>Remove member</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-text-secondary">
+                  Remove {member?.display_name ?? member?.email} from this
+                  workspace? They will lose access immediately.
+                </p>
+                {removeMutation.isError && (
+                  <Alert status="danger" className="mt-4">
+                    <Alert.Content>
+                      <Alert.Description>
+                        {removeMutation.error?.message ??
+                          "Failed to remove member."}
+                      </Alert.Description>
+                    </Alert.Content>
+                  </Alert>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                <Button
+                  variant="outline"
+                  onPress={() => setConfirmUserId(null)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  onPress={handleConfirmRemove}
+                  isDisabled={removeMutation.isPending}
+                >
+                  {removeMutation.isPending ? "Removing…" : "Remove"}
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </section>
   );
 }
 
 function InviteForm({ workspaceId }: { workspaceId: string }) {
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("member");
+  const [role, setRole] = useState<"member" | "admin">("member");
   const inviteMutation = useInviteMember(workspaceId);
 
   function handleSubmit(e: React.FormEvent) {
@@ -204,57 +223,68 @@ function InviteForm({ workspaceId }: { workspaceId: string }) {
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-4 px-5 py-4">
         {inviteMutation.isError && (
-          <ErrorMessage
-            message={`Failed to send invite: ${inviteMutation.error?.message}`}
-          />
+          <Alert status="danger">
+            <Alert.Content>
+              <Alert.Description>
+                Failed to send invite:{" "}
+                {inviteMutation.error?.message ?? "Unknown error"}
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
         )}
         {inviteMutation.isSuccess && (
-          <div className="rounded-lg border border-success/30 bg-success-bg px-4 py-3 text-sm text-success">
-            Invitation created successfully.
-          </div>
+          <Alert status="success">
+            <Alert.Content>
+              <Alert.Description>
+                Invitation created successfully.
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
         )}
         <div className="flex flex-col gap-1">
-          <label
-            htmlFor="invite-email"
-            className="text-xs font-medium text-text-secondary"
-          >
+          <Label htmlFor="invite-email" className="text-xs font-medium text-text-secondary">
             Email address
-          </label>
-          <input
+          </Label>
+          <Input
             id="invite-email"
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="user@example.com"
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label
-            htmlFor="invite-role"
-            className="text-xs font-medium text-text-secondary"
-          >
+          <Label htmlFor="invite-role" className="text-xs font-medium text-text-secondary">
             Role
-          </label>
-          <select
-            id="invite-role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            className="rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+          </Label>
+          <Select
+            selectedKey={role}
+            onSelectionChange={(key) =>
+              setRole(key as "member" | "admin")
+            }
+            aria-label="Role"
           >
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
-          </select>
+            <Select.Trigger id="invite-role">
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                <ListBoxItem id="member">Member</ListBoxItem>
+                <ListBoxItem id="admin">Admin</ListBoxItem>
+              </ListBox>
+            </Select.Popover>
+          </Select>
         </div>
         <div className="flex justify-end">
-          <button
+          <Button
             type="submit"
-            disabled={inviteMutation.isPending || !email.trim()}
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            variant="primary"
+            isDisabled={inviteMutation.isPending || !email.trim()}
           >
             {inviteMutation.isPending ? "Sending…" : "Invite"}
-          </button>
+          </Button>
         </div>
       </form>
     </section>
@@ -274,14 +304,17 @@ function InvitationsTable({
 }) {
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const cancelMutation = useCancelInvitation(workspaceId);
-
   const invitation = invitations.find((inv) => inv.id === confirmId);
+
+  function handleOpenConfirm(invId: string) {
+    cancelMutation.reset();
+    setConfirmId(invId);
+  }
 
   function handleConfirmCancel() {
     if (!confirmId) return;
     cancelMutation.mutate(confirmId, {
       onSuccess: () => setConfirmId(null),
-      onError: () => setConfirmId(null),
     });
   }
 
@@ -303,71 +336,139 @@ function InvitationsTable({
         <h2 className="text-sm font-semibold text-text-primary">
           Pending invitations
         </h2>
-        {loading && (
-          <div className="h-4 w-4 animate-spin rounded-full border-2 border-border border-t-primary" />
-        )}
+        {loading && <Spinner size="sm" />}
       </div>
 
       {error && (
         <div className="px-5 py-3">
-          <ErrorMessage
-            message={`Failed to load invitations: ${error.message}`}
-          />
+          <Alert status="danger">
+            <Alert.Content>
+              <Alert.Description>
+                Failed to load invitations: {error.message}
+              </Alert.Description>
+            </Alert.Content>
+          </Alert>
         </div>
       )}
 
-      {!error && !loading && invitations.length === 0 && (
-        <EmptyState label="No pending invitations." />
-      )}
-
-      {invitations.length > 0 && (
+      {!error && (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border bg-surface-subtle text-xs font-semibold uppercase tracking-wide text-text-muted">
-                <th className="px-5 py-3 text-left">Email</th>
-                <th className="px-5 py-3 text-left">Role</th>
-                <th className="px-5 py-3 text-left">Expires</th>
-                <th className="px-5 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
+          <Table.Content
+            aria-label="Pending invitations"
+            className="w-full text-sm"
+          >
+            <Table.Header>
+              <Table.Column
+                id="email"
+                className="border-b border-border bg-surface-subtle px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Email
+              </Table.Column>
+              <Table.Column
+                id="role"
+                className="border-b border-border bg-surface-subtle px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Role
+              </Table.Column>
+              <Table.Column
+                id="expires"
+                className="border-b border-border bg-surface-subtle px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Expires
+              </Table.Column>
+              <Table.Column
+                id="actions"
+                className="border-b border-border bg-surface-subtle px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-text-muted"
+              >
+                Actions
+              </Table.Column>
+            </Table.Header>
+            <Table.Body
+              renderEmptyState={() =>
+                loading ? null : (
+                  <div className="py-8 text-center text-sm text-text-muted">
+                    No pending invitations.
+                  </div>
+                )
+              }
+            >
               {invitations.map((inv) => (
-                <tr key={inv.id} className="hover:bg-surface-subtle">
-                  <td className="px-5 py-3 text-text-primary">{inv.email}</td>
-                  <td className="px-5 py-3">
+                <Table.Row
+                  key={inv.id}
+                  id={inv.id}
+                  className="border-b border-border last:border-0 hover:bg-surface-subtle"
+                >
+                  <Table.Cell className="px-5 py-3 text-text-primary">
+                    {inv.email}
+                  </Table.Cell>
+                  <Table.Cell className="px-5 py-3">
                     <span className="rounded-full border border-border bg-chip-bg px-2 py-0.5 text-xs font-medium text-text-secondary capitalize">
                       {inv.role}
                     </span>
-                  </td>
-                  <td className="px-5 py-3 text-text-muted">
+                  </Table.Cell>
+                  <Table.Cell className="px-5 py-3 text-text-muted">
                     {formatExpiry(inv.expires_at)}
-                  </td>
-                  <td className="px-5 py-3 text-right">
-                    <button
-                      type="button"
-                      onClick={() => setConfirmId(inv.id)}
-                      className="rounded-lg border border-border px-3 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:border-danger/40 hover:text-danger"
+                  </Table.Cell>
+                  <Table.Cell className="px-5 py-3 text-right">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onPress={() => handleOpenConfirm(inv.id)}
                     >
                       Cancel
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </Table.Cell>
+                </Table.Row>
               ))}
-            </tbody>
-          </table>
+            </Table.Body>
+          </Table.Content>
         </div>
       )}
 
-      {confirmId && invitation && (
-        <ConfirmDialog
-          title="Cancel invitation"
-          message={`Cancel the invitation sent to ${invitation.email}? The invite link will no longer work.`}
-          confirmLabel="Cancel invitation"
-          onConfirm={handleConfirmCancel}
-          onCancel={() => setConfirmId(null)}
-        />
-      )}
+      <Modal
+        isOpen={confirmId !== null && invitation !== undefined}
+        onOpenChange={(open) => {
+          if (!open) setConfirmId(null);
+        }}
+      >
+        <Modal.Backdrop>
+          <Modal.Container>
+            <Modal.Dialog>
+              <Modal.Header>
+                <Modal.Heading>Cancel invitation</Modal.Heading>
+              </Modal.Header>
+              <Modal.Body>
+                <p className="text-sm text-text-secondary">
+                  Cancel the invitation sent to {invitation?.email}? The invite
+                  link will no longer work.
+                </p>
+                {cancelMutation.isError && (
+                  <Alert status="danger" className="mt-4">
+                    <Alert.Content>
+                      <Alert.Description>
+                        {cancelMutation.error?.message ??
+                          "Failed to cancel invitation."}
+                      </Alert.Description>
+                    </Alert.Content>
+                  </Alert>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                <Button variant="outline" onPress={() => setConfirmId(null)}>
+                  Keep invitation
+                </Button>
+                <Button
+                  variant="primary"
+                  onPress={handleConfirmCancel}
+                  isDisabled={cancelMutation.isPending}
+                >
+                  {cancelMutation.isPending ? "Cancelling…" : "Cancel invitation"}
+                </Button>
+              </Modal.Footer>
+            </Modal.Dialog>
+          </Modal.Container>
+        </Modal.Backdrop>
+      </Modal>
     </section>
   );
 }
@@ -389,15 +490,17 @@ export default function AdminMembersPage() {
   }
 
   if (membersQuery.loading && invitationsQuery.loading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Spinner />
+      </div>
+    );
   }
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
       <div className="mb-8">
-        <h1 className="text-xl font-semibold text-text-primary">
-          Members
-        </h1>
+        <h1 className="text-xl font-semibold text-text-primary">Members</h1>
         <p className="mt-1 text-sm text-text-muted">
           Manage workspace members and invitations.
         </p>
