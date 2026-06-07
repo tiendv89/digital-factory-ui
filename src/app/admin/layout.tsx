@@ -24,7 +24,9 @@ export default function AdminLayout({
 
   if (
     session.status !== "authenticated" ||
-    !(sessionData?.memberships ?? []).some((m) => m.role === "platform_admin")
+    !(sessionData?.memberships ?? []).some(
+      (m) => m.role === "platform_admin" || m.role === "admin",
+    )
   ) {
     notFound();
   }
