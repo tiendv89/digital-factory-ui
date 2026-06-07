@@ -75,9 +75,6 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}
             ${{ env.IMAGE_LATEST }}
-          build-args: |
-            NEXT_PUBLIC_WORKFLOW_API_URL=${{ github.event.inputs.workflow_api_url }}
-            NEXT_PUBLIC_USER_SERVICE_URL=${{ github.event.inputs.user_service_url }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
