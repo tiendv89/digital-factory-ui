@@ -14,6 +14,7 @@
   "dependencies": {
     "@heroui/react": "^3.0.3",
     "@heroui/styles": "^3.0.3",
+    "@microsoft/fetch-event-source": "^2.0.1",
     "@tanstack/react-query": "^5.100.14",
     "framer-motion": "^12.38.0",
     "js-yaml": "^4.1.0",
