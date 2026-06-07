@@ -78,6 +78,7 @@ function MembersTable({
             <Table.Header>
               <Table.Column
                 id="name"
+                isRowHeader
                 className="border-b border-border bg-surface-subtle px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted"
               >
                 Name
@@ -360,6 +361,7 @@ function InvitationsTable({
             <Table.Header>
               <Table.Column
                 id="email"
+                isRowHeader
                 className="border-b border-border bg-surface-subtle px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-muted"
               >
                 Email

@@ -3,6 +3,7 @@ import type {
   MeResponse,
   MembersResponse,
   InvitationsResponse,
+  DataEnvelope,
   InviteRequest,
 } from "./types";
 
@@ -54,7 +55,8 @@ export async function fetchWorkspaceMembers(
   if (!res.ok) {
     throw new Error(`Failed to fetch members: ${res.status}`);
   }
-  return res.json() as Promise<MembersResponse>;
+  const json = (await res.json()) as DataEnvelope<MembersResponse> | MembersResponse;
+  return "data" in json ? json.data : json;
 }
 
 export async function fetchWorkspaceInvitations(
@@ -67,7 +69,8 @@ export async function fetchWorkspaceInvitations(
   if (!res.ok) {
     throw new Error(`Failed to fetch invitations: ${res.status}`);
   }
-  return res.json() as Promise<InvitationsResponse>;
+  const json = (await res.json()) as DataEnvelope<InvitationsResponse> | InvitationsResponse;
+  return "data" in json ? json.data : json;
 }
 
 export async function inviteMember(

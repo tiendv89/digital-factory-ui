@@ -46,6 +46,10 @@ export interface InvitationsResponse {
   invitations: Invitation[];
 }
 
+export interface DataEnvelope<T> {
+  data: T;
+}
+
 export interface InviteRequest {
   email: string;
   role: string;
