@@ -1,4 +1,10 @@
-import type { MeData, MeResponse } from "./types";
+import type {
+  MeData,
+  MeResponse,
+  MembersResponse,
+  InvitationsResponse,
+  InviteRequest,
+} from "./types";
 
 export function getUserServiceBase(): string {
   const base =
@@ -36,4 +42,74 @@ export async function logout(): Promise<void> {
     method: "POST",
     credentials: "include",
   });
+}
+
+export async function fetchWorkspaceMembers(
+  workspaceId: string,
+): Promise<MembersResponse> {
+  const res = await fetch(
+    `${getUserServiceBase()}/api/admin/workspace/${workspaceId}/members`,
+    { credentials: "include" },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to fetch members: ${res.status}`);
+  }
+  return res.json() as Promise<MembersResponse>;
+}
+
+export async function fetchWorkspaceInvitations(
+  workspaceId: string,
+): Promise<InvitationsResponse> {
+  const res = await fetch(
+    `${getUserServiceBase()}/api/admin/workspace/${workspaceId}/invitations`,
+    { credentials: "include" },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to fetch invitations: ${res.status}`);
+  }
+  return res.json() as Promise<InvitationsResponse>;
+}
+
+export async function inviteMember(
+  workspaceId: string,
+  body: InviteRequest,
+): Promise<void> {
+  const res = await fetch(
+    `${getUserServiceBase()}/api/admin/workspace/${workspaceId}/invitations`,
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to invite member: ${res.status}`);
+  }
+}
+
+export async function removeMember(
+  workspaceId: string,
+  userId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${getUserServiceBase()}/api/admin/workspace/${workspaceId}/members/${userId}`,
+    { method: "DELETE", credentials: "include" },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to remove member: ${res.status}`);
+  }
+}
+
+export async function cancelInvitation(
+  workspaceId: string,
+  invitationId: string,
+): Promise<void> {
+  const res = await fetch(
+    `${getUserServiceBase()}/api/admin/workspace/${workspaceId}/invitations/${invitationId}`,
+    { method: "DELETE", credentials: "include" },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to cancel invitation: ${res.status}`);
+  }
 }
