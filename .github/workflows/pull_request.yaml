@@ -5,80 +5,29 @@ on:
     branches:
       - main
 
-env:
-  SERVICE: 'digital-factory-ui'
-  IMAGE_REPOSITORY: asia.gcr.io/develop-430303/digital-factory-ui
-
 jobs:
-  docker:
+  build:
+    name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           lfs: true
+
       - name: Checkout LFS objects
         run: git lfs checkout
 
       - name: Prepare env
-        id: prepare_env
-        run: |
-          #!/bin/bash
-          BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})
-          if [[ "${BRANCH_NAME}" == "main" ]]; then
-            echo "Copying .env.dev to .env"
-            cp ./.env.dev ./.env
-          elif [[ "${BRANCH_NAME}" == release-* ]]; then
-            echo "Copying .env.prod to .env"
-            cp ./.env.prod ./.env
-          else
-            echo "No branch name matched"
-          fi
-
-      - name: prepare
-        id: before_script
-        run: |
-          #!/bin/bash
-          if [[ "$IMAGE_REPOSITORY" == "" ]]; then
-            echo "IMAGE_REPOSITORY must be defined."
-            exit 1
-          fi
-          BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})
-          IMAGE_TAG=""
-          if [[ "${BRANCH_NAME}" == "main" ]]; then
-            IMAGE_TAG=${BRANCH_NAME}-$(echo ${GITHUB_SHA::7})
-          elif [[ "${BRANCH_NAME}" == release-* ]]; then
-            IMAGE_TAG=${BRANCH_NAME}.${GITHUB_RUN_NUMBER}
-          else
-            echo "Docker build only happens in branch 'main' or 'release-*'"
-            exit 0
-          fi
-          echo "::set-output name=BRANCH_NAME::${BRANCH_NAME}"
-          echo "::set-output name=IMAGE_URL::${IMAGE_REPOSITORY}:${IMAGE_TAG}"
+        run: cp ./.env.dev ./.env
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Setup Gcloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure docker
-        run: gcloud auth configure-docker
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-${{ env.SERVICE }}-buildx
-
-      - name: Docker build and push
+      - name: Build
         uses: docker/build-push-action@v5
         with:
           context: .
           push: false
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new
-
-      - name: Move Docker cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

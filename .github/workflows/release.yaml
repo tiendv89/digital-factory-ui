@@ -1,114 +1,97 @@
-name: 'Digital Factory UI: Production'
+name: Release
 
-permissions: write-all
+# Build and publish the workflow-frontend image to GHCR at a chosen version,
+# then create a matching git tag and GitHub release.
+#
+# NEXT_PUBLIC_* vars are baked into the Next.js client bundle at build time.
+# Pass the production API URLs as workflow inputs before releasing.
+#
+# Published image: ghcr.io/<owner>/workflow-frontend:<version>
+
 on:
   workflow_dispatch:
     inputs:
-      VERSION:
-        description: "Release version"
+      version:
+        description: "Release version (e.g. v0.1.0)"
         type: string
         required: true
 
-env:
-  SERVICE: 'digital-factory-ui'
-  IMAGE_REPOSITORY: asia.gcr.io/production-476602/digital-factory-ui
+permissions:
+  contents: write
+  packages: write
 
 jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
       version_tag: ${{ steps.version_tag.outputs.value }}
-      build_date: ${{ steps.build_date.outputs.value }}
+      version_raw: ${{ steps.version_tag.outputs.raw }}
     steps:
       - name: Format version tag
-        shell: bash
         id: version_tag
         env:
-          INPUT_TAG: ${{ inputs.VERSION }}
+          INPUT_TAG: ${{ github.event.inputs.version }}
         run: |
           TAG=${INPUT_TAG#v}
-          echo "::set-output name=value::v$TAG"
-      - name: Build date
-        shell: bash
-        id: build_date
-        run: echo "::set-output name=value::$(date +%FT%T%z)"
+          echo "value=v$TAG" >> "$GITHUB_OUTPUT"
+          echo "raw=$TAG" >> "$GITHUB_OUTPUT"
 
-  docker:
-    needs:
-      - prepare
-    env:
-      VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
-      BUILD_DATE: ${{ needs.prepare.outputs.build_date }}
+  build-and-push:
+    needs: prepare
     runs-on: ubuntu-latest
+    env:
+      VERSION_RAW: ${{ needs.prepare.outputs.version_raw }}
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           lfs: true
+
       - name: Checkout LFS objects
         run: git lfs checkout
 
-      - name: Prepare env
-        id: prepare_env
+      - name: Set image name
         run: |
-          #!/bin/bash
-          BRANCH_NAME=$(echo ${GITHUB_REF#refs/heads/})
-          if [[ "${BRANCH_NAME}" == "main" ]]; then
-            echo "Copying .env.dev to .env"
-            cp ./.env.dev ./.env
-          elif [[ "${BRANCH_NAME}" == release-* ]]; then
-            echo "Copying .env.prod to .env"
-            cp ./.env.prod ./.env
-          else
-            echo "No branch name matched"
-          fi
+          OWNER_LOWER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_NAME=ghcr.io/${OWNER_LOWER}/workflow-frontend:${VERSION_RAW}" >> "$GITHUB_ENV"
+          echo "IMAGE_LATEST=ghcr.io/${OWNER_LOWER}/workflow-frontend:latest" >> "$GITHUB_ENV"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Gcloud Auth
-        uses: google-github-actions/auth@v2
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          credentials_json: "${{ secrets.GCR_CREDENTIALS }}"
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Gcloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure docker
-        run: gcloud auth configure-docker
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-${{ env.SERVICE }}-buildx
-
-      - name: Docker build and push
-        uses: docker/build-push-action@v5
+      - name: Build and push image
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
+          platforms: linux/amd64
           tags: |
-            ${{ env.IMAGE_REPOSITORY }}:${{ env.VERSION_TAG }}
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,dest=/tmp/.buildx-cache-new
-
-      - name: Move Docker cache
-        run: |
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+            ${{ env.IMAGE_NAME }}
+            ${{ env.IMAGE_LATEST }}
+          build-args: |
+            NEXT_PUBLIC_WORKFLOW_API_URL=${{ github.event.inputs.workflow_api_url }}
+            NEXT_PUBLIC_USER_SERVICE_URL=${{ github.event.inputs.user_service_url }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   release:
-    needs:
-      - prepare
-      - docker
+    needs: [prepare, build-and-push]
     runs-on: ubuntu-latest
     env:
       VERSION_TAG: ${{ needs.prepare.outputs.version_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Git
         run: |
@@ -117,14 +100,14 @@ jobs:
 
       - name: Create tag
         run: |
-          git tag -d "$VERSION_TAG" 2> /dev/null || echo "Release tag '$VERSION_TAG' does NOT exist"
-          git tag --annotate --message "digital-factory-ui $VERSION_TAG" "$VERSION_TAG"
-          git push origin "refs/tags/$VERSION_TAG"
+          git tag -d "$VERSION_TAG" 2>/dev/null || true
+          git tag --annotate --message "workflow-frontend $VERSION_TAG" "$VERSION_TAG"
+          git push --force origin "refs/tags/$VERSION_TAG"
 
       - name: Create release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ env.VERSION_TAG }}
           prerelease: false
-          name: "${{ env.SERVICE }} ${{ env.VERSION_TAG }}"
+          name: "workflow-frontend ${{ env.VERSION_TAG }}"
