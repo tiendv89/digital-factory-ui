@@ -23,3 +23,30 @@ export interface MeData {
 export interface MeResponse {
   data: MeData;
 }
+
+export interface Member {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  role: string;
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  expires_at: string;
+}
+
+export interface MembersResponse {
+  members: Member[];
+}
+
+export interface InvitationsResponse {
+  invitations: Invitation[];
+}
+
+export interface InviteRequest {
+  email: string;
+  role: string;
+}
