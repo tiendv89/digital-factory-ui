@@ -174,33 +174,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     openFeatureTabsRef.current = openFeatureTabs;
   }, [openFeatureTabs]);
 
-  const isWorkspaceNotFound = useCallback((err: ApiError) => {
-    return (
-      err.code === "DATABASE_NOT_FOUND" ||
-      err.code === "GITHUB_NOT_FOUND" ||
-      err.code === "WORKSPACE_NOT_FOUND"
-    );
-  }, []);
-
-  const handleMissingWorkspace = useCallback(
-    (workspaceId: string) => {
-      removeLocalWorkspaceSummary(workspaceId);
-      const updatedSummaries = getLocalWorkspaceSummaries();
-      setSummaries(updatedSummaries);
-
-      if (selectedWorkspaceId === workspaceId) {
-        clearSelectedWorkspaceId();
-        setSelectedWorkspaceIdState(null);
-      }
-
-      setActiveWorkspace(null);
-      setWorkspaceError(null);
-      setLoadingWorkspace(false);
-      router.replace("/admin/connect");
-    },
-    [router, selectedWorkspaceId],
-  );
-
   const loadWorkspace = useCallback(
     (workspaceId: string) => {
       const requestId = loadWorkspaceSequenceRef.current.next();
@@ -214,15 +187,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         })
         .catch((err: ApiError) => {
           if (!loadWorkspaceSequenceRef.current.isCurrent(requestId)) return;
-          if (isWorkspaceNotFound(err)) {
-            handleMissingWorkspace(workspaceId);
-            return;
-          }
           setWorkspaceError(err);
           setLoadingWorkspace(false);
         });
     },
-    [handleMissingWorkspace, isWorkspaceNotFound],
+    [],
   );
 
   useEffect(() => {
@@ -326,16 +295,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       });
     } catch (err) {
       const apiError = err as ApiError;
-      if (isWorkspaceNotFound(apiError)) {
-        handleMissingWorkspace(selectedWorkspaceId);
-        return;
-      }
       setSyncError(apiError);
       throw err;
     } finally {
       setSyncingWorkspace(false);
     }
-  }, [handleMissingWorkspace, isWorkspaceNotFound, queryClient, selectedWorkspaceId]);
+  }, [queryClient, selectedWorkspaceId]);
 
   const clearSyncError = useCallback(() => {
     setSyncError(null);
@@ -354,15 +319,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       })
       .catch((err: ApiError) => {
         if (!loadWorkspaceSequenceRef.current.isCurrent(requestId)) return;
-        if (isWorkspaceNotFound(err)) {
-          handleMissingWorkspace(selectedWorkspaceId);
-          setRefreshingWorkspace(false);
-          return;
-        }
         setWorkspaceError(err);
         setRefreshingWorkspace(false);
       });
-  }, [handleMissingWorkspace, isWorkspaceNotFound, selectedWorkspaceId]);
+  }, [selectedWorkspaceId]);
 
   // 30s focus-aware background polling
   useEffect(() => {
