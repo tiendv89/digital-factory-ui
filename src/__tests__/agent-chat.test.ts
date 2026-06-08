@@ -15,7 +15,8 @@ import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 
 // ─── chat.ts unit tests ───────────────────────────────────────────────────────
 
-import { createChatSession } from "../services/workflow-backend/chat";
+import { createChatSession, listChatSessions } from "../services/workflow-backend/chat";
+import type { ChatSessionSummary } from "../services/workflow-backend/chat";
 
 const API_BASE = "http://localhost:9000";
 
@@ -58,6 +59,51 @@ describe("createChatSession", () => {
     await expect(
       createChatSession("ws-1", "feat-1"),
     ).rejects.toThrow("503");
+  });
+});
+
+// ─── listChatSessions ─────────────────────────────────────────────────────────
+
+describe("listChatSessions", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    process.env.NEXT_PUBLIC_WORKFLOW_API_URL = API_BASE;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.NEXT_PUBLIC_WORKFLOW_API_URL;
+  });
+
+  it("GETs the sessions endpoint with correct URL", async () => {
+    const sessions: ChatSessionSummary[] = [
+      { id: "s1", title: "Session 1", started_at: 1000, last_active_at: 2000, last_message_excerpt: "hello" },
+    ];
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ sessions }),
+    });
+
+    const result = await listChatSessions("ws-abc", "feat-xyz");
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit | undefined];
+    expect(url).toBe(`${API_BASE}/api/workspaces/ws-abc/features/feat-xyz/chat/sessions`);
+    expect(result).toEqual(sessions);
+  });
+
+  it("throws on non-OK response", async () => {
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 404 });
+    await expect(listChatSessions("ws-1", "feat-1")).rejects.toThrow("listChatSessions failed (404)");
+  });
+
+  it("returns an empty array when sessions list is empty", async () => {
+    fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ sessions: [] }) });
+    const result = await listChatSessions("ws-1", "feat-1");
+    expect(result).toEqual([]);
   });
 });
 
