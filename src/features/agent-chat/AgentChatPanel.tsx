@@ -1,12 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createChatSession, streamChatTurn } from "@/services/workflow-backend/chat";
+import {
+  createChatSession,
+  listChatSessions,
+  streamChatTurn,
+} from "@/services/workflow-backend/chat";
+import type { ChatSessionSummary } from "@/services/workflow-backend/chat";
 import { Conversation } from "./Conversation";
 import { MessageThread } from "./MessageThread";
 import { PromptInput } from "./PromptInput";
+import { SessionHistoryList } from "./SessionHistoryList";
 import { SlashCommandPicker } from "./slash-command-picker";
 import type { ChatStatus, HermesMessage, ToolCallEntry } from "./types";
+
+type PanelMode =
+  | { mode: "history" }
+  | { mode: "active"; sessionId: string; sessionTitle: string };
 
 type AgentChatPanelProps = {
   workspaceId: string;
@@ -19,51 +29,67 @@ export function AgentChatPanel({
   featureId,
   onArtifactSaved,
 }: AgentChatPanelProps) {
+  const [panelMode, setPanelMode] = useState<PanelMode>({ mode: "history" });
+  const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [messages, setMessages] = useState<HermesMessage[]>([]);
   const [status, setStatus] = useState<ChatStatus>("idle");
   const [inputValue, setInputValue] = useState("");
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [initError, setInitError] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const msgIdCounter = useRef(0);
-  // Tracks which workspaceId:featureId we've already issued a createChatSession call
-  // for. Persists across React StrictMode's double-invocation so only one call fires.
-  const sessionInitKey = useRef<string | null>(null);
 
   const nextId = () => {
     msgIdCounter.current += 1;
     return `msg-${msgIdCounter.current}`;
   };
 
-  useEffect(() => {
-    const key = `${workspaceId}:${featureId}`;
-    if (sessionInitKey.current === key) return;
-    sessionInitKey.current = key;
-
-    setStatus("connecting");
-    setSessionId(null);
-    setInitError(null);
-
-    createChatSession(workspaceId, featureId)
-      .then((r) => {
-        if (sessionInitKey.current === key) {
-          setSessionId(r.session_id);
-          setStatus("idle");
-        }
-      })
-      .catch((err: unknown) => {
-        if (sessionInitKey.current === key) {
-          sessionInitKey.current = null; // allow retry on error
-          setInitError(err instanceof Error ? err.message : "Failed to connect to agent.");
-          setStatus("error");
-        }
-      });
+  const fetchSessions = useCallback(async () => {
+    setSessionsLoading(true);
+    try {
+      const list = await listChatSessions(workspaceId, featureId);
+      setSessions(list);
+    } catch {
+      // graceful empty state on 404 or other errors
+      setSessions([]);
+    } finally {
+      setSessionsLoading(false);
+    }
   }, [workspaceId, featureId]);
+
+  useEffect(() => {
+    void fetchSessions();
+  }, [fetchSessions]);
+
+  const enterActiveMode = useCallback(
+    (sessionId: string, sessionTitle: string) => {
+      setMessages([]);
+      setStatus("idle");
+      setInputValue("");
+      setPanelMode({ mode: "active", sessionId, sessionTitle });
+    },
+    [],
+  );
+
+  const handleSessionSelect = useCallback(
+    (id: string) => {
+      const session = sessions.find((s) => s.id === id);
+      enterActiveMode(id, session?.title ?? "");
+    },
+    [sessions, enterActiveMode],
+  );
+
+  const handleBack = useCallback(() => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+    setPanelMode({ mode: "history" });
+    setMessages([]);
+    setStatus("idle");
+    void fetchSessions();
+  }, [fetchSessions]);
 
   const handleInputChange = useCallback((value: string) => {
     setInputValue(value);
-    // Open picker when the input starts with '/' and nothing else closes it
     if (value.startsWith("/")) {
       setPickerOpen(true);
     } else {
@@ -80,11 +106,30 @@ export function AgentChatPanel({
     setPickerOpen(false);
   }, []);
 
-  const handleSubmit = useCallback(() => {
-    if (!sessionId || !inputValue.trim() || status === "connecting" || status === "streaming") {
+  const handleSubmit = useCallback(async () => {
+    if (!inputValue.trim() || status === "connecting" || status === "streaming") {
       return;
     }
     setPickerOpen(false);
+
+    let sessionId: string;
+    let sessionTitle: string;
+
+    if (panelMode.mode === "history") {
+      setStatus("connecting");
+      try {
+        const created = await createChatSession(workspaceId, featureId);
+        sessionId = created.session_id;
+        sessionTitle = inputValue.trim().slice(0, 60);
+        enterActiveMode(sessionId, sessionTitle);
+      } catch {
+        setStatus("error");
+        return;
+      }
+    } else {
+      sessionId = panelMode.sessionId;
+      sessionTitle = panelMode.sessionTitle;
+    }
 
     const userMsg: HermesMessage = {
       id: nextId(),
@@ -103,17 +148,14 @@ export function AgentChatPanel({
     ]);
 
     abortRef.current = streamChatTurn(
-      {
-        workspaceId,
-        featureId,
-        sessionId,
-        message: userMsg.content,
-      },
+      { workspaceId, featureId, sessionId, message: userMsg.content },
       (event) => {
         if (event.type === "delta") {
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === assistantId ? { ...m, content: m.content + event.text } : m,
+              m.id === assistantId
+                ? { ...m, content: m.content + event.text }
+                : m,
             ),
           );
         } else if (event.type === "tool_start") {
@@ -165,34 +207,64 @@ export function AgentChatPanel({
         setMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: m.content || `Connection error: ${err.message}` }
+              ? {
+                  ...m,
+                  content: m.content || `Connection error: ${err.message}`,
+                }
               : m,
           ),
         );
         setStatus("error");
       },
     );
-  }, [sessionId, inputValue, status, workspaceId, featureId, onArtifactSaved]);
+  }, [
+    inputValue,
+    status,
+    panelMode,
+    workspaceId,
+    featureId,
+    onArtifactSaved,
+    enterActiveMode,
+  ]);
+
+  const isActive = panelMode.mode === "active";
 
   return (
-    <div
-      data-agent-chat-panel
-      className="flex h-full flex-col bg-surface"
-    >
-      <div className="shrink-0 border-b border-border px-3 py-2">
-        <span className="text-xs font-semibold text-text-secondary">Agent</span>
+    <div data-agent-chat-panel className="flex h-full flex-col bg-surface">
+      {/* Header */}
+      <div className="flex shrink-0 items-center gap-2 border-b border-border px-3 py-2">
+        {isActive && (
+          <button
+            type="button"
+            data-back-button
+            onClick={handleBack}
+            aria-label="Back to session history"
+            className="shrink-0 text-text-secondary hover:text-text-primary"
+          >
+            ‹
+          </button>
+        )}
+        <span className="truncate text-xs font-semibold text-text-secondary">
+          {isActive && panelMode.mode === "active"
+            ? panelMode.sessionTitle || "Agent"
+            : "Agent"}
+        </span>
       </div>
 
-      {initError ? (
-        <div className="flex flex-1 items-center justify-center px-4 text-center">
-          <p className="text-xs text-danger">{initError}</p>
-        </div>
-      ) : (
+      {/* Body */}
+      {isActive ? (
         <Conversation>
           <MessageThread messages={messages} status={status} />
         </Conversation>
+      ) : (
+        <SessionHistoryList
+          sessions={sessions}
+          loading={sessionsLoading}
+          onSelect={handleSessionSelect}
+        />
       )}
 
+      {/* Input */}
       <div className="relative shrink-0">
         {pickerOpen && (
           <SlashCommandPicker
@@ -204,8 +276,8 @@ export function AgentChatPanel({
         <PromptInput
           value={inputValue}
           onChange={handleInputChange}
-          onSubmit={handleSubmit}
-          status={sessionId ? status : "connecting"}
+          onSubmit={() => void handleSubmit()}
+          status={status}
         />
       </div>
     </div>

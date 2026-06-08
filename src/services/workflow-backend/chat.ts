@@ -1,5 +1,13 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
+export type ChatSessionSummary = {
+  id: string;
+  title: string;
+  started_at: number;
+  last_active_at: number;
+  last_message_excerpt: string;
+};
+
 export type HermesEvent =
   | { type: "delta"; text: string }
   | { type: "tool_start"; name: string; callId: string }
@@ -11,6 +19,19 @@ export type HermesEvent =
 
 function getApiBase(): string {
   return process.env.NEXT_PUBLIC_WORKFLOW_API_URL ?? "https://workflow-backend-api.kitelabs.io";
+}
+
+export async function listChatSessions(
+  workspaceId: string,
+  featureId: string,
+): Promise<ChatSessionSummary[]> {
+  const res = await fetch(
+    `${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/sessions`,
+    { credentials: "include" },
+  );
+  if (!res.ok) throw new Error(`listChatSessions failed (${res.status})`);
+  const body = await res.json() as { sessions: ChatSessionSummary[] };
+  return body.sessions;
 }
 
 export async function createChatSession(
