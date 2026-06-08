@@ -62,6 +62,22 @@ vi.mock("../features/agent-chat", () => ({
   },
 }));
 
+vi.mock("../features/feature-status/FeatureStatusPanel", () => ({
+  FeatureStatusPanel: () => React.createElement("div", { "data-feature-status-panel": "" }),
+}));
+
+vi.mock("../features/feature-status/CollapseToggle", () => ({
+  CollapseToggle: () => React.createElement("button", { "data-collapse-toggle": "" }),
+}));
+
+vi.mock("../hooks/useLocalStorage", () => ({
+  useLocalStorage: vi.fn((key: string) => {
+    if (key === "df-left-panel-collapsed") return [false, vi.fn()];
+    if (key === "df-right-panel-collapsed") return [false, vi.fn()];
+    return [false, vi.fn()];
+  }),
+}));
+
 // Stub WorkspaceSessionShell and useWorkspaceRoute so we don't need providers
 vi.mock("../features/workspaces/components/WorkspaceSessionPage/WorkspaceSessionShared", async (importOriginal) => {
   const original = await importOriginal() as Record<string, unknown>;
