@@ -113,7 +113,7 @@ describe("EmptyState — client_member variant", () => {
         /Your workspace will appear here as soon as your engagement is set up/i,
       ),
     ).toBeTruthy();
-    expect(screen.getByText(/contact your Kitelabs delivery lead/i)).toBeTruthy();
+    expect(screen.getByText(/contact your delivery lead/i)).toBeTruthy();
   });
 
   it("renders the logout button", () => {

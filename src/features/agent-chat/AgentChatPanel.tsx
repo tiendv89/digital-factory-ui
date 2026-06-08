@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   createChatSession,
+  getSessionMessages,
   listChatSessions,
   streamChatTurn,
 } from "@/services/workflow-backend/chat";
@@ -72,11 +73,23 @@ export function AgentChatPanel({
   );
 
   const handleSessionSelect = useCallback(
-    (id: string) => {
+    async (id: string) => {
       const session = sessions.find((s) => s.id === id);
-      enterActiveMode(id, session?.title ?? "");
+      setMessages([]);
+      setInputValue("");
+      setPanelMode({ mode: "active", sessionId: id, sessionTitle: session?.title ?? "" });
+      setStatus("connecting");
+      try {
+        const history = await getSessionMessages(workspaceId, featureId, id);
+        setMessages(history);
+        setStatus("idle");
+      } catch {
+        // graceful: show empty transcript if history can't be loaded
+        setMessages([]);
+        setStatus("idle");
+      }
     },
-    [sessions, enterActiveMode],
+    [sessions, workspaceId, featureId],
   );
 
   const handleBack = useCallback(() => {

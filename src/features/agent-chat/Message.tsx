@@ -15,6 +15,12 @@ export function MessageContent({ content }: { content: string }) {
 export function Message({ message }: { message: HermesMessage }) {
   const isUser = message.role === "user";
 
+  // Skip the bubble entirely for empty content (e.g. an assistant turn that
+  // only produced tool calls) — an empty bubble is just visual noise.
+  if (!message.content.trim()) {
+    return null;
+  }
+
   return (
     <div
       data-message

@@ -124,6 +124,29 @@ describe("SessionHistoryList", () => {
     expect(html).toContain(sessions[0].title);
   });
 
+  it("renders a sane relative date for second-based timestamps", () => {
+    // Backend sends Unix seconds, not ms. A timestamp 5 minutes ago in seconds
+    // must render as "5m ago", not a bogus ~20000d ago.
+    const fiveMinAgoSeconds = Math.floor((Date.now() - 5 * 60_000) / 1000);
+    const html = renderToStaticMarkup(
+      React.createElement(SessionHistoryList, {
+        sessions: [
+          {
+            id: "s-secs",
+            title: "Seconds session",
+            started_at: fiveMinAgoSeconds,
+            last_active_at: fiveMinAgoSeconds,
+            last_message_excerpt: "hi",
+          },
+        ],
+        loading: false,
+        onSelect: vi.fn(),
+      }),
+    );
+    expect(html).toContain("5m ago");
+    expect(html).not.toMatch(/\d{4,}d ago/);
+  });
+
   it("calls onSelect with the session id when a row is clicked", () => {
     const sessions = makeSessions(2);
     const onSelect = vi.fn();
