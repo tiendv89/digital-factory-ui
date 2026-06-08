@@ -74,7 +74,7 @@ test.describe("T5 — EmptyState for zero-membership user", () => {
     expect(pageText).toContain(
       "Your workspace will appear here as soon as your engagement is set up",
     );
-    expect(pageText).toContain("contact your Kitelabs delivery lead");
+    expect(pageText).toContain("contact your delivery lead");
 
     // Must NOT see the import/connect form (which was the old redirect target)
     expect(pageText).not.toContain("Connect workspace");

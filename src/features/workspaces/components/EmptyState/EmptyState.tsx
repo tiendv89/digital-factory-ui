@@ -25,7 +25,7 @@ export function EmptyState() {
       <div className="flex max-w-md flex-col items-center gap-6 text-center">
         <p className="text-sm text-text-secondary">
           Your workspace will appear here as soon as your engagement is set up.
-          If you expected to see something, contact your Kitelabs delivery lead.
+          If you expected to see something, contact your delivery lead.
         </p>
 
         {isPlatformAdmin && (

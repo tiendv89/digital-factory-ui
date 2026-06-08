@@ -1,4 +1,5 @@
 export { AgentChatPanel } from "./AgentChatPanel";
+export { SessionHistoryList } from "./SessionHistoryList";
 export { Conversation, ConversationContent, useConversationScroll } from "./Conversation";
 export { Message, MessageContent } from "./Message";
 export { MessageThread } from "./MessageThread";
