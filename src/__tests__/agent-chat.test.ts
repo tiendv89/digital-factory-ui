@@ -185,6 +185,23 @@ vi.mock("../features/agent-chat", () => ({
   AgentChatPanel: () => React.createElement("div", { "data-agent-chat-panel": "" }),
 }));
 
+vi.mock("../features/feature-status/FeatureStatusPanel", () => ({
+  FeatureStatusPanel: () => React.createElement("div", { "data-feature-status-panel": "" }),
+}));
+
+vi.mock("../features/feature-status/CollapseToggle", () => ({
+  CollapseToggle: ({ side }: { side: string }) =>
+    React.createElement("button", { "data-collapse-toggle": "", "data-side": side }),
+}));
+
+vi.mock("../hooks/useLocalStorage", () => ({
+  useLocalStorage: vi.fn((key: string) => {
+    if (key === "df-left-panel-collapsed") return [false, vi.fn()];
+    if (key === "df-right-panel-collapsed") return [false, vi.fn()];
+    return [false, vi.fn()];
+  }),
+}));
+
 // Avoid rendering WorkspaceHeader which requires SessionProvider
 vi.mock("../features/workspaces/components/WorkspaceSessionPage/WorkspaceSessionShared", async (importOriginal) => {
   const original = await importOriginal() as Record<string, unknown>;
@@ -231,7 +248,7 @@ vi.mock("../features/workspaces/context/WorkspaceContext", () => ({
 import { FeatureSessionPage } from "../features/workspaces/components/WorkspaceSessionPage/FeatureSessionPage";
 
 describe("FeatureSessionPage layout", () => {
-  it("renders FeatureTabView and AgentChatPanel in a horizontal flex split", () => {
+  it("renders FeatureStatusPanel, FeatureTabView, and AgentChatPanel in a three-panel flex layout", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureSessionPage, {
         sessionId: "sess-1",
@@ -240,14 +257,17 @@ describe("FeatureSessionPage layout", () => {
       }),
     );
 
+    expect(html).toContain('data-feature-status-panel');
     expect(html).toContain('data-feature-tab-view');
     expect(html).toContain('data-agent-chat-panel');
 
     // The outer wrapper uses flex + overflow-hidden
     expect(html).toMatch(/class="[^"]*flex[^"]*min-h-0[^"]*flex-1[^"]*overflow-hidden/);
 
-    // Chat panel has w-80
-    expect(html).toMatch(/class="[^"]*w-80[^"]*shrink-0/);
+    // Left panel is w-64 when expanded
+    expect(html).toMatch(/data-left-panel[^>]*class="[^"]*w-64/);
+    // Right panel is w-96 when expanded
+    expect(html).toMatch(/data-right-panel[^>]*class="[^"]*w-96/);
   });
 
   it("shows error state when workspaceId is missing", () => {
