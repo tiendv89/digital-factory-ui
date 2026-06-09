@@ -93,7 +93,7 @@ vi.mock("@/features/board/components/FeatureTabView/FeatureTabView", () => ({
     React.createElement("div", { "data-feature-tab-view": true }),
 }));
 
-import BoardPage from "../app/board/page";
+import BoardPage from "../app/(shell)/board/page";
 
 describe("BoardPage layout", () => {
   beforeEach(() => {
