@@ -187,6 +187,15 @@ export type CreateFeatureRequest = {
   start_stage?: string;
 };
 
+export type CreateWorkspaceRequest = {
+  name: string;
+  slug: string;
+  /** Placeholder — accepted but may be ignored by the backend until the workspace entity gains a color column. */
+  color?: string;
+  /** Placeholder — accepted but may be ignored by the backend until the workspace entity gains a plan column. */
+  plan?: string;
+};
+
 export type ApiError = {
   code: string;
   message: string;

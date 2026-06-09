@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronDown, Check, Building2, Layers } from "lucide-react";
+import { ChevronDown, Check, Building2, Layers, Plus } from "lucide-react";
 import { useOrgWorkspaceSelection } from "@/features/workspaces/hooks/useOrgWorkspaceSelection";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
+import { CreateOrgModal } from "@/features/workspaces/components/CreateOrgModal";
+import { CreateWorkspaceModal } from "@/features/workspaces/components/CreateWorkspaceModal";
 import type { MeMembership } from "@/services/user-service";
 import type { LocalWorkspaceSummary } from "@/services/workflow-backend";
 
@@ -13,10 +15,12 @@ function OrgDropdown({
   memberships,
   activeMembership,
   onSelect,
+  onCreateOrg,
 }: {
   memberships: MeMembership[];
   activeMembership: MeMembership | null;
   onSelect: (slug: string) => void;
+  onCreateOrg: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -37,6 +41,11 @@ function OrgDropdown({
     },
     [onSelect],
   );
+
+  const handleCreateOrg = useCallback(() => {
+    setOpen(false);
+    onCreateOrg();
+  }, [onCreateOrg]);
 
   return (
     <div ref={ref} className="relative flex-shrink-0">
@@ -94,6 +103,17 @@ function OrgDropdown({
               );
             })}
           </div>
+          <div className="border-t border-border p-1">
+            <button
+              type="button"
+              onClick={handleCreateOrg}
+              data-create-org-trigger
+              className="flex w-full items-center gap-2 px-2 py-1.5 text-[11px] font-semibold text-text-primary transition-colors hover:bg-surface-subtle"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              Create Organization
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -106,10 +126,12 @@ function WorkspaceDropdown({
   workspaces,
   activeWorkspaceId,
   onSelect,
+  onCreateWorkspace,
 }: {
   workspaces: LocalWorkspaceSummary[];
   activeWorkspaceId: string | null;
   onSelect: (workspaceId: string) => void;
+  onCreateWorkspace: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -132,6 +154,11 @@ function WorkspaceDropdown({
     },
     [onSelect],
   );
+
+  const handleCreateWorkspace = useCallback(() => {
+    setOpen(false);
+    onCreateWorkspace();
+  }, [onCreateWorkspace]);
 
   return (
     <div ref={ref} className="relative flex-shrink-0">
@@ -190,6 +217,17 @@ function WorkspaceDropdown({
               );
             })}
           </div>
+          <div className="border-t border-border p-1">
+            <button
+              type="button"
+              onClick={handleCreateWorkspace}
+              data-create-workspace-trigger
+              className="flex w-full items-center gap-2 px-2 py-1.5 text-[11px] font-semibold text-text-primary transition-colors hover:bg-surface-subtle"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              Create Workspace
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -211,6 +249,9 @@ export function OrgWorkspaceSwitcher() {
   } = useOrgWorkspaceSelection();
 
   const { summaries, selectWorkspace } = useWorkspaceContext();
+
+  const [showCreateOrg, setShowCreateOrg] = useState(false);
+  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
 
   // Cross-reference local summaries with accessible_workspace_ids.
   // If none match (e.g. dev env with stub data), fall back to showing all summaries.
@@ -242,12 +283,30 @@ export function OrgWorkspaceSwitcher() {
 
   if (isEmpty) {
     return (
-      <div
-        data-org-workspace-empty
-        className="flex h-7 items-center gap-1.5 rounded border border-border bg-surface-secondary px-2 text-xs text-text-muted"
-      >
-        <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        <span>Contact your delivery team</span>
+      <div className="flex items-center gap-1">
+        <div
+          data-org-workspace-empty
+          className="flex h-7 items-center gap-1.5 rounded border border-border bg-surface-secondary px-2 text-xs text-text-muted"
+        >
+          <Building2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span>No organization</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowCreateOrg(true)}
+          data-create-org-trigger
+          aria-label="Create organization"
+          className="flex h-7 items-center gap-1 rounded border border-border bg-surface-secondary px-2 text-xs text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+          New Org
+        </button>
+        {showCreateOrg && (
+          <CreateOrgModal
+            onClose={() => setShowCreateOrg(false)}
+            onSuccess={() => setShowCreateOrg(false)}
+          />
+        )}
       </div>
     );
   }
@@ -256,45 +315,78 @@ export function OrgWorkspaceSwitcher() {
   const multiWorkspace = accessibleSummaries.length >= 2;
 
   return (
-    <div className="flex items-center gap-1" data-org-workspace-switcher>
-      {multiOrg ? (
-        <OrgDropdown
-          memberships={memberships}
-          activeMembership={activeMembership}
-          onSelect={switchOrg}
-        />
-      ) : activeMembership ? (
-        <div
-          className="flex h-7 items-center gap-1.5 rounded border border-border bg-surface-secondary px-2 text-xs font-semibold text-text-secondary"
-          data-org-label
-          aria-label={`Organization: ${activeMembership.organization_name}`}
-        >
-          <Building2 className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden="true" />
-          <span className="max-w-32 truncate">{activeMembership.organization_name}</span>
-        </div>
-      ) : null}
+    <>
+      <div className="flex items-center gap-1" data-org-workspace-switcher>
+        {multiOrg ? (
+          <OrgDropdown
+            memberships={memberships}
+            activeMembership={activeMembership}
+            onSelect={switchOrg}
+            onCreateOrg={() => setShowCreateOrg(true)}
+          />
+        ) : activeMembership ? (
+          <div
+            className="flex h-7 items-center gap-1.5 rounded border border-border bg-surface-secondary px-2 text-xs font-semibold text-text-secondary"
+            data-org-label
+            aria-label={`Organization: ${activeMembership.organization_name}`}
+          >
+            <Building2 className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden="true" />
+            <span className="max-w-32 truncate">{activeMembership.organization_name}</span>
+          </div>
+        ) : null}
 
-      {accessibleSummaries.length > 0 && (
-        <>
-          <span className="text-text-muted" aria-hidden="true">/</span>
-          {multiWorkspace ? (
-            <WorkspaceDropdown
-              workspaces={accessibleSummaries}
-              activeWorkspaceId={activeWorkspaceId}
-              onSelect={handleSwitchWorkspace}
-            />
-          ) : (
-            <div
-              className="flex h-7 items-center gap-1.5 rounded border border-border bg-surface-secondary px-2 text-xs font-semibold text-text-secondary"
-              data-workspace-label
-              aria-label={`Workspace: ${accessibleSummaries[0]?.name}`}
+        {accessibleSummaries.length > 0 && (
+          <>
+            <span className="text-text-muted" aria-hidden="true">/</span>
+            {multiWorkspace ? (
+              <WorkspaceDropdown
+                workspaces={accessibleSummaries}
+                activeWorkspaceId={activeWorkspaceId}
+                onSelect={handleSwitchWorkspace}
+                onCreateWorkspace={() => setShowCreateWorkspace(true)}
+              />
+            ) : (
+              <div
+                className="flex h-7 items-center gap-1.5 rounded border border-border bg-surface-secondary px-2 text-xs font-semibold text-text-secondary"
+                data-workspace-label
+                aria-label={`Workspace: ${accessibleSummaries[0]?.name}`}
+              >
+                <Layers className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden="true" />
+                <span className="max-w-32 truncate">{accessibleSummaries[0]?.name}</span>
+              </div>
+            )}
+          </>
+        )}
+
+        {accessibleSummaries.length === 0 && activeMembership && (
+          <>
+            <span className="text-text-muted" aria-hidden="true">/</span>
+            <button
+              type="button"
+              onClick={() => setShowCreateWorkspace(true)}
+              data-create-workspace-trigger
+              aria-label="Create workspace"
+              className="flex h-7 items-center gap-1 rounded border border-border bg-surface-secondary px-2 text-xs text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary"
             >
-              <Layers className="h-3.5 w-3.5 shrink-0 text-text-muted" aria-hidden="true" />
-              <span className="max-w-32 truncate">{accessibleSummaries[0]?.name}</span>
-            </div>
-          )}
-        </>
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              New Workspace
+            </button>
+          </>
+        )}
+      </div>
+
+      {showCreateOrg && (
+        <CreateOrgModal
+          onClose={() => setShowCreateOrg(false)}
+          onSuccess={() => setShowCreateOrg(false)}
+        />
       )}
-    </div>
+      {showCreateWorkspace && (
+        <CreateWorkspaceModal
+          onClose={() => setShowCreateWorkspace(false)}
+          onSuccess={() => setShowCreateWorkspace(false)}
+        />
+      )}
+    </>
   );
 }

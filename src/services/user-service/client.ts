@@ -7,6 +7,7 @@ import type {
   InviteRequest,
   UpdateMeRequest,
   RoleChangeRequest,
+  CreateOrgRequest,
   Org,
   OrgResponse,
   OrgMember,
@@ -178,6 +179,17 @@ async function throwIfNotOk(res: Response, context: string): Promise<void> {
     err.status = res.status;
     throw err;
   }
+}
+
+export async function createOrg(body: CreateOrgRequest): Promise<Org> {
+  const res = await fetch(`${getUserServiceBase()}/api/orgs`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  await throwIfNotOk(res, "Failed to create org");
+  return unwrapOrg((await res.json()) as OrgResponse | Org);
 }
 
 export async function fetchOrg(orgId: string): Promise<Org> {
