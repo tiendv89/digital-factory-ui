@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${cousine.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} ${cousine.variable} dark h-full`}>
       <body className="h-full min-h-screen bg-bg text-text-primary antialiased">
         <AppProviders>{children}</AppProviders>
       </body>
