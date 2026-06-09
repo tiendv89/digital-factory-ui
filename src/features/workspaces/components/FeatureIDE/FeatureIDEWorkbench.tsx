@@ -148,8 +148,6 @@ export function FeatureIDEWorkbench({
           >
             <FeatureIDEDocsPanel
               feature={feature}
-              workspaceId={workspaceId}
-              featureId={featureId}
               activeTab={activeDocTab}
               onTabChange={setActiveDocTab}
               activityEvents={featureActivityEvents}

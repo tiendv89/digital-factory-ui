@@ -11,8 +11,6 @@ export type DocTab = "product_spec" | "technical_design" | "tasks" | "logs";
 
 type FeatureIDEDocsPanelProps = {
   feature: FeatureDetail;
-  workspaceId: string;
-  featureId: string;
   activeTab: DocTab;
   onTabChange: (tab: DocTab) => void;
   activityEvents: ActivityEvent[];

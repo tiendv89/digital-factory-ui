@@ -371,8 +371,6 @@ describe("FeatureIDEDocsPanel", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureIDEDocsPanel, {
         feature: makeFeature(),
-        workspaceId: "ws-1",
-        featureId: "feat-1",
         activeTab: "product_spec",
         onTabChange: vi.fn(),
         activityEvents: [],
@@ -387,8 +385,6 @@ describe("FeatureIDEDocsPanel", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureIDEDocsPanel, {
         feature: makeFeature(),
-        workspaceId: "ws-1",
-        featureId: "feat-1",
         activeTab: "product_spec",
         onTabChange: vi.fn(),
         activityEvents: [],
@@ -406,8 +402,6 @@ describe("FeatureIDEDocsPanel", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureIDEDocsPanel, {
         feature: makeFeature(),
-        workspaceId: "ws-1",
-        featureId: "feat-1",
         activeTab: "product_spec",
         onTabChange: vi.fn(),
         activityEvents: [],
@@ -425,8 +419,6 @@ describe("FeatureIDEDocsPanel", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureIDEDocsPanel, {
         feature: makeFeature(),
-        workspaceId: "ws-1",
-        featureId: "feat-1",
         activeTab: "technical_design",
         onTabChange: vi.fn(),
         activityEvents: [],
@@ -443,8 +435,6 @@ describe("FeatureIDEDocsPanel", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureIDEDocsPanel, {
         feature: makeFeature(),
-        workspaceId: "ws-1",
-        featureId: "feat-1",
         activeTab: "product_spec",
         onTabChange: vi.fn(),
         activityEvents: [],
@@ -459,8 +449,6 @@ describe("FeatureIDEDocsPanel", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureIDEDocsPanel, {
         feature: makeFeature(),
-        workspaceId: "ws-1",
-        featureId: "feat-1",
         activeTab: "technical_design",
         onTabChange: vi.fn(),
         activityEvents: [],
@@ -475,8 +463,6 @@ describe("FeatureIDEDocsPanel", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureIDEDocsPanel, {
         feature: makeFeature(),
-        workspaceId: "ws-1",
-        featureId: "feat-1",
         activeTab: "tasks",
         onTabChange: vi.fn(),
         activityEvents: [],
@@ -491,8 +477,6 @@ describe("FeatureIDEDocsPanel", () => {
     const html = renderToStaticMarkup(
       React.createElement(FeatureIDEDocsPanel, {
         feature: makeFeature(),
-        workspaceId: "ws-1",
-        featureId: "feat-1",
         activeTab: "logs",
         onTabChange: vi.fn(),
         activityEvents: [],
@@ -512,8 +496,6 @@ describe("FeatureIDEDocsPanel", () => {
             technical_design: { review_status: "approved" },
           },
         }),
-        workspaceId: "ws-1",
-        featureId: "feat-1",
         activeTab: "product_spec",
         onTabChange: vi.fn(),
         activityEvents: [],
