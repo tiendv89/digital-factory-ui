@@ -34,6 +34,12 @@ const config: Config = {
         "text-muted": "var(--color-text-muted)",
         "chip-bg": "var(--color-chip-bg)",
         "surface-subtle": "var(--color-surface-subtle)",
+        /* IDE shell tokens (NavRail, Topbar) */
+        "nav-rail": "var(--color-nav-rail)",
+        topbar: "var(--color-topbar)",
+        "nav-item-hover": "var(--color-nav-item-hover)",
+        "nav-item-active": "var(--color-nav-item-active)",
+        statusbar: "var(--color-statusbar)",
       },
     },
   },

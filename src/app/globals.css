@@ -1,36 +1,85 @@
 @import "tailwindcss";
 @import "@heroui/react/styles";
 
+/*
+ * Dark VS Code-inspired palette — oklch color space throughout.
+ * This is the baseline theme; all tokens are dark by default.
+ * HeroUI dark mode is activated via .dark on <html>.
+ *
+ * Lightness / chroma / hue key:
+ *   Background tier:  ~13–28% lightness, ~0 chroma (near-neutral gray)
+ *   Text tier:        ~46–85% lightness, ~0 chroma
+ *   Accent / status:  full chroma, lightness tuned for legibility on dark bg
+ */
 @theme inline {
   /* Fonts */
   --font-sans: var(--font-inter);
   --font-mono: var(--font-cousine);
 
-  /* Design tokens */
-  --color-primary: #5465e8;
-  --color-primary-light: #e4e8fb;
-  --color-success: #009252;
-  --color-success-bg: #d9f2e6;
-  --color-warning: #b3741a;
-  --color-warning-bg: #fbefd9;
-  --color-danger: #e04865;
-  --color-danger-bg: #fce4e9;
-  --color-purple: #7c3aed;
-  --color-purple-bg: #ede9fe;
-  --color-yellow: #b45309;
-  --color-yellow-bg: #fef3c7;
-  --color-ready: #2595cc;
-  --color-ready-bg: #e3f2fb;
-  --color-muted-bg: #eef0f6;
-  --color-surface: #ffffff;
-  --color-bg: #f7f8fb;
-  --color-surface-secondary: #fafbfd;
-  --color-border: #e4e7ef;
-  --color-text-primary: #1a1d27;
-  --color-text-secondary: #5a6380;
-  --color-text-muted: #8892b5;
-  --color-chip-bg: #f3f4f9;
-  --color-surface-subtle: #eef0f6;
+  /* ── Background / surface ──────────────────────────────────────── */
+  /* Main editor/page background  ≈ VS Code #1e1e1e */
+  --color-bg: oklch(13.4% 0 0);
+  /* Panel / sidebar surface  ≈ VS Code #252526 */
+  --color-surface: oklch(16.2% 0.003 285.9);
+  /* Slightly lifted surface (cards, dropdowns)  ≈ #2d2d2d */
+  --color-surface-secondary: oklch(19.6% 0 0);
+  /* Subtle tinted surface (inline highlights)  ≈ #252526 tinted */
+  --color-surface-subtle: oklch(17.5% 0.003 285.9);
+  /* Chip / badge background  ≈ #333333 */
+  --color-chip-bg: oklch(22.9% 0 0);
+  /* Muted fill (empty states, disabled zones)  ≈ #2d2d2d */
+  --color-muted-bg: oklch(19.6% 0 0);
+
+  /* IDE shell-specific surfaces (used by NavRail/Topbar, T2+) */
+  --color-nav-rail: oklch(14.8% 0.003 285.9);
+  --color-topbar: oklch(16.2% 0.003 285.9);
+  --color-nav-item-hover: oklch(22.0% 0.004 285.9);
+  --color-nav-item-active: oklch(25.5% 0.005 270deg);
+  /* Status bar accent (VS Code #007acc) */
+  --color-statusbar: oklch(52.7% 0.155 235.0);
+
+  /* ── Borders / separators ──────────────────────────────────────── */
+  /* ≈ VS Code #3c3c3c */
+  --color-border: oklch(27.4% 0 0);
+
+  /* ── Text ──────────────────────────────────────────────────────── */
+  /* Primary text  ≈ VS Code #d4d4d4 */
+  --color-text-primary: oklch(85.1% 0 0);
+  /* Secondary / muted label  ≈ VS Code #9d9d9d */
+  --color-text-secondary: oklch(65.5% 0 0);
+  /* Dimmed / placeholder  ≈ VS Code #666666 */
+  --color-text-muted: oklch(46.3% 0 0);
+
+  /* ── Accent / primary ──────────────────────────────────────────── */
+  /* Brand blue (kept close to existing 5465e8, adapted for dark contrast) */
+  --color-primary: oklch(65.0% 0.185 265.0);
+  /* Tinted primary background for selected/active items */
+  --color-primary-light: oklch(26.0% 0.065 265.0);
+
+  /* ── Status ────────────────────────────────────────────────────── */
+  /* Success  ≈ VS Code teal-green #4ec9b0 */
+  --color-success: oklch(74.0% 0.105 175.0);
+  --color-success-bg: oklch(21.0% 0.04 175.0);
+
+  /* Warning  ≈ VS Code yellow #dcdcaa */
+  --color-warning: oklch(87.5% 0.072 96.5);
+  --color-warning-bg: oklch(21.5% 0.035 88.0);
+
+  /* Danger  ≈ VS Code red #f44747 */
+  --color-danger: oklch(63.5% 0.195 24.0);
+  --color-danger-bg: oklch(20.5% 0.065 24.0);
+
+  /* Purple  ≈ VS Code #c586c0 */
+  --color-purple: oklch(68.5% 0.115 325.0);
+  --color-purple-bg: oklch(21.0% 0.045 325.0);
+
+  /* Yellow (alias for warning in status chips) */
+  --color-yellow: oklch(87.5% 0.072 96.5);
+  --color-yellow-bg: oklch(21.5% 0.035 88.0);
+
+  /* Ready (task-status "ready")  ≈ VS Code #569cd6 blue */
+  --color-ready: oklch(64.5% 0.13 234.0);
+  --color-ready-bg: oklch(21.0% 0.05 234.0);
 }
 
 :root {
