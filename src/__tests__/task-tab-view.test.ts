@@ -289,19 +289,16 @@ describe("TaskTabView — content rendering", () => {
     expect(html).toContain("agent");
   });
 
-  it("renders PR refs section when pr_refs is non-empty", () => {
+  it("renders PR pills when pr_refs is non-empty", () => {
     const html = renderToStaticMarkup(
       React.createElement(TaskTabView, { workspaceId: "ws-1", taskId: "task-uuid-1" }),
     );
-    expect(html).toContain("data-task-pr-refs");
+    // T5 re-skin: PR entries are shown as pills (data-pr-pills / data-pr-pill)
+    expect(html).toContain("data-pr-pills");
     expect(html).toContain("https://github.com/acme/project-workspace/pull/42");
-    expect(html).toContain("Workspace PR");
-
-    const prCardStart = html.indexOf(
-      'data-pr-ref="https://github.com/acme/project-workspace/pull/42"',
+    expect(html).toContain(
+      'data-pr-pill="https://github.com/acme/project-workspace/pull/42"',
     );
-    const prCard = html.slice(prCardStart, html.indexOf("</a>", prCardStart));
-    expect(prCard).not.toContain(">open<");
   });
 });
 
@@ -379,7 +376,7 @@ describe("TaskTabView — metadata fallbacks", () => {
     expect(html).not.toContain("data-task-execution");
   });
 
-  it("does not render PR refs section when pr_refs is empty and no legacy PR", () => {
+  it("does not render PR pills row when pr_refs is empty and no legacy PR", () => {
     mockUseWorkspaceTask.mockReturnValue({
       task: makeTaskDetail({ pr_refs: [], pr: null, workspace_pr: null }),
       loading: false,
@@ -390,7 +387,8 @@ describe("TaskTabView — metadata fallbacks", () => {
     const html = renderToStaticMarkup(
       React.createElement(TaskTabView, { workspaceId: "ws-1", taskId: "task-uuid-1" }),
     );
-    expect(html).not.toContain("data-task-pr-refs");
+    // T5 re-skin: pills row hidden when no PRs
+    expect(html).not.toContain("data-pr-pills");
   });
 
   it("renders blocked reason when present", () => {

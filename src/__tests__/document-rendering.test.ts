@@ -714,10 +714,11 @@ describe("TaskTabView — empty PR refs handled gracefully", () => {
       }),
     );
     expect(html).toContain("data-task-tab-content");
-    expect(html).not.toContain("data-task-pr-refs");
+    // T5 re-skin: pills row hidden when no PRs
+    expect(html).not.toContain("data-pr-pills");
   });
 
-  it("renders PR refs section when pr_refs has entries", () => {
+  it("renders PR pills when pr_refs has entries", () => {
     mockUseWorkspaceTask.mockReturnValue({
       task: makeTaskDetail({
         pr_refs: [
@@ -740,12 +741,13 @@ describe("TaskTabView — empty PR refs handled gracefully", () => {
         taskId: "task-uuid-1",
       }),
     );
-    expect(html).toContain("data-task-pr-refs");
+    // T5 re-skin: PR entries shown as pills (data-pr-pills / data-pr-pill)
+    expect(html).toContain("data-pr-pills");
     expect(html).toContain("https://github.com/org/my-repo/pull/42");
     expect(html).toContain("Repository PR");
   });
 
-  it("renders PR refs from legacy pr field when pr_refs is empty", () => {
+  it("renders PR pills from legacy pr field when pr_refs is empty", () => {
     mockUseWorkspaceTask.mockReturnValue({
       task: makeTaskDetail({
         pr_refs: [],
@@ -768,7 +770,8 @@ describe("TaskTabView — empty PR refs handled gracefully", () => {
         taskId: "task-uuid-1",
       }),
     );
-    expect(html).toContain("data-task-pr-refs");
+    // T5 re-skin: PR entries shown as pills
+    expect(html).toContain("data-pr-pills");
     expect(html).toContain("https://github.com/org/my-repo/pull/10");
   });
 });
