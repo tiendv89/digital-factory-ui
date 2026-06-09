@@ -288,44 +288,46 @@ export function OrgMembersTab({ orgId, currentUserId, userRole }: OrgMembersTabP
           ) : invitations.length === 0 ? (
             <p className="text-sm text-text-muted">No pending invitations.</p>
           ) : (
-            <div className="rounded-lg border border-border bg-surface divide-y divide-border" data-invitations-list>
-              {invitations.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="flex items-center gap-3 px-4 py-3"
-                  data-invitation-row={inv.id}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-text-primary">{inv.email}</p>
-                    <p className="text-xs text-text-muted">
-                      Expires {new Date(inv.expires_at).toLocaleDateString()}
-                    </p>
+            <>
+              <div className="rounded-lg border border-border bg-surface divide-y divide-border" data-invitations-list>
+                {invitations.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="flex items-center gap-3 px-4 py-3"
+                    data-invitation-row={inv.id}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm text-text-primary">{inv.email}</p>
+                      <p className="text-xs text-text-muted">
+                        Expires {new Date(inv.expires_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <RoleBadge role={inv.role} />
+                    {canEdit && (
+                      <button
+                        type="button"
+                        title="Cancel invitation"
+                        aria-label={`Cancel invitation for ${inv.email}`}
+                        onClick={() => void cancelInvitation.mutateAsync(inv.id)}
+                        disabled={cancelInvitation.isPending}
+                        className="flex h-7 w-7 items-center justify-center rounded border border-border text-text-muted transition-colors hover:bg-nav-item-hover hover:text-danger disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        {cancelInvitation.isPending ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                        ) : (
+                          <X className="h-3.5 w-3.5" aria-hidden />
+                        )}
+                      </button>
+                    )}
                   </div>
-                  <RoleBadge role={inv.role} />
-                  {canEdit && (
-                    <button
-                      type="button"
-                      title="Cancel invitation"
-                      aria-label={`Cancel invitation for ${inv.email}`}
-                      onClick={() => void cancelInvitation.mutateAsync(inv.id)}
-                      disabled={cancelInvitation.isPending}
-                      className="flex h-7 w-7 items-center justify-center rounded border border-border text-text-muted transition-colors hover:bg-nav-item-hover hover:text-danger disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    >
-                      {cancelInvitation.isPending ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                      ) : (
-                        <X className="h-3.5 w-3.5" aria-hidden />
-                      )}
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-            {cancelInvitation.error && (
-              <p className="mt-2 text-xs text-danger" role="alert">
-                {cancelInvitation.error.message}
-              </p>
-            )}
+                ))}
+              </div>
+              {cancelInvitation.error && (
+                <p className="mt-2 text-xs text-danger" role="alert">
+                  {cancelInvitation.error.message}
+                </p>
+              )}
+            </>
           )}
         </section>
       )}
