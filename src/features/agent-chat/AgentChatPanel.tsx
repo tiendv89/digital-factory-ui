@@ -23,12 +23,14 @@ type AgentChatPanelProps = {
   workspaceId: string;
   featureId: string;
   onArtifactSaved?: (artifact: "product_spec" | "technical_design") => void;
+  requestSessionId?: string | null;
 };
 
 export function AgentChatPanel({
   workspaceId,
   featureId,
   onArtifactSaved,
+  requestSessionId,
 }: AgentChatPanelProps) {
   const [panelMode, setPanelMode] = useState<PanelMode>({ mode: "history" });
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
@@ -91,6 +93,13 @@ export function AgentChatPanel({
     },
     [sessions, workspaceId, featureId],
   );
+
+  const requestedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!requestSessionId || requestSessionId === requestedRef.current) return;
+    requestedRef.current = requestSessionId;
+    void handleSessionSelect(requestSessionId);
+  }, [requestSessionId, handleSessionSelect]);
 
   const handleBack = useCallback(() => {
     abortRef.current?.abort();
