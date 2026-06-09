@@ -2,6 +2,7 @@ export type {
   ActivityEvent,
   ApiError,
   CreateFeatureRequest,
+  CreateWorkspaceRequest,
   FeatureDetail,
   FeatureDocument,
   FeatureId,
@@ -39,6 +40,7 @@ export type { FeatureSearchParams, FeatureTaskParams, TaskSearchParams } from ".
 
 export {
   createFeature,
+  createWorkspace,
   getFeature,
   getFeatureTask,
   getFeatureTaskList,

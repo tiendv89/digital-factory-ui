@@ -95,6 +95,11 @@ export interface OrgWorkspace {
   slug: string;
 }
 
+export interface CreateOrgRequest {
+  name: string;
+  slug: string;
+}
+
 export interface OrgResponse {
   data: Org;
 }

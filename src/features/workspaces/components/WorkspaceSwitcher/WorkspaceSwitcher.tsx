@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronDown, Check, FolderOpen, Plus, Search } from "lucide-react";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
 import { ImportModal } from "@/features/workspaces/components/ImportModal/ImportModal";
+import { CreateWorkspaceModal } from "@/features/workspaces/components/CreateWorkspaceModal";
 import type { LocalWorkspaceSummary } from "@/services/workflow-backend";
 
 const AVATAR_CLASSES = [
@@ -91,6 +92,7 @@ export function WorkspaceSwitcher() {
   } = useWorkspaceContext();
   const [open, setOpen] = useState(false);
   const [showImport, setShowImport] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
@@ -239,7 +241,20 @@ export function WorkspaceSwitcher() {
               </p>
             )}
 
-            <div className="border-t border-border p-1.5">
+            <div className="border-t border-border p-1.5 space-y-0.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  setSearch("");
+                  setShowCreate(true);
+                }}
+                data-create-workspace-trigger
+                className="flex w-full items-center gap-2 px-2 py-1.5 text-[11px] font-semibold text-text-primary transition-colors hover:bg-surface-subtle"
+              >
+                <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                Create Workspace
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -247,7 +262,7 @@ export function WorkspaceSwitcher() {
                   setSearch("");
                   setShowImport(true);
                 }}
-                className="flex w-full items-center gap-2 px-2 py-1.5 text-[11px] font-semibold text-text-primary transition-colors hover:bg-surface-subtle"
+                className="flex w-full items-center gap-2 px-2 py-1.5 text-[11px] text-text-secondary transition-colors hover:bg-surface-subtle"
               >
                 <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                 Import Workspace
@@ -261,6 +276,14 @@ export function WorkspaceSwitcher() {
         <ImportModal
           onClose={() => setShowImport(false)}
           onSuccess={handleImportSuccess}
+        />
+      )}
+      {showCreate && (
+        <CreateWorkspaceModal
+          onClose={() => setShowCreate(false)}
+          onSuccess={() => {
+            setShowCreate(false);
+          }}
         />
       )}
     </>
