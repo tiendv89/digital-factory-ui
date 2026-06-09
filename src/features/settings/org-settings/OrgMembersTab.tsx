@@ -137,6 +137,11 @@ function MemberRow({
       {changeRole.error && (
         <p className="text-xs text-danger">{changeRole.error.message}</p>
       )}
+      {removeMember.error && (
+        <p className="text-xs text-danger" role="alert">
+          {removeMember.error.message}
+        </p>
+      )}
     </div>
   );
 }
@@ -316,6 +321,11 @@ export function OrgMembersTab({ orgId, currentUserId, userRole }: OrgMembersTabP
                 </div>
               ))}
             </div>
+            {cancelInvitation.error && (
+              <p className="mt-2 text-xs text-danger" role="alert">
+                {cancelInvitation.error.message}
+              </p>
+            )}
           )}
         </section>
       )}
