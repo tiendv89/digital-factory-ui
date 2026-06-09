@@ -181,6 +181,12 @@ export type ImportWorkspaceRequest = {
   name?: string;
 };
 
+export type CreateFeatureRequest = {
+  name: string;
+  description?: string;
+  start_stage?: string;
+};
+
 export type ApiError = {
   code: string;
   message: string;

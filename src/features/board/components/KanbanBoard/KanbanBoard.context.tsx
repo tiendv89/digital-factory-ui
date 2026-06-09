@@ -27,15 +27,19 @@ import type {
 } from "../../types";
 import {
   type BoardMode,
+  type ViewMode,
   getDefaultBoardMode,
   getDefaultFeatureStatusFilter,
   getDefaultStatusFilter,
+  getDefaultViewMode,
   getStoredBoardMode,
   getStoredFeatureStatusFilter,
   getStoredStatusFilter,
+  getStoredViewMode,
   saveBoardMode,
   saveFeatureStatusFilter,
   saveStatusFilter,
+  saveViewMode,
 } from "../../lib/status-filter-store";
 import { isAllFeatureStatusFilterSelected } from "../../lib/status-filter";
 import {
@@ -60,6 +64,9 @@ export type BoardContextValue = {
 
   boardMode: BoardMode;
   setBoardMode: (mode: BoardMode) => void;
+
+  viewMode: ViewMode;
+  setViewMode: (mode: ViewMode) => void;
 
   // Task Mode search/filter
   taskSearchQuery: string;
@@ -144,6 +151,9 @@ export function BoardProvider({
 
   const [boardMode, setBoardModeState] = useState<BoardMode>(
     () => getStoredBoardMode() ?? getDefaultBoardMode(),
+  );
+  const [viewMode, setViewModeState] = useState<ViewMode>(
+    () => getStoredViewMode() ?? getDefaultViewMode(),
   );
   const [taskSearchQuery, setTaskSearchQuery] = useState("");
   const [featureSearchQuery, setFeatureSearchQuery] = useState("");
@@ -323,6 +333,11 @@ export function BoardProvider({
     setBoardModeState(mode);
   }, []);
 
+  const handleSetViewMode = useCallback((mode: ViewMode) => {
+    saveViewMode(mode);
+    setViewModeState(mode);
+  }, []);
+
   const handleSetTaskActiveFilters = useCallback((filters: ActiveFilters) => {
     saveStatusFilter(filters.statuses);
     setTaskActiveFiltersState(filters);
@@ -426,6 +441,9 @@ export function BoardProvider({
       boardMode,
       setBoardMode: handleSetBoardMode,
 
+      viewMode,
+      setViewMode: handleSetViewMode,
+
       taskSearchQuery,
       setTaskSearchQuery,
       taskActiveFilters,
@@ -480,6 +498,8 @@ export function BoardProvider({
       syncBoard,
       boardMode,
       handleSetBoardMode,
+      viewMode,
+      handleSetViewMode,
       taskSearchQuery,
       taskActiveFilters,
       handleSetTaskActiveFilters,

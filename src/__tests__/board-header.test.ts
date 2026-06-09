@@ -63,6 +63,7 @@ const mockBoardContext = vi.hoisted(() => ({
       tasks: [{ id: "T1", title: "Implement task tab", status: "ready", dependsOn: [] }],
     },
   ],
+  reload: vi.fn(),
 }));
 
 vi.mock("@/features/workspaces/context/WorkspaceContext", () => ({
@@ -74,8 +75,8 @@ vi.mock("@/features/auth", () => ({
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-vi.mock("@/features/workspaces/components/ImportModal/ImportModal", () => ({
-  ImportModal: () => React.createElement("div", { "data-import-modal": true }),
+vi.mock("../features/board/components/NewFeatureModal/NewFeatureModal", () => ({
+  NewFeatureModal: () => React.createElement("div", { "data-new-feature-modal": true }),
 }));
 
 vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
@@ -122,5 +123,10 @@ describe("BoardHeader", () => {
     expect(html).toContain('data-task-tab="task-session-1"');
     expect(html).toContain('data-feature-tab="feature-session-1"');
     expect(html).toContain("Startup Project");
+  });
+
+  it("renders a New Feature button in the workspace header", () => {
+    const html = renderToStaticMarkup(React.createElement(BoardHeader));
+    expect(html).toContain("data-new-feature-btn");
   });
 });

@@ -89,7 +89,7 @@ export default function BoardPage() {
         <BoardHeader />
         <div className="flex flex-1 overflow-hidden">
           <TaskTrackingPanel />
-          <section className="min-w-0 flex-1 overflow-hidden p-6">
+          <section className="min-w-0 flex-1 overflow-hidden">
             <KanbanBoard />
           </section>
           <BoardAgentChat />
