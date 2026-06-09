@@ -21,8 +21,8 @@ describe("LoginPage", () => {
 
   it("renders Google and GitHub sign-in links", () => {
     const html = renderToStaticMarkup(React.createElement(LoginPage));
-    expect(html).toContain("Sign in with Google");
-    expect(html).toContain("Sign in with GitHub");
+    expect(html).toContain("Continue with Google");
+    expect(html).toContain("Continue with GitHub");
   });
 
   it("links to user-service OAuth start endpoints", () => {
@@ -33,6 +33,22 @@ describe("LoginPage", () => {
 
   it("renders the sign-in heading", () => {
     const html = renderToStaticMarkup(React.createElement(LoginPage));
-    expect(html).toContain("Sign in to Workflow");
+    expect(html).toContain("Sign in");
+  });
+
+  it("renders the Workflow brand name", () => {
+    const html = renderToStaticMarkup(React.createElement(LoginPage));
+    expect(html).toContain("Workflow");
+  });
+
+  it("renders the VS Code-style status bar", () => {
+    const html = renderToStaticMarkup(React.createElement(LoginPage));
+    expect(html).toContain("bg-statusbar");
+  });
+
+  it("uses dark theme surface and bg classes", () => {
+    const html = renderToStaticMarkup(React.createElement(LoginPage));
+    expect(html).toContain("bg-bg");
+    expect(html).toContain("bg-surface");
   });
 });
