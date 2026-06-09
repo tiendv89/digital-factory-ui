@@ -1,12 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { User, Bell, Shield, Bot, Settings, Layers } from "lucide-react";
+import { User, Bell, Shield, Bot, Settings, Layers, Building2 } from "lucide-react";
 import { AccountTab } from "./tabs/AccountTab";
 import { NotificationsTab } from "./tabs/NotificationsTab";
 import { SecurityTab } from "./tabs/SecurityTab";
 import { AgentDefaultsTab } from "./tabs/AgentDefaultsTab";
 import { WorkspaceSettingsPage } from "@/features/workspaces/components/WorkspaceSettings";
+import { OrgSettingsModal } from "./org-settings/OrgSettingsModal";
+import { useSession } from "@/features/auth";
+import { getMeData } from "@/services/user-service";
+import type { MeMembership } from "@/services/user-service";
 
 type TabId = "account" | "notifications" | "security" | "agent-defaults" | "workspace-settings";
 
@@ -26,6 +30,13 @@ const TABS: TabDef[] = [
 
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("account");
+  const [orgSettingsMembership, setOrgSettingsMembership] =
+    useState<MeMembership | null>(null);
+
+  const { session } = useSession();
+  const meData = session.status === "authenticated" ? getMeData(session.data) : null;
+  const memberships = meData?.memberships ?? [];
+  const activeMembership = memberships[0] ?? null;
 
   const isWorkspaceSettings = activeTab === "workspace-settings";
 
@@ -90,22 +101,33 @@ export function SettingsPage() {
           })}
         </nav>
 
-        {/* Workspace settings — T13 */}
+        {/* Org settings entry point */}
         <div className="mt-auto border-t border-border pt-3">
-          <button
-            type="button"
-            disabled
-            title="Organisation settings — coming soon"
-            className="flex w-full cursor-not-allowed items-center gap-2.5 px-4 py-2 text-left text-sm text-text-muted opacity-50"
-            data-settings-tab="org-settings"
-            aria-label="Organisation settings (coming soon)"
-          >
-            <Bot className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="flex-1 truncate">Org settings</span>
-            <span className="rounded border border-border bg-chip-bg px-1 py-0 text-[10px]">
-              soon
-            </span>
-          </button>
+          {activeMembership ? (
+            <button
+              type="button"
+              onClick={() => setOrgSettingsMembership(activeMembership)}
+              title={`${activeMembership.organization_name} settings`}
+              className="flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm text-text-secondary transition-colors hover:bg-nav-item-hover hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+              data-settings-tab="org-settings"
+              aria-label={`Open ${activeMembership.organization_name} settings`}
+            >
+              <Building2 className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="flex-1 truncate">Org settings</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled
+              title="No organisation — join or create one first"
+              className="flex w-full cursor-not-allowed items-center gap-2.5 px-4 py-2 text-left text-sm text-text-muted opacity-50"
+              data-settings-tab="org-settings"
+              aria-label="Org settings (no organisation)"
+            >
+              <Building2 className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="flex-1 truncate">Org settings</span>
+            </button>
+          )}
           <button
             type="button"
             role="tab"
@@ -145,6 +167,15 @@ export function SettingsPage() {
           ) : null}
         </div>
       </main>
+
+      {/* Org settings modal */}
+      {orgSettingsMembership && (
+        <OrgSettingsModal
+          membership={orgSettingsMembership}
+          onClose={() => setOrgSettingsMembership(null)}
+          onOrgDeleted={() => setOrgSettingsMembership(null)}
+        />
+      )}
     </div>
   );
 }
