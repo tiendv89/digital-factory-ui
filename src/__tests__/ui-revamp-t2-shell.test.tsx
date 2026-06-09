@@ -66,6 +66,16 @@ vi.mock("@/features/workspaces/components/OrgWorkspaceSwitcher", () => ({
     React.createElement("div", { "data-org-workspace-switcher": "" }),
 }));
 
+// ── Mock useAdminMembers so TeamPage renders without a QueryClientProvider ───
+
+vi.mock("@/features/admin/hooks/useAdminMembers", () => ({
+  useWorkspaceMembers: () => ({ members: [], loading: false, error: null, reload: () => undefined }),
+  useWorkspaceInvitations: () => ({ invitations: [], loading: false, error: null, reload: () => undefined }),
+  useInviteMember: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  useRemoveMember: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+  useCancelInvitation: () => ({ mutate: vi.fn(), isPending: false, isError: false }),
+}));
+
 // ── Mock WorkspaceContext for board page ─────────────────────────────────────
 
 const mockWorkspaceCtx = vi.hoisted(() => ({
