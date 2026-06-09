@@ -6,6 +6,7 @@ import type {
   DataEnvelope,
   InviteRequest,
   UpdateMeRequest,
+  RoleChangeRequest,
 } from "./types";
 
 export function getUserServiceBase(): string {
@@ -128,5 +129,24 @@ export async function cancelInvitation(
   );
   if (!res.ok) {
     throw new Error(`Failed to cancel invitation: ${res.status}`);
+  }
+}
+
+export async function changeOrgMemberRole(
+  orgId: string,
+  userId: string,
+  body: RoleChangeRequest,
+): Promise<void> {
+  const res = await fetch(
+    `${getUserServiceBase()}/api/orgs/${orgId}/members/${userId}`,
+    {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to change member role: ${res.status}`);
   }
 }

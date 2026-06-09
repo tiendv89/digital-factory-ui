@@ -58,3 +58,18 @@ export interface InviteRequest {
 export interface UpdateMeRequest {
   display_name?: string | null;
 }
+
+export interface RoleChangeRequest {
+  role: "member" | "admin";
+}
+
+export interface OrgMember {
+  user_id: string;
+  email: string;
+  display_name: string | null;
+  role: string;
+}
+
+export interface OrgMembersResponse {
+  members: OrgMember[];
+}

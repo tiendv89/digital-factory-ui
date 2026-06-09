@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { User, Bell, Shield, Bot, Settings } from "lucide-react";
+import { User, Bell, Shield, Bot, Settings, Layers } from "lucide-react";
 import { AccountTab } from "./tabs/AccountTab";
 import { NotificationsTab } from "./tabs/NotificationsTab";
 import { SecurityTab } from "./tabs/SecurityTab";
 import { AgentDefaultsTab } from "./tabs/AgentDefaultsTab";
+import { WorkspaceSettingsPage } from "@/features/workspaces/components/WorkspaceSettings";
 
-type TabId = "account" | "notifications" | "security" | "agent-defaults";
+type TabId = "account" | "notifications" | "security" | "agent-defaults" | "workspace-settings";
 
 type TabDef = {
   id: TabId;
@@ -26,12 +27,17 @@ const TABS: TabDef[] = [
 export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>("account");
 
-  const TabContent = {
-    account: AccountTab,
-    notifications: NotificationsTab,
-    security: SecurityTab,
-    "agent-defaults": AgentDefaultsTab,
-  }[activeTab];
+  const isWorkspaceSettings = activeTab === "workspace-settings";
+
+  const TabContent = isWorkspaceSettings
+    ? null
+    : ({
+        account: AccountTab,
+        notifications: NotificationsTab,
+        security: SecurityTab,
+        "agent-defaults": AgentDefaultsTab,
+        "workspace-settings": null,
+      } as Record<TabId, React.ComponentType | null>)[activeTab];
 
   return (
     <div
@@ -84,12 +90,12 @@ export function SettingsPage() {
           })}
         </nav>
 
-        {/* Entry points for org / workspace settings (T12/T13 — not yet implemented) */}
+        {/* Workspace settings — T13 */}
         <div className="mt-auto border-t border-border pt-3">
           <button
             type="button"
             disabled
-            title="Organisation settings — available in a future release"
+            title="Organisation settings — coming soon"
             className="flex w-full cursor-not-allowed items-center gap-2.5 px-4 py-2 text-left text-sm text-text-muted opacity-50"
             data-settings-tab="org-settings"
             aria-label="Organisation settings (coming soon)"
@@ -102,17 +108,20 @@ export function SettingsPage() {
           </button>
           <button
             type="button"
-            disabled
-            title="Workspace settings — available in a future release"
-            className="flex w-full cursor-not-allowed items-center gap-2.5 px-4 py-2 text-left text-sm text-text-muted opacity-50"
+            role="tab"
+            aria-selected={activeTab === "workspace-settings"}
+            aria-controls="settings-panel-workspace-settings"
+            onClick={() => setActiveTab("workspace-settings")}
             data-settings-tab="workspace-settings"
-            aria-label="Workspace settings (coming soon)"
+            className={
+              "flex w-full items-center gap-2.5 px-4 py-2 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary " +
+              (activeTab === "workspace-settings"
+                ? "bg-nav-item-active font-medium text-text-primary"
+                : "text-text-secondary hover:bg-nav-item-hover hover:text-text-primary")
+            }
           >
-            <Settings className="h-4 w-4 shrink-0" aria-hidden />
+            <Layers className="h-4 w-4 shrink-0" aria-hidden />
             <span className="flex-1 truncate">Workspace settings</span>
-            <span className="rounded border border-border bg-chip-bg px-1 py-0 text-[10px]">
-              soon
-            </span>
           </button>
         </div>
       </aside>
@@ -121,11 +130,19 @@ export function SettingsPage() {
       <main
         id={`settings-panel-${activeTab}`}
         role="tabpanel"
-        aria-label={TABS.find((t) => t.id === activeTab)?.label}
+        aria-label={
+          activeTab === "workspace-settings"
+            ? "Workspace settings"
+            : TABS.find((t) => t.id === activeTab)?.label
+        }
         className="flex-1 overflow-y-auto p-6"
       >
         <div className="mx-auto max-w-2xl">
-          <TabContent />
+          {isWorkspaceSettings ? (
+            <WorkspaceSettingsPage />
+          ) : TabContent ? (
+            <TabContent />
+          ) : null}
         </div>
       </main>
     </div>
