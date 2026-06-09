@@ -2,16 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { useBoardContext } from "../KanbanBoard/KanbanBoard.context";
+import { NewFeatureModal } from "../NewFeatureModal/NewFeatureModal";
 import { WorkspaceHeader } from "@/features/workspaces/components/WorkspaceHeader/WorkspaceHeader";
 import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceContext";
-import { ImportModal } from "@/features/workspaces/components/ImportModal/ImportModal";
 
 export function BoardHeader() {
-  const { workspaceDetail, features } = useBoardContext();
+  const { workspaceDetail, features, reload } = useBoardContext();
   const { summaries, selectedWorkspaceId, refreshWorkspace, refreshingWorkspace } =
     useWorkspaceContext();
 
-  const [showImport, setShowImport] = useState(false);
+  const [showNewFeature, setShowNewFeature] = useState(false);
 
   const totalTasks = useMemo(
     () => features.reduce((sum, feature) => sum + feature.tasks.length, 0),
@@ -36,12 +36,16 @@ export function BoardHeader() {
         showTitle={false}
         onRefresh={refreshWorkspace}
         refreshing={refreshingWorkspace}
-        onNewFeature={() => setShowImport(true)}
+        onNewFeature={() => setShowNewFeature(true)}
       />
-      {showImport && (
-        <ImportModal
-          onClose={() => setShowImport(false)}
-          onSuccess={() => setShowImport(false)}
+      {showNewFeature && (
+        <NewFeatureModal
+          workspaceId={workspaceDetail.id}
+          onClose={() => setShowNewFeature(false)}
+          onSuccess={() => {
+            setShowNewFeature(false);
+            reload();
+          }}
         />
       )}
     </>

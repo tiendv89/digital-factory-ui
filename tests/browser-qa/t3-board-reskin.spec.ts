@@ -74,12 +74,12 @@ test.describe("T3 — Board reskin: view modes and shell integration", () => {
     ).not.toBeVisible();
   });
 
-  test("New Feature button opens the import modal", async ({ page }) => {
+  test("New Feature button opens the new feature modal", async ({ page }) => {
     await page.locator("[data-new-feature-btn]").click();
-    // Import modal should appear
+    // New Feature modal should appear
     await expect(page.locator('[role="dialog"]')).toBeVisible();
     await expect(
-      page.locator('[aria-label="Import workspace"]'),
+      page.locator('[aria-label="New feature"]'),
     ).toBeVisible();
   });
 });

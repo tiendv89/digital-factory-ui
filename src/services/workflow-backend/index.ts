@@ -1,6 +1,7 @@
 export type {
   ActivityEvent,
   ApiError,
+  CreateFeatureRequest,
   FeatureDetail,
   FeatureDocument,
   FeatureId,
@@ -37,6 +38,7 @@ export {
 export type { FeatureSearchParams, FeatureTaskParams, TaskSearchParams } from "./query-params";
 
 export {
+  createFeature,
   getFeature,
   getFeatureTask,
   getFeatureTaskList,

@@ -1,6 +1,7 @@
 import type {
   ActivityEvent,
   ApiError,
+  CreateFeatureRequest,
   FeatureDetail,
   FeatureTaskPage,
   FeatureSummary,
@@ -64,6 +65,13 @@ export async function importWorkspace(body: ImportWorkspaceRequest): Promise<Wor
 
 export async function getWorkspace(workspaceId: string): Promise<WorkspaceDetail> {
   return request<WorkspaceDetail>(`/api/workspaces/${workspaceId}`);
+}
+
+export async function createFeature(workspaceId: string, body: CreateFeatureRequest): Promise<FeatureSummary> {
+  return request<FeatureSummary>(`/api/workspaces/${workspaceId}/features`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 export async function syncWorkspace(workspaceId: string): Promise<WorkspaceDetail> {

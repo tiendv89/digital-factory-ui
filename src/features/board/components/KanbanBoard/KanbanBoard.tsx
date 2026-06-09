@@ -16,8 +16,6 @@ import { TaskBoardView } from "../TaskBoardView";
 import { FeatureBoardView } from "../FeatureBoardView";
 import { FeatureHierarchyListView } from "../FeatureHierarchyListView";
 import { BoardTableTitle } from "../BoardTableTitle";
-import type { ViewMode } from "../../lib/status-filter-store";
-
 import {
   FEATURE_MODE_STATUSES,
   STATUS_COLUMNS,
@@ -259,7 +257,7 @@ function ViewModeToggle() {
         type="button"
         aria-pressed={viewMode === "kanban"}
         data-view-mode-btn="kanban"
-        onClick={() => setViewMode("kanban" as ViewMode)}
+        onClick={() => setViewMode("kanban")}
         title="Kanban view"
         aria-label="Kanban view"
         className={
@@ -276,7 +274,7 @@ function ViewModeToggle() {
         type="button"
         aria-pressed={viewMode === "list"}
         data-view-mode-btn="list"
-        onClick={() => setViewMode("list" as ViewMode)}
+        onClick={() => setViewMode("list")}
         title="List view"
         aria-label="List view"
         className={

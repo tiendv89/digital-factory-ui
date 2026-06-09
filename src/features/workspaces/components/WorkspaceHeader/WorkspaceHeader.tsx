@@ -248,7 +248,7 @@ export function WorkspaceHeader({
           <button
             type="button"
             onClick={onNewFeature}
-            title="Import / add a new workspace"
+            title="New feature"
             aria-label="New feature"
             data-new-feature-btn
             className="flex shrink-0 items-center gap-1 rounded border border-border bg-surface-secondary px-2 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"

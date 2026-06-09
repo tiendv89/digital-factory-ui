@@ -63,6 +63,7 @@ const mockBoardContext = vi.hoisted(() => ({
       tasks: [{ id: "T1", title: "Implement task tab", status: "ready", dependsOn: [] }],
     },
   ],
+  reload: vi.fn(),
 }));
 
 vi.mock("@/features/workspaces/context/WorkspaceContext", () => ({
@@ -74,8 +75,8 @@ vi.mock("@/features/auth", () => ({
   SessionProvider: ({ children }: { children: React.ReactNode }) => children,
 }));
 
-vi.mock("@/features/workspaces/components/ImportModal/ImportModal", () => ({
-  ImportModal: () => React.createElement("div", { "data-import-modal": true }),
+vi.mock("../features/board/components/NewFeatureModal/NewFeatureModal", () => ({
+  NewFeatureModal: () => React.createElement("div", { "data-new-feature-modal": true }),
 }));
 
 vi.mock("../features/board/components/KanbanBoard/KanbanBoard.context", () => ({
