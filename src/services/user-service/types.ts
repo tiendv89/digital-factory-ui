@@ -54,3 +54,7 @@ export interface InviteRequest {
   email: string;
   role: string;
 }
+
+export interface UpdateMeRequest {
+  display_name?: string | null;
+}

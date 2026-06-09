@@ -114,6 +114,10 @@ vi.mock("@/features/agent-chat", () => ({
   AgentChatPanel: () => React.createElement("div", { "data-agent-chat-panel": "" }),
 }));
 
+vi.mock("@/features/settings", () => ({
+  SettingsPage: () => React.createElement("div", { "data-settings-page": "" }),
+}));
+
 // ── Imports ──────────────────────────────────────────────────────────────────
 
 import { usePathname } from "next/navigation";
