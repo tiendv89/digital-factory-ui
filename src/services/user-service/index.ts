@@ -9,6 +9,7 @@ export {
   inviteMember,
   removeMember,
   cancelInvitation,
+  changeOrgMemberRole,
 } from "./client";
 export type {
   MeResponse,
@@ -21,4 +22,7 @@ export type {
   InvitationsResponse,
   InviteRequest,
   UpdateMeRequest,
+  RoleChangeRequest,
+  OrgMember,
+  OrgMembersResponse,
 } from "./types";
