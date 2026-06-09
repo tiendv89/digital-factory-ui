@@ -118,10 +118,11 @@ describe("OrgWorkspaceSwitcher — empty memberships", () => {
     vi.clearAllMocks();
   });
 
-  it("renders empty state with 'Contact your delivery team' when no memberships", () => {
+  it("renders empty state with 'No organization' label and 'New Org' create trigger when no memberships", () => {
     const html = renderToStaticMarkup(React.createElement(OrgWorkspaceSwitcher));
-    expect(html).toContain("Contact your delivery team");
+    expect(html).toContain("No organization");
     expect(html).toContain("data-org-workspace-empty");
+    expect(html).toContain("data-create-org-trigger");
   });
 });
 
