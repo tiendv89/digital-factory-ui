@@ -177,7 +177,7 @@ vi.mock(
   }),
 );
 
-import BoardPage from "../app/board/page";
+import BoardPage from "../app/(shell)/board/page";
 
 describe("BoardPage — CreateTaskButton removal", () => {
   beforeEach(() => {

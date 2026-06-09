@@ -12,22 +12,18 @@ import { AgentChatPanel } from "@/features/agent-chat";
 
 function LoadingState() {
   return (
-    <main className="flex min-h-screen flex-col bg-bg">
-      <div className="flex flex-1 items-center justify-center">
-        <p className="text-sm text-text-muted">Loading workspace…</p>
-      </div>
-    </main>
+    <div className="flex flex-1 flex-col items-center justify-center">
+      <p className="text-sm text-text-muted">Loading workspace…</p>
+    </div>
   );
 }
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <main className="flex min-h-screen flex-col bg-bg">
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
-        <AlertCircle className="h-8 w-8 text-danger" />
-        <p className="text-sm text-text-secondary">{message}</p>
-      </div>
-    </main>
+    <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
+      <AlertCircle className="h-8 w-8 text-danger" />
+      <p className="text-sm text-text-secondary">{message}</p>
+    </div>
   );
 }
 
@@ -85,7 +81,10 @@ export default function BoardPage() {
   }
 
   return (
-    <main className="flex h-screen flex-col bg-bg">
+    <div
+      data-board-page
+      className="flex h-full flex-col"
+    >
       <BoardProvider workspaceDetail={activeWorkspace}>
         <BoardHeader />
         <div className="flex flex-1 overflow-hidden">
@@ -96,6 +95,6 @@ export default function BoardPage() {
           <BoardAgentChat />
         </div>
       </BoardProvider>
-    </main>
+    </div>
   );
 }

@@ -690,7 +690,7 @@ describe("regression: no GitHub direct reads in workspace flow components", () =
     const fs = await import("fs");
     const path = await import("path");
     const boardContent = fs.default.readFileSync(
-      path.default.resolve(__dirname, "../app/board/page.tsx"),
+      path.default.resolve(__dirname, "../app/(shell)/board/page.tsx"),
       "utf8",
     );
     expect(boardContent).not.toContain("api.github.com");

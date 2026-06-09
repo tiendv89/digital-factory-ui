@@ -8,8 +8,8 @@ function readSource(path: string) {
 
 describe("React performance boundaries", () => {
   it("keeps task and feature routes on split session entry points", () => {
-    const taskRoute = readSource("src/app/task/[sessionId]/page.tsx");
-    const featureRoute = readSource("src/app/feature/[sessionId]/page.tsx");
+    const taskRoute = readSource("src/app/(shell)/task/[sessionId]/page.tsx");
+    const featureRoute = readSource("src/app/(shell)/feature/[sessionId]/page.tsx");
 
     expect(taskRoute).toContain("WorkspaceSessionPage/TaskSessionPage");
     expect(taskRoute).not.toContain(
@@ -44,7 +44,7 @@ describe("React performance boundaries", () => {
   });
 
   it("keeps board route imports on direct component modules", () => {
-    const boardRoute = readSource("src/app/board/page.tsx");
+    const boardRoute = readSource("src/app/(shell)/board/page.tsx");
 
     // T1: detail modal mounts should no longer be imported on the board route
     expect(boardRoute).toContain(

@@ -541,7 +541,7 @@ describe("T6 Browser QA — Visual cleanup verification", () => {
       }),
     );
 
-    const { default: BoardPage } = await import("../app/board/page");
+    const { default: BoardPage } = await import("../app/(shell)/board/page");
     const html = renderToStaticMarkup(React.createElement(BoardPage));
 
     // No sort button text
