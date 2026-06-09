@@ -5,6 +5,7 @@ import type {
   InvitationsResponse,
   DataEnvelope,
   InviteRequest,
+  UpdateMeRequest,
 } from "./types";
 
 export function getUserServiceBase(): string {
@@ -43,6 +44,19 @@ export async function logout(): Promise<void> {
     method: "POST",
     credentials: "include",
   });
+}
+
+export async function updateMe(body: UpdateMeRequest): Promise<MeResponse> {
+  const res = await fetch(`${getUserServiceBase()}/api/me`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update /api/me: ${res.status}`);
+  }
+  return res.json() as Promise<MeResponse>;
 }
 
 export async function fetchWorkspaceMembers(

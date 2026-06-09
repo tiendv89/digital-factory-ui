@@ -3,6 +3,7 @@ export {
   logout,
   getUserServiceBase,
   getMeData,
+  updateMe,
   fetchWorkspaceMembers,
   fetchWorkspaceInvitations,
   inviteMember,
@@ -19,4 +20,5 @@ export type {
   MembersResponse,
   InvitationsResponse,
   InviteRequest,
+  UpdateMeRequest,
 } from "./types";
