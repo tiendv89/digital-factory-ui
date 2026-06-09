@@ -8,33 +8,98 @@ function getProviderUrl(provider: "google" | "github"): string {
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-bg">
-      <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-8 shadow-sm">
-        <div className="mb-8 text-center">
-          <h1 className="text-xl font-semibold text-text-primary">
-            Sign in to Workflow
-          </h1>
-          <p className="mt-2 text-sm text-text-secondary">
-            Use your Google or GitHub account to continue.
-          </p>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-bg px-4">
+      <div className="w-full max-w-[400px]">
+        {/* Logo / brand */}
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <WorkflowLogo />
+          <span className="text-lg font-semibold tracking-tight text-text-primary">
+            Workflow
+          </span>
         </div>
-        <div className="flex flex-col gap-3">
-          <a
-            href={getProviderUrl("google")}
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <GoogleIcon />
-            Sign in with Google
-          </a>
-          <a
-            href={getProviderUrl("github")}
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:bg-surface-subtle focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            <GitHubIcon />
-            Sign in with GitHub
-          </a>
+
+        {/* Sign-in card */}
+        <div className="rounded-xl border border-border bg-surface px-8 py-8 shadow-lg">
+          <div className="mb-6 text-center">
+            <h1 className="text-xl font-semibold text-text-primary">
+              Sign in
+            </h1>
+            <p className="mt-1.5 text-sm text-text-secondary">
+              Use your Google or GitHub account to continue.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <a
+              href={getProviderUrl("google")}
+              className="group flex w-full items-center gap-3 rounded-lg border border-border bg-surface-secondary px-4 py-2.5 text-sm font-medium text-text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-nav-item-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+            >
+              <GoogleIcon />
+              <span className="flex-1 text-center">Continue with Google</span>
+            </a>
+
+            <a
+              href={getProviderUrl("github")}
+              className="group flex w-full items-center gap-3 rounded-lg border border-border bg-surface-secondary px-4 py-2.5 text-sm font-medium text-text-primary transition-colors duration-150 hover:border-primary/40 hover:bg-nav-item-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:ring-offset-surface"
+            >
+              <GitHubIcon />
+              <span className="flex-1 text-center">Continue with GitHub</span>
+            </a>
+          </div>
         </div>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-xs text-text-muted">
+          By signing in you agree to the{" "}
+          <span className="text-text-secondary">Terms of Service</span> and{" "}
+          <span className="text-text-secondary">Privacy Policy</span>.
+        </p>
       </div>
+
+      {/* VS Code-style status bar */}
+      <div className="fixed bottom-0 left-0 right-0 flex h-6 items-center bg-statusbar px-3">
+        <span className="text-xs font-medium text-white/90">Workflow</span>
+      </div>
+    </div>
+  );
+}
+
+function WorkflowLogo() {
+  return (
+    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 ring-1 ring-primary/30">
+      <svg
+        aria-hidden="true"
+        width="28"
+        height="28"
+        viewBox="0 0 28 28"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* Abstract workflow / branching graph icon */}
+        <circle cx="6" cy="14" r="2.5" fill="currentColor" className="text-primary" />
+        <circle cx="22" cy="8" r="2.5" fill="currentColor" className="text-primary" />
+        <circle cx="22" cy="20" r="2.5" fill="currentColor" className="text-primary" />
+        <line
+          x1="8.5"
+          y1="14"
+          x2="19.5"
+          y2="8"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          className="text-primary"
+        />
+        <line
+          x1="8.5"
+          y1="14"
+          x2="19.5"
+          y2="20"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          className="text-primary"
+        />
+      </svg>
     </div>
   );
 }
@@ -48,6 +113,7 @@ function GoogleIcon() {
       viewBox="0 0 18 18"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
+      className="shrink-0"
     >
       <path
         d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
@@ -78,6 +144,7 @@ function GitHubIcon() {
       viewBox="0 0 24 24"
       fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
+      className="shrink-0 text-text-primary"
     >
       <path
         fillRule="evenodd"
