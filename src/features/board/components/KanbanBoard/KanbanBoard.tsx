@@ -4,7 +4,9 @@ import {
   AlertTriangle,
   Funnel,
   LayoutGrid,
+  LayoutList,
   ListChecks,
+  Rows3,
   Search,
   X,
 } from "lucide-react";
@@ -12,7 +14,9 @@ import { useEffect, useRef, useState } from "react";
 import { useBoardContext } from "./KanbanBoard.context";
 import { TaskBoardView } from "../TaskBoardView";
 import { FeatureBoardView } from "../FeatureBoardView";
+import { FeatureHierarchyListView } from "../FeatureHierarchyListView";
 import { BoardTableTitle } from "../BoardTableTitle";
+import type { ViewMode } from "../../lib/status-filter-store";
 
 import {
   FEATURE_MODE_STATUSES,
@@ -242,6 +246,53 @@ function FeatureModeFilterMenu() {
   );
 }
 
+function ViewModeToggle() {
+  const { viewMode, setViewMode } = useBoardContext();
+
+  return (
+    <div
+      className="inline-flex items-stretch rounded-md border border-border bg-surface p-0.5 shadow-sm"
+      role="group"
+      aria-label="View mode"
+    >
+      <button
+        type="button"
+        aria-pressed={viewMode === "kanban"}
+        data-view-mode-btn="kanban"
+        onClick={() => setViewMode("kanban" as ViewMode)}
+        title="Kanban view"
+        aria-label="Kanban view"
+        className={
+          "flex h-7 items-center gap-1.5 rounded-sm px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface " +
+          (viewMode === "kanban"
+            ? "border border-primary/40 bg-primary/10 text-primary"
+            : "border border-transparent text-text-secondary hover:bg-surface-subtle hover:text-text-primary")
+        }
+      >
+        <Rows3 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span className="hidden sm:inline">Kanban</span>
+      </button>
+      <button
+        type="button"
+        aria-pressed={viewMode === "list"}
+        data-view-mode-btn="list"
+        onClick={() => setViewMode("list" as ViewMode)}
+        title="List view"
+        aria-label="List view"
+        className={
+          "flex h-7 items-center gap-1.5 rounded-sm px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-surface " +
+          (viewMode === "list"
+            ? "border border-primary/40 bg-primary/10 text-primary"
+            : "border border-transparent text-text-secondary hover:bg-surface-subtle hover:text-text-primary")
+        }
+      >
+        <LayoutList className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span className="hidden sm:inline">List</span>
+      </button>
+    </div>
+  );
+}
+
 function BoardControls() {
   const {
     boardMode,
@@ -285,7 +336,10 @@ function BoardControls() {
       data-board-controls
       className="flex h-12 shrink-0 items-center justify-between gap-2 border-b border-border bg-surface px-4"
     >
-      <ModeSegmentedControl />
+      <div className="flex items-center gap-2">
+        <ModeSegmentedControl />
+        <ViewModeToggle />
+      </div>
 
       <div className="flex items-center gap-2">
         <label className="flex h-8 w-64 items-center gap-2 border border-border bg-surface px-3 text-xs text-text-secondary focus-within:border-primary">
@@ -340,14 +394,23 @@ function BoardControls() {
 }
 
 export function KanbanBoard() {
-  const { boardMode } = useBoardContext();
+  const { boardMode, viewMode } = useBoardContext();
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border border-border bg-surface">
+    <div
+      data-kanban-board
+      className="flex h-full min-h-0 flex-1 flex-col overflow-hidden border border-border bg-surface"
+    >
       <StaleBanner />
       <BoardTableTitle />
       <BoardControls />
-      {boardMode === "task" ? <TaskBoardView /> : <FeatureBoardView />}
+      {viewMode === "list" ? (
+        <FeatureHierarchyListView />
+      ) : boardMode === "task" ? (
+        <TaskBoardView />
+      ) : (
+        <FeatureBoardView />
+      )}
     </div>
   );
 }

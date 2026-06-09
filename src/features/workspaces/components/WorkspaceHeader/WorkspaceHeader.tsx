@@ -1,6 +1,6 @@
 "use client";
 
-import { Layers, LogOut, RefreshCw, X } from "lucide-react";
+import { Layers, LogOut, Plus, RefreshCw, X } from "lucide-react";
 import type {
   FeatureTabEntry,
   TaskTabEntry,
@@ -20,6 +20,7 @@ type WorkspaceHeaderProps = {
   showTitle?: boolean;
   onRefresh?: () => void;
   refreshing?: boolean;
+  onNewFeature?: () => void;
 };
 
 function formatSyncedTime(iso: string): string {
@@ -206,6 +207,7 @@ export function WorkspaceHeader({
   showTitle = true,
   onRefresh,
   refreshing = false,
+  onNewFeature,
 }: WorkspaceHeaderProps) {
   const { logout } = useSession();
 
@@ -241,6 +243,19 @@ export function WorkspaceHeader({
               </span>
             )}
           </div>
+        )}
+        {onNewFeature && (
+          <button
+            type="button"
+            onClick={onNewFeature}
+            title="Import / add a new workspace"
+            aria-label="New feature"
+            data-new-feature-btn
+            className="flex shrink-0 items-center gap-1 rounded border border-border bg-surface-secondary px-2 py-1 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <Plus className="h-3 w-3" aria-hidden="true" />
+            New
+          </button>
         )}
         {onRefresh && (
           <button

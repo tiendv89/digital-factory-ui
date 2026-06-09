@@ -123,4 +123,9 @@ describe("BoardHeader", () => {
     expect(html).toContain('data-feature-tab="feature-session-1"');
     expect(html).toContain("Startup Project");
   });
+
+  it("renders a New Feature button in the workspace header", () => {
+    const html = renderToStaticMarkup(React.createElement(BoardHeader));
+    expect(html).toContain("data-new-feature-btn");
+  });
 });

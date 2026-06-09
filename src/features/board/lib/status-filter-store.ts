@@ -3,6 +3,7 @@ import { FEATURE_MODE_STATUSES, TASK_MODE_STATUSES, type FeatureStatus, type Tas
 const TASK_STORAGE_KEY = "dashboard:board-status-filter";
 const FEATURE_STORAGE_KEY = "dashboard:board-feature-status-filter";
 const BOARD_MODE_STORAGE_KEY = "dashboard:board-mode";
+const VIEW_MODE_STORAGE_KEY = "dashboard:board-view-mode";
 
 const VALID_TASK_STATUSES = new Set<string>(TASK_MODE_STATUSES);
 const VALID_FEATURE_STATUSES = new Set<string>(FEATURE_MODE_STATUSES);
@@ -123,6 +124,37 @@ export function clearBoardMode(): void {
   if (typeof window === "undefined") return;
   try {
     localStorage.removeItem(BOARD_MODE_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures.
+  }
+}
+
+export type ViewMode = "kanban" | "list";
+
+const VALID_VIEW_MODES = new Set(["kanban", "list"]);
+
+export function getDefaultViewMode(): ViewMode {
+  return "kanban";
+}
+
+export function getStoredViewMode(): ViewMode | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    if (raw === null) return null;
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === "string" && VALID_VIEW_MODES.has(parsed)
+      ? (parsed as ViewMode)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveViewMode(mode: ViewMode): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(VIEW_MODE_STORAGE_KEY, JSON.stringify(mode));
   } catch {
     // Ignore storage failures.
   }
