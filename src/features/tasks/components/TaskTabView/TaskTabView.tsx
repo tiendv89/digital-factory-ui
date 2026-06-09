@@ -9,8 +9,10 @@ import {
   ClipboardCopy,
   ExternalLink,
   GitBranch,
+  GitMerge,
   GitPullRequest,
   Layers,
+  MessageSquare,
   RefreshCw,
   User,
 } from "lucide-react";
@@ -20,7 +22,7 @@ import { formatTimestamp } from "@/lib/time";
 import { tokenizeText } from "@/lib/url-tokenizer";
 import { clientStatusLabel, getStatusColor } from "@/features/board/lib/status";
 import { formatStatusLabel, getStatusStyle } from "../../lib/status";
-import type { TaskDetail } from "@/services/workflow-backend/types";
+import type { TaskDetail, PullRequestRef } from "@/services/workflow-backend/types";
 
 export type TaskTabViewProps = {
   workspaceId: string;
@@ -73,6 +75,55 @@ export function TaskTabView({ workspaceId, taskId }: TaskTabViewProps) {
   return <TaskTabContent task={task} onReload={reload} />;
 }
 
+function collectPrEntries(task: TaskDetail): PullRequestRef[] {
+  const seen = new Set<string>();
+  const entries: PullRequestRef[] = [];
+
+  function add(ref: PullRequestRef) {
+    if (!ref.url || seen.has(ref.url)) return;
+    seen.add(ref.url);
+    entries.push(ref);
+  }
+
+  for (const ref of task.pr_refs ?? []) {
+    add({
+      label: ref.label || ref.repo || "PR",
+      repo: ref.repo,
+      url: ref.url,
+      status: ref.status,
+    });
+  }
+
+  if (task.pr?.url) {
+    add({
+      label: task.repo || "Repository PR",
+      repo: task.repo,
+      url: task.pr.url,
+      status: task.pr.status,
+    });
+  }
+
+  if (task.workspace_pr?.url) {
+    add({
+      label: "Workspace PR",
+      url: task.workspace_pr.url,
+      status: task.workspace_pr.status,
+    });
+  }
+
+  return entries;
+}
+
+function getPrStatusColor(status: string | null | undefined): string {
+  if (!status) return "text-text-muted";
+  const s = status.toLowerCase();
+  if (s === "merged") return "text-purple";
+  if (s === "open") return "text-success";
+  if (s === "closed") return "text-danger";
+  return "text-text-secondary";
+}
+
+
 function TaskTabContent({
   task,
   onReload,
@@ -83,6 +134,7 @@ function TaskTabContent({
   const { activeTaskTabId, closeTaskTab, goToBoard } = useWorkspaceContext();
   const [copied, setCopied] = useState(false);
   const statusColor = getStatusColor(task.status);
+  const prEntries = collectPrEntries(task);
 
   function handleBackToBoard() {
     if (activeTaskTabId) {
@@ -116,6 +168,7 @@ function TaskTabContent({
       data-task-tab-content
       className="flex h-full min-h-0 flex-col overflow-hidden bg-bg"
     >
+      {/* ── Header ────────────────────────────────────────────────── */}
       <header className="shrink-0 border-b border-border bg-surface px-6 py-4">
         <div className="flex items-center justify-between gap-3">
           <button
@@ -137,6 +190,7 @@ function TaskTabContent({
             <RefreshCw className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
+
         <div className="mt-4 flex min-w-0 items-start gap-2">
           <h1 className="min-w-0 text-xl font-semibold leading-7 text-text-primary">
             {task.title || task.task_name}
@@ -156,6 +210,7 @@ function TaskTabContent({
             )}
           </button>
         </div>
+
         <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
           <span className="bg-chip-bg px-2 py-1 font-mono font-semibold text-text-secondary">
             {task.task_name}
@@ -172,18 +227,159 @@ function TaskTabContent({
             </span>
           )}
         </div>
+
+        {/* PR pills row */}
+        {prEntries.length > 0 && (
+          <div
+            data-pr-pills
+            className="mt-4 flex flex-wrap gap-2"
+            aria-label="Pull requests"
+          >
+            {prEntries.map((entry, i) => (
+              <PrPill key={entry.url ?? `pr-${i}`} entry={entry} />
+            ))}
+          </div>
+        )}
       </header>
 
+      {/* ── Scrollable body ────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto bg-surface-secondary/40 px-6 py-6">
         <div className="max-w-5xl space-y-8">
+          {/* Diff viewer placeholder */}
+          <DiffViewerPlaceholder />
+
+          {/* Review thread placeholder */}
+          <ReviewThreadPlaceholder />
+
+          {/* Existing detail sections */}
           <TaskMetadataSection task={task} />
           <TaskDependenciesSection task={task} />
           <TaskExecutionSection task={task} />
-          <TaskPrRefsSection task={task} />
           <TaskActivityTimelineSection task={task} />
         </div>
       </div>
     </div>
+  );
+}
+
+function PrPillIcon({ status }: { status: string | null | undefined }) {
+  const colorClass = getPrStatusColor(status);
+  const s = (status ?? "").toLowerCase();
+  if (s === "merged") {
+    return (
+      <GitMerge
+        className={`h-3.5 w-3.5 shrink-0 ${colorClass}`}
+        aria-hidden="true"
+      />
+    );
+  }
+  return (
+    <GitPullRequest
+      className={`h-3.5 w-3.5 shrink-0 ${colorClass}`}
+      aria-hidden="true"
+    />
+  );
+}
+
+function PrPill({ entry }: { entry: PullRequestRef }) {
+  const label = entry.label || entry.repo || "PR";
+  const statusColorClass = getPrStatusColor(entry.status);
+  const hasUrl = typeof entry.url === "string" && entry.url.length > 0;
+
+  const pillContent = (
+    <span className="flex items-center gap-1.5 border border-border bg-surface px-2.5 py-1 text-xs font-medium transition-colors hover:border-primary-light hover:bg-surface-subtle">
+      <PrPillIcon status={entry.status} />
+      <span className="text-text-primary">{label}</span>
+      {entry.repo && entry.repo !== label && (
+        <span className="text-text-muted">· {entry.repo}</span>
+      )}
+      {entry.status && (
+        <span className={`capitalize ${statusColorClass}`}>
+          · {entry.status}
+        </span>
+      )}
+      {hasUrl && (
+        <ExternalLink
+          className="ml-0.5 h-3 w-3 shrink-0 text-text-muted"
+          aria-hidden="true"
+        />
+      )}
+    </span>
+  );
+
+  if (hasUrl) {
+    return (
+      <a
+        href={entry.url!}
+        target="_blank"
+        rel="noreferrer noopener"
+        data-pr-pill={entry.url}
+        aria-label={`Open pull request: ${label}`}
+      >
+        {pillContent}
+      </a>
+    );
+  }
+
+  return (
+    <span data-pr-pill-no-url aria-disabled="true" className="opacity-60">
+      {pillContent}
+    </span>
+  );
+}
+
+function DiffViewerPlaceholder() {
+  return (
+    <section data-diff-placeholder>
+      <h2 className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-text-muted">
+        <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
+        Diff Viewer
+      </h2>
+      <div className="flex min-h-48 flex-col items-center justify-center gap-3 border border-border border-dashed bg-surface px-6 py-10 text-center">
+        <GitPullRequest
+          className="h-8 w-8 text-text-muted opacity-40"
+          aria-hidden="true"
+        />
+        <p className="text-sm font-medium text-text-secondary">
+          Diff viewer — not built yet
+        </p>
+        <p className="max-w-xs text-xs text-text-muted">
+          File diffs require a PR content API which is not yet available. This
+          area will show changed files and inline diff hunks when the API is
+          ready.
+        </p>
+        <span className="mt-1 border border-border bg-chip-bg px-2 py-0.5 font-mono text-xs text-text-muted">
+          placeholder
+        </span>
+      </div>
+    </section>
+  );
+}
+
+function ReviewThreadPlaceholder() {
+  return (
+    <section data-review-thread-placeholder>
+      <h2 className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-text-muted">
+        <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+        Review Thread
+      </h2>
+      <div className="flex min-h-32 flex-col items-center justify-center gap-3 border border-border border-dashed bg-surface px-6 py-8 text-center">
+        <MessageSquare
+          className="h-6 w-6 text-text-muted opacity-40"
+          aria-hidden="true"
+        />
+        <p className="text-sm font-medium text-text-secondary">
+          Review thread — not built yet
+        </p>
+        <p className="max-w-xs text-xs text-text-muted">
+          Inline review comments will appear here once the PR review API is
+          available.
+        </p>
+        <span className="mt-1 border border-border bg-chip-bg px-2 py-0.5 font-mono text-xs text-text-muted">
+          placeholder
+        </span>
+      </div>
+    </section>
   );
 }
 
@@ -302,65 +498,6 @@ function TaskExecutionSection({ task }: { task: TaskDetail }) {
             </span>
           </MetaField>
         )}
-      </div>
-    </section>
-  );
-}
-
-type PrEntry = {
-  label: string;
-  repo?: string | null;
-  url?: string | null;
-  status?: string | null;
-};
-
-function TaskPrRefsSection({ task }: { task: TaskDetail }) {
-  const entriesByUrl = new Map<string, PrEntry>();
-
-  function addEntry(entry: PrEntry) {
-    if (!entry.url || entriesByUrl.has(entry.url)) return;
-    entriesByUrl.set(entry.url, entry);
-  }
-
-  for (const ref of task.pr_refs ?? []) {
-    addEntry({
-      label: ref.label || ref.repo || "PR",
-      repo: ref.repo,
-      url: ref.url,
-      status: ref.status,
-    });
-  }
-
-  if (task.pr?.url) {
-    addEntry({
-      label: "Repository PR",
-      repo: task.repo,
-      url: task.pr.url,
-      status: task.pr.status,
-    });
-  }
-
-  if (task.workspace_pr?.url) {
-    addEntry({
-      label: "Workspace PR",
-      url: task.workspace_pr.url,
-      status: task.workspace_pr.status,
-    });
-  }
-
-  const allEntries = Array.from(entriesByUrl.values());
-
-  if (allEntries.length === 0) return null;
-
-  return (
-    <section>
-      <h2 className="mb-4 text-xs font-semibold uppercase tracking-widest text-text-muted">
-        Pull Requests
-      </h2>
-      <div data-task-pr-refs className="flex flex-col gap-2">
-        {allEntries.map((entry, i) => (
-          <PrRefCard key={entry.url ?? `empty-${i}`} entry={entry} />
-        ))}
       </div>
     </section>
   );
@@ -487,47 +624,6 @@ function TaskActivityTimelineItem({
         ) : null}
       </div>
     </li>
-  );
-}
-
-function PrRefCard({ entry }: { entry: PrEntry }) {
-  const label = entry.label || entry.repo || "PR";
-  const hasUrl = typeof entry.url === "string" && entry.url.length > 0;
-
-  if (hasUrl) {
-    return (
-      <a
-        href={entry.url!}
-        target="_blank"
-        rel="noreferrer noopener"
-        data-pr-ref={entry.url}
-        className="flex items-center justify-between border border-border bg-surface px-3 py-2.5 transition-colors hover:border-primary-light hover:bg-surface-subtle"
-      >
-        <div className="flex items-center gap-2">
-          <GitPullRequest className="h-4 w-4 text-success" aria-hidden="true" />
-          <span className="text-sm font-medium text-text-primary">{label}</span>
-        </div>
-        <ExternalLink
-          className="h-3.5 w-3.5 text-text-muted"
-          aria-hidden="true"
-        />
-      </a>
-    );
-  }
-
-  return (
-    <div
-      aria-disabled="true"
-      className="pointer-events-none flex items-center justify-between border border-border bg-surface px-3 py-2.5 opacity-70"
-    >
-      <div className="flex items-center gap-2">
-        <span className="text-text-muted">
-          <GitPullRequest className="h-4 w-4" aria-hidden="true" />
-        </span>
-        <span className="text-sm font-medium text-text-secondary">{label}</span>
-      </div>
-      <span className="italic text-xs text-text-muted">None</span>
-    </div>
   );
 }
 
