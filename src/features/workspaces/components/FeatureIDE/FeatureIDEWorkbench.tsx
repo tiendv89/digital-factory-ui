@@ -10,6 +10,7 @@ import { useWorkspaceContext } from "@/features/workspaces/context/WorkspaceCont
 import { workspaceKeys } from "@/lib/query-keys";
 import { FeatureIDEExplorer } from "./FeatureIDEExplorer";
 import { FeatureIDEDocsPanel } from "./FeatureIDEDocsPanel";
+import { FeatureIDEChannelsPane } from "./FeatureIDEChannelsPane";
 import type { DocTab } from "./FeatureIDEDocsPanel";
 
 type FeatureIDEWorkbenchProps = {
@@ -41,6 +42,7 @@ export function FeatureIDEWorkbench({
 
   const [activeDocTab, setActiveDocTab] = useState<DocTab>("product_spec");
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
 
   const featureActivityEvents = feature
     ? filterFeatureEvents(allActivityEvents, feature.id, feature.feature_name)
@@ -72,9 +74,15 @@ export function FeatureIDEWorkbench({
 
   const handleSessionSelect = useCallback((sessionId: string) => {
     setSelectedSessionId(sessionId);
+    setSelectedChannelId(null);
   }, []);
 
   const handleNewSession = useCallback(() => {
+    setSelectedSessionId(null);
+  }, []);
+
+  const handleChannelSelect = useCallback((channelId: string) => {
+    setSelectedChannelId(channelId);
     setSelectedSessionId(null);
   }, []);
 
@@ -121,6 +129,8 @@ export function FeatureIDEWorkbench({
           selectedSessionId={selectedSessionId}
           onSessionSelect={handleSessionSelect}
           onNewSession={handleNewSession}
+          selectedChannelId={selectedChannelId}
+          onChannelSelect={handleChannelSelect}
         />
       </div>
 
@@ -128,17 +138,21 @@ export function FeatureIDEWorkbench({
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Center + Docs row */}
         <div className="flex min-h-0 flex-1 overflow-hidden">
-          {/* Center — chat pane */}
+          {/* Center — chat pane or channels pane */}
           <div
             data-feature-ide-chat-pane
             className="min-w-0 flex-1 border-r border-border"
           >
-            <AgentChatPanel
-              workspaceId={workspaceId}
-              featureId={featureId}
-              onArtifactSaved={handleArtifactSaved}
-              requestSessionId={selectedSessionId}
-            />
+            {selectedChannelId ? (
+              <FeatureIDEChannelsPane channelId={selectedChannelId} />
+            ) : (
+              <AgentChatPanel
+                workspaceId={workspaceId}
+                featureId={featureId}
+                onArtifactSaved={handleArtifactSaved}
+                requestSessionId={selectedSessionId}
+              />
+            )}
           </div>
 
           {/* Right — docs pane */}

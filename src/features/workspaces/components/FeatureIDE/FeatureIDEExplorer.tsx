@@ -7,6 +7,7 @@ import {
   FileText,
   Hash,
   List,
+  Lock,
   MessageSquare,
   Plus,
 } from "lucide-react";
@@ -15,6 +16,7 @@ import type { ChatSessionSummary } from "@/services/workflow-backend/chat";
 import { clientFeatureStatusLabel, getFeatureStatusColor } from "@/features/board/lib/status";
 import { formatTimestamp } from "@/lib/time";
 import type { FeatureDetail, TaskSummary } from "@/services/workflow-backend/types";
+import { PLACEHOLDER_CHANNELS } from "./FeatureIDEChannelsPane";
 
 const TASK_STATUS_ICON: Record<string, { symbol: string; colorClass: string }> = {
   done:             { symbol: "✓", colorClass: "text-success" },
@@ -40,6 +42,8 @@ export type FeatureIDEExplorerProps = {
   selectedSessionId: string | null;
   onSessionSelect: (sessionId: string) => void;
   onNewSession: () => void;
+  selectedChannelId?: string | null;
+  onChannelSelect?: (channelId: string) => void;
 };
 
 function SectionHeader({ label }: { label: string }) {
@@ -139,6 +143,36 @@ function SessionRow({
   );
 }
 
+function ChannelRow({
+  id,
+  name,
+  active,
+  onClick,
+}: {
+  id: string;
+  name: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      data-channel-row={id}
+      className={
+        "flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors " +
+        (active
+          ? "bg-surface-subtle text-text-primary"
+          : "text-text-secondary hover:bg-surface-hover hover:text-text-primary")
+      }
+    >
+      <Hash className="h-3 w-3 shrink-0 text-text-muted" aria-hidden="true" />
+      <span className="min-w-0 flex-1 truncate">{name}</span>
+      <Lock className="h-2.5 w-2.5 shrink-0 text-text-muted opacity-50" aria-hidden="true" />
+    </button>
+  );
+}
+
 export function FeatureIDEExplorer({
   feature,
   workspaceId,
@@ -148,6 +182,8 @@ export function FeatureIDEExplorer({
   selectedSessionId,
   onSessionSelect,
   onNewSession,
+  selectedChannelId = null,
+  onChannelSelect,
 }: FeatureIDEExplorerProps) {
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -262,13 +298,18 @@ export function FeatureIDEExplorer({
           ))
         )}
 
-        {/* Channels — placeholder for T11 */}
+        {/* Channels — placeholder */}
         <SectionHeader label="Channels" />
-        <div
-          data-channels-placeholder
-          className="px-3 py-2 text-[11px] text-text-muted"
-        >
-          Channels coming soon.
+        <div data-channels-placeholder>
+          {PLACEHOLDER_CHANNELS.map((ch) => (
+            <ChannelRow
+              key={ch.id}
+              id={ch.id}
+              name={ch.name}
+              active={selectedChannelId === ch.id}
+              onClick={() => onChannelSelect?.(ch.id)}
+            />
+          ))}
         </div>
       </div>
     </div>
