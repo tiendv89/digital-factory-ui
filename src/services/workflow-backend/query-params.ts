@@ -62,9 +62,7 @@ export function buildFeatureTaskParams(params: FeatureTaskParams): URLSearchPara
   const sp = new URLSearchParams();
   sp.set("include", "tasks");
   if (params.status !== undefined) {
-    const csv = Array.isArray(params.status)
-      ? [...params.status].sort().join(",")
-      : params.status;
+    const csv = Array.isArray(params.status) ? [...params.status].sort().join(",") : params.status;
     if (csv) sp.set("status", csv);
   }
   if (params.title) sp.set("title", params.title);
@@ -73,7 +71,6 @@ export function buildFeatureTaskParams(params: FeatureTaskParams): URLSearchPara
   if (params.limit !== undefined) sp.set("limit", String(params.limit));
   if (params.sort) sp.set("sort", params.sort);
   return sp;
-
 }
 
 export const TASK_MODE_FEATURE_TASK_PARAMS: FeatureTaskParams = {

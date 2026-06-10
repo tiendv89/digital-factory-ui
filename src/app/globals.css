@@ -6,31 +6,67 @@
   --font-sans: var(--font-inter);
   --font-mono: var(--font-cousine);
 
-  /* Design tokens */
-  --color-primary: #5465e8;
-  --color-primary-light: #e4e8fb;
-  --color-success: #009252;
-  --color-success-bg: #d9f2e6;
-  --color-warning: #b3741a;
-  --color-warning-bg: #fbefd9;
-  --color-danger: #e04865;
-  --color-danger-bg: #fce4e9;
-  --color-purple: #7c3aed;
-  --color-purple-bg: #ede9fe;
-  --color-yellow: #b45309;
-  --color-yellow-bg: #fef3c7;
-  --color-ready: #2595cc;
-  --color-ready-bg: #e3f2fb;
-  --color-muted-bg: #eef0f6;
-  --color-surface: #ffffff;
-  --color-bg: #f7f8fb;
-  --color-surface-secondary: #fafbfd;
-  --color-border: #e4e7ef;
-  --color-text-primary: #1a1d27;
-  --color-text-secondary: #5a6380;
-  --color-text-muted: #8892b5;
-  --color-chip-bg: #f3f4f9;
-  --color-surface-subtle: #eef0f6;
+  /* ── Type scale (Figma: 11px labels, 13px body/controls) ───────── */
+  --text-xs: 11px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 19.5px;
+
+  /* ── Background / surface ──────────────────────────────────────── */
+  --color-bg: #1e1e1e;                 /* main editor/page background */
+  --color-surface: #252526;            /* panels, cards, modals */
+  --color-surface-secondary: #2d2d2d;  /* inputs, buttons, dropdowns */
+  --color-surface-subtle: #2a2a2b;     /* subtle inline highlight */
+  --color-chip-bg: #333333;            /* chip / badge background */
+  --color-muted-bg: #2d2d2d;           /* empty / disabled fills */
+
+  /* IDE shell-specific surfaces (NavRail / Topbar) */
+  --color-nav-rail: #181818;
+  --color-topbar: #252526;
+  --color-nav-item-hover: #2a2d2e;
+  --color-nav-item-active: #094771;    /* VS Code selection blue */
+  --color-statusbar: #007acc;
+
+  /* ── Borders / separators ──────────────────────────────────────── */
+  --color-border: #3c3c3c;             /* container / divider borders */
+  --color-border-control: #454545;     /* button / input borders */
+
+  /* ── Text ──────────────────────────────────────────────────────── */
+  --color-text-primary: #d4d4d4;
+  --color-text-secondary: #858585;
+  --color-text-muted: #6e6e6e;
+
+  /* ── Accent / primary ──────────────────────────────────────────── */
+  --color-primary: #007acc;            /* VS Code accent blue */
+  --color-primary-hover: #1b8bd0;
+  --color-primary-light: #094771;      /* tinted active/selected bg */
+  --color-accent-foreground: #4fc3f7;  /* light-blue text on selection */
+
+  /* ── Status (exact hues from board frame 122:70) ───────────────── */
+  --color-success: #45b164;            /* done — green */
+  --color-success-bg: #243629;
+
+  --color-warning: #cda629;            /* in review — gold */
+  --color-warning-bg: #3a3420;
+
+  --color-danger: #f14d4c;             /* blocked — red */
+  --color-danger-bg: #402625;
+
+  --color-purple: #7472f4;             /* agent — indigo */
+  --color-purple-bg: #2c2b40;
+
+  --color-yellow: #cda629;             /* alias of warning */
+  --color-yellow-bg: #3a3420;
+
+  --color-ready: #32b3e6;              /* ready — cyan */
+  --color-ready-bg: #21363e;
+
+  /* ── Radii ─────────────────────────────────────────────────────── */
+  --radius-control: 8px;               /* buttons, inputs */
+  --radius-card: 13px;                 /* cards, modals */
+
+  /* ── Shadow ────────────────────────────────────────────────────── */
+  --shadow-modal: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
 :root {
@@ -41,7 +77,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter, system-ui, sans-serif);
+  font-family: var(--font-inter, system-ui, sans-serif), serif;
+  font-size: 13px;
+  line-height: 19.5px;
 }
 
 /* ── Status spinner ────────────────────────────────────────────── */

@@ -45,19 +45,12 @@ export type ActivityEvent = {
 
 export type WorkspaceSummary = {
   id: string;
+  organization_id: string;
   name: string;
   slug: string;
   repo_url: string;
   source_state: SourceState;
   updated_at: string;
-};
-
-export type LocalWorkspaceSummary = {
-  workspaceId: string;
-  name: string;
-  repo_url: string;
-  default_branch: string;
-  last_opened_at: string;
 };
 
 export type StageReview = {
@@ -179,6 +172,22 @@ export type ImportWorkspaceRequest = {
   repo_url: string;
   default_branch?: string;
   name?: string;
+};
+
+export type CreateFeatureRequest = {
+  name: string;
+  description?: string;
+  start_stage?: string;
+};
+
+export type CreateWorkspaceRequest = {
+  name: string;
+  slug: string;
+  organization_id?: string;
+  /** Placeholder — accepted but may be ignored by the backend until the workspace entity gains a color column. */
+  color?: string;
+  /** Placeholder — accepted but may be ignored by the backend until the workspace entity gains a plan column. */
+  plan?: string;
 };
 
 export type ApiError = {

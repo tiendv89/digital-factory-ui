@@ -1,5 +1,6 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import type { HermesMessage, ToolCallEntry } from "@/features/agent-chat/types";
+
+import type { HermesMessage, ToolCallEntry } from "@/components/agent-chat/types";
 
 export type ChatSessionSummary = {
   id: string;
@@ -22,16 +23,10 @@ function getApiBase(): string {
   return process.env.NEXT_PUBLIC_WORKFLOW_API_URL ?? "https://workflow-backend-api.kitelabs.io";
 }
 
-export async function listChatSessions(
-  workspaceId: string,
-  featureId: string,
-): Promise<ChatSessionSummary[]> {
-  const res = await fetch(
-    `${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/sessions`,
-    { credentials: "include" },
-  );
+export async function listChatSessions(workspaceId: string, featureId: string): Promise<ChatSessionSummary[]> {
+  const res = await fetch(`${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/sessions`, { credentials: "include" });
   if (!res.ok) throw new Error(`listChatSessions failed (${res.status})`);
-  const body = await res.json() as { sessions: ChatSessionSummary[] };
+  const body = (await res.json()) as { sessions: ChatSessionSummary[] };
   return body.sessions;
 }
 
@@ -52,15 +47,8 @@ type RawSessionMessage = {
  * messages and attach any tool calls recorded on assistant turns (already
  * completed, so their status is "done").
  */
-export async function getSessionMessages(
-  workspaceId: string,
-  featureId: string,
-  sessionId: string,
-): Promise<HermesMessage[]> {
-  const res = await fetch(
-    `${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/sessions/${sessionId}/messages`,
-    { credentials: "include" },
-  );
+export async function getSessionMessages(workspaceId: string, featureId: string, sessionId: string): Promise<HermesMessage[]> {
+  const res = await fetch(`${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/sessions/${sessionId}/messages`, { credentials: "include" });
   if (!res.ok) throw new Error(`getSessionMessages failed (${res.status})`);
   const body = (await res.json()) as { messages: RawSessionMessage[] };
   return (body.messages ?? [])
@@ -90,26 +78,20 @@ function parseToolCalls(raw: unknown): ToolCallEntry[] {
   });
 }
 
-export async function createChatSession(
-  workspaceId: string,
-  featureId: string,
-): Promise<{ session_id: string }> {
-  const res = await fetch(
-    `${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/session`,
-    {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({}),
-    },
-  );
+export async function createChatSession(workspaceId: string, featureId: string): Promise<{ session_id: string }> {
+  const res = await fetch(`${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/session`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({}),
+  });
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`createChatSession failed (${res.status}): ${text}`);
   }
 
-  const body = await res.json() as { session_id: string };
+  const body = (await res.json()) as { session_id: string };
   return body;
 }
 
@@ -120,50 +102,42 @@ export type StreamChatTurnParams = {
   message: string;
 };
 
-export function streamChatTurn(
-  params: StreamChatTurnParams,
-  onEvent: (event: HermesEvent) => void,
-  onDone: () => void,
-  onError: (err: Error) => void,
-): AbortController {
+export function streamChatTurn(params: StreamChatTurnParams, onEvent: (event: HermesEvent) => void, onDone: () => void, onError: (err: Error) => void): AbortController {
   const ctrl = new AbortController();
 
-  fetchEventSource(
-    `${getApiBase()}/api/workspaces/${params.workspaceId}/features/${params.featureId}/chat`,
-    {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        session_id: params.sessionId,
-        message: params.message,
-      }),
-      signal: ctrl.signal,
-      openWhenHidden: true,
-      onmessage(ev) {
-        if (ev.data === "[DONE]") {
-          onEvent({ type: "done" });
-          onDone();
-          return;
-        }
-        try {
-          const raw = JSON.parse(ev.data) as Record<string, unknown>;
-          for (const hermesEvent of parseHermesEvents(ev.event, raw)) {
-            onEvent(hermesEvent);
-          }
-        } catch {
-          // skip unparseable frames
-        }
-      },
-      onerror(err) {
-        onError(err instanceof Error ? err : new Error(String(err)));
-        throw err; // prevent fetchEventSource auto-retry
-      },
-      onclose() {
+  fetchEventSource(`${getApiBase()}/api/workspaces/${params.workspaceId}/features/${params.featureId}/chat`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: params.sessionId,
+      message: params.message,
+    }),
+    signal: ctrl.signal,
+    openWhenHidden: true,
+    onmessage(ev) {
+      if (ev.data === "[DONE]") {
+        onEvent({ type: "done" });
         onDone();
-      },
+        return;
+      }
+      try {
+        const raw = JSON.parse(ev.data) as Record<string, unknown>;
+        for (const hermesEvent of parseHermesEvents(ev.event, raw)) {
+          onEvent(hermesEvent);
+        }
+      } catch {
+        // skip unparseable frames
+      }
     },
-  ).catch((err) => {
+    onerror(err) {
+      onError(err instanceof Error ? err : new Error(String(err)));
+      throw err; // prevent fetchEventSource auto-retry
+    },
+    onclose() {
+      onDone();
+    },
+  }).catch((err) => {
     if ((err as Error)?.name !== "AbortError") {
       onError(err instanceof Error ? err : new Error(String(err)));
     }
@@ -191,10 +165,7 @@ type OpenAIChunk = {
  *   - default `data:` frames are OpenAI chat.completion.chunk objects carrying
  *     delta.content (text), finish_reason (stop/error), and usage.
  */
-function parseHermesEvents(
-  eventType: string | undefined,
-  raw: Record<string, unknown>,
-): HermesEvent[] {
+function parseHermesEvents(eventType: string | undefined, raw: Record<string, unknown>): HermesEvent[] {
   // Tool lifecycle (custom hermes event channel).
   if (eventType === "hermes.tool.progress") {
     const status = String(raw.status ?? "");

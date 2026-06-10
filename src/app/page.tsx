@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/features/auth";
-import { EmptyState } from "@/features/workspaces/components/EmptyState";
+import { useEffect } from "react";
+
+import { useSession } from "@/components/auth";
+import { EmptyState } from "@/components/workspaces/empty-state";
 
 export default function RootPage() {
   const router = useRouter();
@@ -11,19 +12,16 @@ export default function RootPage() {
 
   useEffect(() => {
     if (session.status !== "authenticated") return;
-    if ((session.data.data.accessible_workspace_ids ?? []).length > 0) {
-      router.replace("/board");
-    }
+    router.replace("/board");
   }, [router, session]);
 
   if (session.status === "loading") {
     return null;
   }
 
-  if (
-    session.status === "authenticated" &&
-    (session.data.data.accessible_workspace_ids ?? []).length === 0
-  ) {
+  const orgWorkspaceIds = session.status === "authenticated" ? session.data.data.org_workspace_ids : {};
+  const hasWorkspaces = Object.values(orgWorkspaceIds).some((ids) => ids.length > 0);
+  if (session.status === "authenticated" && !hasWorkspaces) {
     return <EmptyState />;
   }
 

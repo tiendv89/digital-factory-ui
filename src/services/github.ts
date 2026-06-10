@@ -72,6 +72,8 @@ type RefOptions = {
   ref?: string;
 };
 
+import axios from "axios";
+
 export class GitHubClient {
   private readonly owner: string;
   private readonly repo: string;
@@ -83,34 +85,25 @@ export class GitHubClient {
     this.pat = opts.pat;
   }
 
-  private headers(): Record<string, string> {
-    const headers: Record<string, string> = {
-      Accept: "application/vnd.github+json",
-    };
-    if (this.pat) {
-      headers["Authorization"] = `Bearer ${this.pat}`;
-    }
+  private axiosHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { Accept: "application/vnd.github+json" };
+    if (this.pat) headers["Authorization"] = `Bearer ${this.pat}`;
     return headers;
   }
 
   private async request<T>(url: string): Promise<T> {
-    const res = await fetch(url, { headers: this.headers() });
-
-    if (res.status === 401 || res.status === 403) {
-      throw new GitHubAccessError(
-        "Access denied. Check your PAT or repository visibility.",
-      );
+    try {
+      const { data } = await axios.get<T>(url, { headers: this.axiosHeaders() });
+      return data;
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        const status = err.response?.status;
+        if (status === 401 || status === 403) throw new GitHubAccessError("Access denied. Check your PAT or repository visibility.");
+        if (status === 404) throw new GitHubNotFoundError("No workflow data found in this repository.");
+        throw new GitHubApiError(`GitHub API error. Try again.`, status ?? 0);
+      }
+      throw err;
     }
-    if (res.status === 404) {
-      throw new GitHubNotFoundError(
-        "No workflow data found in this repository.",
-      );
-    }
-    if (!res.ok) {
-      throw new GitHubApiError(`GitHub API error. Try again.`, res.status);
-    }
-
-    return res.json() as Promise<T>;
   }
 
   private async requestPaginated<T>(url: URL): Promise<T[]> {
@@ -133,20 +126,13 @@ export class GitHubClient {
   }
 
   private contentsUrl(path: string, options: RefOptions = {}): string {
-    const url = new URL(
-      `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${path}`,
-    );
+    const url = new URL(`https://api.github.com/repos/${this.owner}/${this.repo}/contents/${path}`);
     if (options.ref) url.searchParams.set("ref", options.ref);
     return url.toString();
   }
 
-  async listDirectory(
-    path: string,
-    options: RefOptions = {},
-  ): Promise<GitHubEntry[]> {
-    const data = await this.request<GitHubEntry[]>(
-      this.contentsUrl(path, options),
-    );
+  async listDirectory(path: string, options: RefOptions = {}): Promise<GitHubEntry[]> {
+    const data = await this.request<GitHubEntry[]>(this.contentsUrl(path, options));
     return data.map(({ name, path: entryPath, type, sha }) => ({
       name,
       path: entryPath,
@@ -155,22 +141,15 @@ export class GitHubClient {
     }));
   }
 
-  async getFileContent(
-    path: string,
-    options: RefOptions = {},
-  ): Promise<string> {
-    const data = await this.request<GitHubFileResponse>(
-      this.contentsUrl(path, options),
-    );
+  async getFileContent(path: string, options: RefOptions = {}): Promise<string> {
+    const data = await this.request<GitHubFileResponse>(this.contentsUrl(path, options));
     const binary = atob(data.content.replace(/\s/g, ""));
     const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
     return new TextDecoder("utf-8").decode(bytes);
   }
 
   async listOpenPullRequests(): Promise<GitHubPullRequest[]> {
-    const url = new URL(
-      `https://api.github.com/repos/${this.owner}/${this.repo}/pulls`,
-    );
+    const url = new URL(`https://api.github.com/repos/${this.owner}/${this.repo}/pulls`);
     url.searchParams.set("state", "open");
     url.searchParams.set("per_page", "100");
 
@@ -185,16 +164,12 @@ export class GitHubClient {
         headRef: pull.head!.ref!,
         title: pull.title,
         body: pull.body,
-        ...(typeof pull.head?.sha === "string"
-          ? { headSha: pull.head.sha }
-          : {}),
+        ...(typeof pull.head?.sha === "string" ? { headSha: pull.head.sha } : {}),
       }));
   }
 
   async listPullRequestFiles(number: number): Promise<GitHubPullRequestFile[]> {
-    const url = new URL(
-      `https://api.github.com/repos/${this.owner}/${this.repo}/pulls/${number}/files`,
-    );
+    const url = new URL(`https://api.github.com/repos/${this.owner}/${this.repo}/pulls/${number}/files`);
     url.searchParams.set("per_page", "100");
 
     const data = await this.requestPaginated<GitHubPullRequestFileResponse>(url);
