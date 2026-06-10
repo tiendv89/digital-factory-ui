@@ -1,6 +1,6 @@
 "use client";
 
-import { SettingsPage } from "@/features/settings";
+import { SettingsPage } from "@/components/settings";
 
 export default function SettingsRoute() {
   return <SettingsPage />;

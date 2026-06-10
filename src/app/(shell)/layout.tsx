@@ -1,15 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { NavRail } from "@/features/shell/components/NavRail";
-import { Topbar } from "@/features/shell/components/Topbar";
-import { CommandPalette } from "@/features/shell/components/CommandPalette";
 
-export default function ShellLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+import { CommandPalette } from "@/components/shell/command-palette";
+import { NavRail } from "@/components/shell/nav-rail";
+import { Topbar } from "@/components/shell/topbar";
+
+export default function ShellLayout({ children }: { children: React.ReactNode }) {
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
@@ -28,17 +25,11 @@ export default function ShellLayout({
   }, []);
 
   return (
-    <div
-      data-shell-layout
-      className="flex h-full min-h-screen"
-    >
+    <div data-shell-layout className="flex h-full min-h-screen">
       <NavRail onCommandPalette={openPalette} />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar onCommandPalette={openPalette} />
-        <main
-          data-shell-main
-          className="flex-1 overflow-auto"
-        >
+        <main data-shell-main className="flex-1 overflow-auto">
           {children}
         </main>
       </div>

@@ -1,16 +1,12 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/features/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ["./src/pages/**/*.{js,ts,jsx,tsx,mdx}", "./src/components/**/*.{js,ts,jsx,tsx,mdx}", "./src/app/**/*.{js,ts,jsx,tsx,mdx}", "./src/features/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
         primary: "var(--color-primary)",
+        "primary-hover": "var(--color-primary-hover)",
         "primary-light": "var(--color-primary-light)",
         success: "var(--color-success)",
         "success-bg": "var(--color-success-bg)",
@@ -29,6 +25,7 @@ const config: Config = {
         bg: "var(--color-bg)",
         "surface-secondary": "var(--color-surface-secondary)",
         border: "var(--color-border)",
+        "border-control": "var(--color-border-control)",
         "text-primary": "var(--color-text-primary)",
         "text-secondary": "var(--color-text-secondary)",
         "text-muted": "var(--color-text-muted)",
@@ -39,6 +36,7 @@ const config: Config = {
         topbar: "var(--color-topbar)",
         "nav-item-hover": "var(--color-nav-item-hover)",
         "nav-item-active": "var(--color-nav-item-active)",
+        "accent-foreground": "var(--color-accent-foreground)",
         statusbar: "var(--color-statusbar)",
       },
     },

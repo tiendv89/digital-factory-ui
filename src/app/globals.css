@@ -1,85 +1,72 @@
 @import "tailwindcss";
 @import "@heroui/react/styles";
 
-/*
- * Dark VS Code-inspired palette — oklch color space throughout.
- * This is the baseline theme; all tokens are dark by default.
- * HeroUI dark mode is activated via .dark on <html>.
- *
- * Lightness / chroma / hue key:
- *   Background tier:  ~13–28% lightness, ~0 chroma (near-neutral gray)
- *   Text tier:        ~46–85% lightness, ~0 chroma
- *   Accent / status:  full chroma, lightness tuned for legibility on dark bg
- */
 @theme inline {
   /* Fonts */
   --font-sans: var(--font-inter);
   --font-mono: var(--font-cousine);
 
-  /* ── Background / surface ──────────────────────────────────────── */
-  /* Main editor/page background  ≈ VS Code #1e1e1e */
-  --color-bg: oklch(13.4% 0 0);
-  /* Panel / sidebar surface  ≈ VS Code #252526 */
-  --color-surface: oklch(16.2% 0.003 285.9);
-  /* Slightly lifted surface (cards, dropdowns)  ≈ #2d2d2d */
-  --color-surface-secondary: oklch(19.6% 0 0);
-  /* Subtle tinted surface (inline highlights)  ≈ #252526 tinted */
-  --color-surface-subtle: oklch(17.5% 0.003 285.9);
-  /* Chip / badge background  ≈ #333333 */
-  --color-chip-bg: oklch(22.9% 0 0);
-  /* Muted fill (empty states, disabled zones)  ≈ #2d2d2d */
-  --color-muted-bg: oklch(19.6% 0 0);
+  /* ── Type scale (Figma: 11px labels, 13px body/controls) ───────── */
+  --text-xs: 11px;
+  --text-xs--line-height: 16px;
+  --text-sm: 13px;
+  --text-sm--line-height: 19.5px;
 
-  /* IDE shell-specific surfaces (used by NavRail/Topbar, T2+) */
-  --color-nav-rail: oklch(14.8% 0.003 285.9);
-  --color-topbar: oklch(16.2% 0.003 285.9);
-  --color-nav-item-hover: oklch(22.0% 0.004 285.9);
-  --color-nav-item-active: oklch(25.5% 0.005 270deg);
-  /* Status bar accent (VS Code #007acc) */
-  --color-statusbar: oklch(52.7% 0.155 235.0);
+  /* ── Background / surface ──────────────────────────────────────── */
+  --color-bg: #1e1e1e;                 /* main editor/page background */
+  --color-surface: #252526;            /* panels, cards, modals */
+  --color-surface-secondary: #2d2d2d;  /* inputs, buttons, dropdowns */
+  --color-surface-subtle: #2a2a2b;     /* subtle inline highlight */
+  --color-chip-bg: #333333;            /* chip / badge background */
+  --color-muted-bg: #2d2d2d;           /* empty / disabled fills */
+
+  /* IDE shell-specific surfaces (NavRail / Topbar) */
+  --color-nav-rail: #181818;
+  --color-topbar: #252526;
+  --color-nav-item-hover: #2a2d2e;
+  --color-nav-item-active: #094771;    /* VS Code selection blue */
+  --color-statusbar: #007acc;
 
   /* ── Borders / separators ──────────────────────────────────────── */
-  /* ≈ VS Code #3c3c3c */
-  --color-border: oklch(27.4% 0 0);
+  --color-border: #3c3c3c;             /* container / divider borders */
+  --color-border-control: #454545;     /* button / input borders */
 
   /* ── Text ──────────────────────────────────────────────────────── */
-  /* Primary text  ≈ VS Code #d4d4d4 */
-  --color-text-primary: oklch(85.1% 0 0);
-  /* Secondary / muted label  ≈ VS Code #9d9d9d */
-  --color-text-secondary: oklch(65.5% 0 0);
-  /* Dimmed / placeholder  ≈ VS Code #666666 */
-  --color-text-muted: oklch(46.3% 0 0);
+  --color-text-primary: #d4d4d4;
+  --color-text-secondary: #858585;
+  --color-text-muted: #6e6e6e;
 
   /* ── Accent / primary ──────────────────────────────────────────── */
-  /* Brand blue (kept close to existing 5465e8, adapted for dark contrast) */
-  --color-primary: oklch(65.0% 0.185 265.0);
-  /* Tinted primary background for selected/active items */
-  --color-primary-light: oklch(26.0% 0.065 265.0);
+  --color-primary: #007acc;            /* VS Code accent blue */
+  --color-primary-hover: #1b8bd0;
+  --color-primary-light: #094771;      /* tinted active/selected bg */
+  --color-accent-foreground: #4fc3f7;  /* light-blue text on selection */
 
-  /* ── Status ────────────────────────────────────────────────────── */
-  /* Success  ≈ VS Code teal-green #4ec9b0 */
-  --color-success: oklch(74.0% 0.105 175.0);
-  --color-success-bg: oklch(21.0% 0.04 175.0);
+  /* ── Status (exact hues from board frame 122:70) ───────────────── */
+  --color-success: #45b164;            /* done — green */
+  --color-success-bg: #243629;
 
-  /* Warning  ≈ VS Code yellow #dcdcaa */
-  --color-warning: oklch(87.5% 0.072 96.5);
-  --color-warning-bg: oklch(21.5% 0.035 88.0);
+  --color-warning: #cda629;            /* in review — gold */
+  --color-warning-bg: #3a3420;
 
-  /* Danger  ≈ VS Code red #f44747 */
-  --color-danger: oklch(63.5% 0.195 24.0);
-  --color-danger-bg: oklch(20.5% 0.065 24.0);
+  --color-danger: #f14d4c;             /* blocked — red */
+  --color-danger-bg: #402625;
 
-  /* Purple  ≈ VS Code #c586c0 */
-  --color-purple: oklch(68.5% 0.115 325.0);
-  --color-purple-bg: oklch(21.0% 0.045 325.0);
+  --color-purple: #7472f4;             /* agent — indigo */
+  --color-purple-bg: #2c2b40;
 
-  /* Yellow (alias for warning in status chips) */
-  --color-yellow: oklch(87.5% 0.072 96.5);
-  --color-yellow-bg: oklch(21.5% 0.035 88.0);
+  --color-yellow: #cda629;             /* alias of warning */
+  --color-yellow-bg: #3a3420;
 
-  /* Ready (task-status "ready")  ≈ VS Code #569cd6 blue */
-  --color-ready: oklch(64.5% 0.13 234.0);
-  --color-ready-bg: oklch(21.0% 0.05 234.0);
+  --color-ready: #32b3e6;              /* ready — cyan */
+  --color-ready-bg: #21363e;
+
+  /* ── Radii ─────────────────────────────────────────────────────── */
+  --radius-control: 8px;               /* buttons, inputs */
+  --radius-card: 13px;                 /* cards, modals */
+
+  /* ── Shadow ────────────────────────────────────────────────────── */
+  --shadow-modal: 0 8px 20px rgba(0, 0, 0, 0.5);
 }
 
 :root {
@@ -90,7 +77,9 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-inter, system-ui, sans-serif);
+  font-family: var(--font-inter, system-ui, sans-serif), serif;
+  font-size: 13px;
+  line-height: 19.5px;
 }
 
 /* ── Status spinner ────────────────────────────────────────────── */

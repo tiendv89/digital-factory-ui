@@ -12,12 +12,14 @@ export interface MeMembership {
   organization_slug: string;
   organization_name: string;
   role: string;
+  member_count: number;
+  workspace_count: number;
 }
 
 export interface MeData {
   user: MeUser;
   memberships: MeMembership[];
-  accessible_workspace_ids: string[];
+  org_workspace_ids: Record<string, string[]>;
 }
 
 export interface MeResponse {

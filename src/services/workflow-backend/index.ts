@@ -1,3 +1,24 @@
+export {
+  createFeature,
+  createWorkspace,
+  getFeature,
+  getFeatureTask,
+  getFeatureTaskList,
+  getWorkspace,
+  getWorkspaceTask,
+  importWorkspace,
+  listActivity,
+  listWorkspaces,
+  request,
+  searchFeatures,
+  searchFeaturesPage,
+  searchFeatureTasks,
+  searchWorkspaceTasks,
+  searchWorkspaceTasksPage,
+  syncWorkspace,
+} from "./client";
+export type { FeatureSearchParams, FeatureTaskParams, TaskSearchParams } from "./query-params";
+export { buildFeatureParams, buildFeatureTaskParams, buildTaskParams, SIDEBAR_TASK_PARAMS, TASK_MODE_FEATURE_TASK_PARAMS } from "./query-params";
 export type {
   ActivityEvent,
   ApiError,
@@ -11,7 +32,6 @@ export type {
   FeatureTaskPage,
   FeatureWithTasks,
   ImportWorkspaceRequest,
-  LocalWorkspaceSummary,
   PagedFeatures,
   PagedTasks,
   PullRequestRef,
@@ -27,32 +47,3 @@ export type {
   WorkspaceId,
   WorkspaceSummary,
 } from "./types";
-
-export {
-  SIDEBAR_TASK_PARAMS,
-  TASK_MODE_FEATURE_TASK_PARAMS,
-  buildFeatureParams,
-  buildFeatureTaskParams,
-  buildTaskParams,
-} from "./query-params";
-
-export type { FeatureSearchParams, FeatureTaskParams, TaskSearchParams } from "./query-params";
-
-export {
-  createFeature,
-  createWorkspace,
-  getFeature,
-  getFeatureTask,
-  getFeatureTaskList,
-  getWorkspace,
-  getWorkspaceTask,
-  importWorkspace,
-  listActivity,
-  request,
-  searchFeatureTasks,
-  searchFeatures,
-  searchFeaturesPage,
-  searchWorkspaceTasks,
-  searchWorkspaceTasksPage,
-  syncWorkspace,
-} from "./client";

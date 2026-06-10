@@ -1,7 +1,9 @@
-import type { Metadata } from "next";
-import { Inter, Cousine } from "next/font/google";
 import "./globals.css";
-import { AppProviders } from "@/app/providers/AppProviders";
+
+import type { Metadata } from "next";
+import { Cousine, Inter } from "next/font/google";
+
+import { AppProviders } from "@/providers/app-providers";
 
 const inter = Inter({
   variable: "--font-inter",
