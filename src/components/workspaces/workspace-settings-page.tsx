@@ -1,7 +1,8 @@
 "use client";
 
+import { Modal, Popover } from "@heroui/react";
 import { AlertTriangle, Check, Copy, CreditCard, Loader2, MoreHorizontal, Settings, Shield, Trash2, UserPlus, Users, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { Avatar, Button, Field, Input } from "@/components/common";
 import { deriveIconColor, ICON_COLORS } from "@/components/settings/icon-colors";
@@ -132,30 +133,21 @@ function GeneralTab({ workspaceId, name, slug }: { workspaceId: string; name: st
 function MemberMenu({ member, workspaceId }: { member: Member; workspaceId: string }) {
   const removeMember = useRemoveMember(workspaceId);
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onDown(e: PointerEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("pointerdown", onDown);
-    return () => document.removeEventListener("pointerdown", onDown);
-  }, [open]);
 
   return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        disabled={removeMember.isPending}
-        className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-primary disabled:opacity-40 focus:outline-none"
-        aria-label="Member options"
-      >
-        {removeMember.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <MoreHorizontal className="h-4 w-4" aria-hidden />}
-      </button>
-      {open && (
-        <div className="absolute right-0 top-8 z-50 min-w-[168px] overflow-hidden rounded-[8px] border border-border bg-surface py-1 shadow-lg">
+    <Popover isOpen={open} onOpenChange={setOpen}>
+      <Popover.Trigger>
+        <button
+          type="button"
+          disabled={removeMember.isPending}
+          className="flex h-7 w-7 items-center justify-center rounded text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-primary disabled:opacity-40 focus:outline-none"
+          aria-label="Member options"
+        >
+          {removeMember.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <MoreHorizontal className="h-4 w-4" aria-hidden />}
+        </button>
+      </Popover.Trigger>
+      <Popover.Content placement="bottom end" className="p-0 overflow-hidden rounded-[8px] border border-border bg-surface shadow-lg" style={{ minWidth: 168 }}>
+        <Popover.Dialog className="p-0 outline-none flex flex-col py-1">
           <button
             type="button"
             onClick={() => {
@@ -166,9 +158,9 @@ function MemberMenu({ member, workspaceId }: { member: Member; workspaceId: stri
           >
             Remove from workspace
           </button>
-        </div>
-      )}
-    </div>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
   );
 }
 
@@ -409,36 +401,36 @@ export function WorkspaceSettingsPage({ workspaceId: propWorkspaceId, orgId: pro
 // ─── WorkspaceSettingsModal ───────────────────────────────────────────────────
 
 export function WorkspaceSettingsModal({ workspaceId, orgId, workspaceName, onClose }: { workspaceId: string; orgId: string; workspaceName: string; onClose: () => void }) {
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
   return (
-    <div role="dialog" aria-modal="true" aria-label="Workspace settings" data-ws-settings-modal className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60" aria-hidden="true" onClick={onClose} />
-
-      <div className="relative flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-[13px] border border-border bg-surface shadow-[0_8px_20px_rgba(0,0,0,0.5)]">
-        {/* Header */}
-        <header className="flex shrink-0 items-center justify-between border-b border-border px-5 py-3.5">
-          <h2 className="text-sm font-semibold text-text-primary">Workspace settings</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close workspace settings"
-            className="rounded p-1 text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    <Modal.Root
+      isOpen
+      onOpenChange={(o) => {
+        if (!o) onClose();
+      }}
+    >
+      <Modal.Backdrop variant="opaque" isDismissable>
+        <Modal.Container placement="center">
+          <Modal.Dialog
+            data-ws-settings-modal
+            className="p-0 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-[13px] border border-border bg-surface shadow-[0_8px_20px_rgba(0,0,0,0.5)]"
           >
-            <X className="h-4 w-4" aria-hidden />
-          </button>
-        </header>
-
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          <WorkspaceSettingsPage workspaceId={workspaceId} orgId={orgId} />
-        </div>
-      </div>
-    </div>
+            <header className="flex shrink-0 items-center justify-between border-b border-border px-5 py-3.5">
+              <h2 className="text-sm font-semibold text-text-primary">Workspace settings</h2>
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close workspace settings"
+                className="rounded p-1 text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <X className="h-4 w-4" aria-hidden />
+              </button>
+            </header>
+            <div className="flex min-h-0 flex-1 overflow-hidden">
+              <WorkspaceSettingsPage workspaceId={workspaceId} orgId={orgId} />
+            </div>
+          </Modal.Dialog>
+        </Modal.Container>
+      </Modal.Backdrop>
+    </Modal.Root>
   );
 }

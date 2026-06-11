@@ -1,22 +1,44 @@
 "use client";
 
 import { Search } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useSession } from "@/components/auth";
 import { OrgWorkspaceSwitcher } from "@/components/orgs/org-workspace-switcher";
+import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
 
 const ROUTE_LABELS: Record<string, string> = {
-  "/board": "Board",
+  "/board": "Features",
   "/inbox": "Inbox",
   "/team": "Team",
   "/settings": "Settings",
 };
 
-function getBreadcrumb(pathname: string): string {
-  if (pathname.startsWith("/feature/")) return "Feature IDE";
-  if (pathname.startsWith("/task/")) return "Task Review";
-  return ROUTE_LABELS[pathname] ?? "Board";
+type BreadcrumbSegment = { label: string; href?: string };
+
+function useBreadcrumbs(pathname: string): BreadcrumbSegment[] {
+  const { activeWorkspace } = useWorkspaceContext();
+
+  if (pathname.startsWith("/feature/")) {
+    const featureId = decodeURIComponent(pathname.slice("/feature/".length));
+    const feature = activeWorkspace?.features.find((f) => f.id === featureId);
+    const name = feature?.feature_name ?? featureId;
+    return [{ label: "Features", href: "/board" }, { label: name }];
+  }
+
+  if (pathname.startsWith("/task/")) {
+    const taskId = decodeURIComponent(pathname.slice("/task/".length));
+    const task = activeWorkspace?.tasks.find((t) => t.id === taskId);
+    const featureId = task?.feature_id;
+    const feature = featureId ? activeWorkspace?.features.find((f) => f.id === featureId) : undefined;
+    const featureName = feature?.feature_name ?? task?.feature_name ?? "Feature";
+    const taskName = task?.task_name ?? taskId;
+    return [{ label: "Features", href: "/board" }, ...(featureId ? [{ label: featureName, href: `/feature/${encodeURIComponent(featureId)}` }] : [{ label: featureName }]), { label: taskName }];
+  }
+
+  const label = ROUTE_LABELS[pathname] ?? "Board";
+  return [{ label }];
 }
 
 type TopbarProps = {
@@ -26,7 +48,7 @@ type TopbarProps = {
 export function Topbar({ onCommandPalette }: TopbarProps) {
   const pathname = usePathname();
   const { logout } = useSession();
-  const breadcrumb = getBreadcrumb(pathname);
+  const segments = useBreadcrumbs(pathname);
 
   return (
     <header aria-label="Application toolbar" data-topbar className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-topbar px-4">
@@ -34,9 +56,26 @@ export function Topbar({ onCommandPalette }: TopbarProps) {
 
       <span aria-hidden className="h-4 w-px shrink-0 bg-border" />
 
-      <span data-breadcrumb className="text-xs text-text-secondary" aria-current="page">
-        {breadcrumb}
-      </span>
+      <nav data-breadcrumb aria-label="Breadcrumb" className="flex items-center gap-1.5">
+        {segments.map((seg, i) => (
+          <span key={i} className="flex items-center gap-1.5">
+            {i > 0 && (
+              <span aria-hidden className="text-[11px] text-text-muted">
+                /
+              </span>
+            )}
+            {seg.href ? (
+              <Link href={seg.href} className="text-xs text-text-muted transition-colors hover:text-text-secondary">
+                {seg.label}
+              </Link>
+            ) : (
+              <span className="text-xs text-text-secondary" aria-current="page">
+                {seg.label}
+              </span>
+            )}
+          </span>
+        ))}
+      </nav>
 
       <div className="flex-1" />
 

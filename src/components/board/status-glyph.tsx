@@ -50,9 +50,9 @@ function Done({ size, color }: GP) {
 
 function ReviewPassed({ size, color }: GP) {
   return (
-    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
-      <circle cx="8" cy="8" r="7.5" fill={color} />
-      <path d="M5 8.5 L7 10.5 L11 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
+      <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" />
+      <path d="M5.5 8.5 L7 10 L10.5 6" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

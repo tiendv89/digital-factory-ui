@@ -1,6 +1,6 @@
 "use client";
 
-import { Wrench } from "lucide-react";
+import { Bot, Wrench } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { ConversationContent, useConversationScroll } from "./conversation";
@@ -33,8 +33,12 @@ export function MessageThread({ messages, status }: MessageThreadProps) {
 
   if (messages.length === 0 && !isStreaming && status !== "connecting") {
     return (
-      <div data-message-thread-empty className="flex flex-1 items-center justify-center px-4 text-center">
-        <p className="text-sm text-text-muted">Ask a question or use a slash command to get started.</p>
+      <div data-message-thread-empty className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface">
+          <Bot className="h-5 w-5 text-text-muted" />
+        </div>
+        <p className="text-[13px] font-medium text-text-secondary">Start a conversation</p>
+        <p className="text-[11px] text-text-muted">Ask a question or use a slash command to get started.</p>
       </div>
     );
   }

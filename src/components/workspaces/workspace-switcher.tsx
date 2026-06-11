@@ -1,7 +1,8 @@
 "use client";
 
+import { Popover } from "@heroui/react";
 import { Check, ChevronDown, FolderOpen, Plus, Search } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { CreateWorkspaceModal } from "@/components/workspaces/create-workspace-modal";
 import { ImportModal } from "@/components/workspaces/import-modal";
@@ -57,7 +58,6 @@ export function WorkspaceSwitcher() {
   const [showImport, setShowImport] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [search, setSearch] = useState("");
-  const ref = useRef<HTMLDivElement>(null);
 
   const filteredSummaries = summaries.filter((s) => !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.repo_url.toLowerCase().includes(search.toLowerCase()));
 
@@ -79,22 +79,8 @@ export function WorkspaceSwitcher() {
   }, []);
 
   const handleGoToBoard = useCallback(() => {
-    setOpen(false);
-    setSearch("");
     goToBoard();
   }, [goToBoard]);
-
-  useEffect(() => {
-    if (!open) return;
-    function handlePointerDown(e: PointerEvent) {
-      if (!ref.current?.contains(e.target as Node)) {
-        setOpen(false);
-        setSearch("");
-      }
-    }
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [open]);
 
   const activeSummary = summaries.find((s) => s.id === selectedWorkspaceId);
 
@@ -102,7 +88,13 @@ export function WorkspaceSwitcher() {
 
   return (
     <>
-      <div ref={ref} className="relative">
+      <Popover
+        isOpen={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (!o) setSearch("");
+        }}
+      >
         <div
           className={
             "flex h-8 w-60 overflow-hidden border text-left transition-colors " +
@@ -113,23 +105,22 @@ export function WorkspaceSwitcher() {
             <FolderOpen className={"h-4 w-4 shrink-0 " + (isBoardActive ? "text-success" : "text-text-muted")} strokeWidth={2} aria-hidden="true" />
             <span className="min-w-0 truncate text-xs font-semibold leading-none text-text-secondary">{activeSummary?.name ?? "Select workspace"}</span>
           </button>
-          <button
-            type="button"
-            aria-haspopup="listbox"
-            aria-expanded={open}
-            aria-label="Switch workspace"
-            onClick={() => setOpen((v) => !v)}
-            className={
-              "ml-auto flex h-full w-8 shrink-0 items-center justify-center border-l transition-colors " +
-              (isBoardActive ? "border-success/25 bg-success-bg/70 hover:bg-success-bg" : "border-border bg-surface-secondary hover:bg-surface-subtle")
-            }
-          >
-            <ChevronDown className={"h-3.5 w-3.5 shrink-0 transition-transform " + (isBoardActive ? "text-success " : "text-text-muted ") + (open ? "rotate-180" : "")} aria-hidden="true" />
-          </button>
+          <Popover.Trigger>
+            <button
+              type="button"
+              aria-label="Switch workspace"
+              className={
+                "ml-auto flex h-full w-8 shrink-0 items-center justify-center border-l transition-colors " +
+                (isBoardActive ? "border-success/25 bg-success-bg/70 hover:bg-success-bg" : "border-border bg-surface-secondary hover:bg-surface-subtle")
+              }
+            >
+              <ChevronDown className={"h-3.5 w-3.5 shrink-0 transition-transform " + (isBoardActive ? "text-success " : "text-text-muted ") + (open ? "rotate-180" : "")} aria-hidden="true" />
+            </button>
+          </Popover.Trigger>
         </div>
 
-        {open && (
-          <div role="listbox" aria-label="Available workspaces" className="absolute left-0 top-full z-40 mt-2 w-72 border border-border bg-surface shadow-lg">
+        <Popover.Content placement="bottom start" className="p-0 overflow-hidden border border-border bg-surface shadow-lg" style={{ width: 288 }}>
+          <Popover.Dialog className="p-0 outline-none flex flex-col">
             <div className="border-b border-border bg-surface-secondary px-2.5 py-2">
               <div className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-text-secondary">Switch Workspace</div>
               <label className="flex h-8 items-center gap-2 border border-border bg-surface px-2">
@@ -183,19 +174,12 @@ export function WorkspaceSwitcher() {
                 Import Workspace
               </button>
             </div>
-          </div>
-        )}
-      </div>
+          </Popover.Dialog>
+        </Popover.Content>
+      </Popover>
 
       {showImport && <ImportModal onClose={() => setShowImport(false)} onSuccess={handleImportSuccess} />}
-      {showCreate && (
-        <CreateWorkspaceModal
-          onClose={() => setShowCreate(false)}
-          onSuccess={() => {
-            setShowCreate(false);
-          }}
-        />
-      )}
+      {showCreate && <CreateWorkspaceModal onClose={() => setShowCreate(false)} onSuccess={() => setShowCreate(false)} />}
     </>
   );
 }

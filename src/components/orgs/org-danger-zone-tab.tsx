@@ -1,5 +1,6 @@
 "use client";
 
+import { ListBox, Select } from "@heroui/react";
 import { AlertTriangle, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -128,23 +129,31 @@ export function OrgDangerZoneTab({ orgId, orgName, currentUserId, userRole, onOr
           Transfer admin ownership of this organisation to another member. You will retain your current admin role unless the new owner changes it.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row">
-          <select
-            value={transferUserId}
-            onChange={(e) => {
-              setTransferUserId(e.target.value);
+          <Select.Root
+            selectedKey={transferUserId || null}
+            onSelectionChange={(key) => {
+              setTransferUserId(key ? String(key) : "");
               setTransferConfirm(false);
               setTransferError(null);
             }}
+            placeholder="Select member…"
             aria-label="Select member to transfer ownership to"
-            className="h-9 flex-1 rounded-[8px] border border-border-control bg-surface-secondary px-3 text-sm text-text-primary outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            className="flex-1"
           >
-            <option value="">Select member…</option>
-            {eligibleForTransfer.map((m) => (
-              <option key={m.user_id} value={m.user_id}>
-                {m.display_name ?? m.email}
-              </option>
-            ))}
-          </select>
+            <Select.Trigger>
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover>
+              <ListBox>
+                {eligibleForTransfer.map((m) => (
+                  <ListBox.Item key={m.user_id} id={m.user_id}>
+                    {m.display_name ?? m.email}
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
+          </Select.Root>
           <Button
             variant={transferConfirm ? "primary" : "secondary"}
             onClick={() => void handleTransfer()}

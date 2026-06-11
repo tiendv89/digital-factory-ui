@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, LayoutList } from "lucide-react";
 import { useMemo } from "react";
 
 import type { ParsedTask } from "@/services/yaml-parser";
@@ -33,6 +33,18 @@ export function FeatureListView({ rows, onTaskClick }: { rows: BoardFeatureRow[]
     }
     return [...map.entries()].sort(([a], [b]) => statusSortIndex(a) - statusSortIndex(b)).map(([status, groupRows]) => ({ status, rows: groupRows }));
   }, [rows]);
+
+  if (rows.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface">
+          <LayoutList className="h-5 w-5 text-text-muted" />
+        </div>
+        <p className="text-[13px] font-medium text-text-secondary">No features found</p>
+        <p className="text-[11px] text-text-muted">Try adjusting your search or filters</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto px-6 py-4">
@@ -77,7 +89,7 @@ export function FeatureListView({ rows, onTaskClick }: { rows: BoardFeatureRow[]
                 return (
                   <div key={feature.id} className="mt-1">
                     {/* Feature row */}
-                    <div className="grid h-11 items-center rounded-lg px-2 transition-colors hover:bg-white/4" style={{ gridTemplateColumns: GRID }}>
+                    <div className="grid min-h-11 items-center rounded-lg px-2 py-2 transition-colors hover:bg-white/4" style={{ gridTemplateColumns: GRID }}>
                       <div className="flex min-w-0 items-center gap-1.5">
                         <button
                           type="button"
@@ -88,7 +100,9 @@ export function FeatureListView({ rows, onTaskClick }: { rows: BoardFeatureRow[]
                           {featureCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                         </button>
                         <LifecycleGlyph stage={feature.featureStatus} size={12} />
-                        <span className="truncate text-[13px] font-semibold text-text-primary">{name}</span>
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate text-[13px] font-semibold text-text-primary">{feature.id}</span>
+                        </div>
                       </div>
 
                       <span className="inline-flex h-5 w-fit items-center rounded-full px-2 text-[10px] font-semibold" style={{ backgroundColor: meta.bg, color: meta.color }}>

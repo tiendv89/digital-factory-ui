@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "@heroui/react/styles";
 
+@layer base {
+  button { cursor: pointer; }
+}
+
 @theme inline {
   /* Fonts */
   --font-sans: var(--font-inter);
@@ -144,7 +148,7 @@ body {
   background: var(--color-surface-secondary);
   border-radius: 4px;
   padding: 0.15em 0.4em;
-  font-family: var(--font-mono, monospace);
+  font-family: var(--font-mono, monospace), serif;
   font-size: 0.85em;
   color: var(--color-text-secondary);
 }
@@ -234,5 +238,5 @@ body {
 
 .markdown-body input[type="checkbox"] {
   margin-right: 0.4em;
-  accent-color: var(--color-success);
+  accent-color: var(--color-primary);
 }

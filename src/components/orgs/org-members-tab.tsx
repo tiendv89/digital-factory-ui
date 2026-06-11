@@ -1,7 +1,8 @@
 "use client";
 
+import { Popover } from "@heroui/react";
 import { AlertCircle, Loader2, MoreHorizontal, UserPlus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { Avatar } from "@/components/common";
 import { useCancelOrgInvitation, useChangeOrgMemberRole, useInviteOrgMember, useOrgInvitations, useOrgMembers, useRemoveOrgMember } from "@/hooks/admin/use-org-settings";
@@ -30,33 +31,23 @@ function MemberMenu({ member, orgId }: { member: OrgMember; orgId: string }) {
   const changeRole = useChangeOrgMemberRole(orgId);
   const removeMember = useRemoveOrgMember(orgId);
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(e: PointerEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
 
   const busy = changeRole.isPending || removeMember.isPending;
 
   return (
-    <div ref={ref} className="relative shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        disabled={busy}
-        className="flex h-7 w-7 items-center justify-center rounded text-[#666] transition-colors hover:bg-white/8 hover:text-[#ccc] disabled:opacity-40"
-        aria-label="Member actions"
-      >
-        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <MoreHorizontal className="h-4 w-4" aria-hidden />}
-      </button>
-
-      {open && (
-        <div className="absolute right-0 top-8 z-50 min-w-[168px] overflow-hidden rounded-lg border py-1 shadow-xl" style={{ backgroundColor: "#2d2d2d", borderColor: "#454545" }}>
+    <Popover isOpen={open} onOpenChange={setOpen}>
+      <Popover.Trigger>
+        <button
+          type="button"
+          disabled={busy}
+          className="flex h-7 w-7 items-center justify-center rounded text-[#666] transition-colors hover:bg-white/8 hover:text-[#ccc] disabled:opacity-40"
+          aria-label="Member actions"
+        >
+          {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <MoreHorizontal className="h-4 w-4" aria-hidden />}
+        </button>
+      </Popover.Trigger>
+      <Popover.Content placement="bottom end" className="p-0 overflow-hidden rounded-lg border shadow-xl" style={{ backgroundColor: "#2d2d2d", borderColor: "#454545", minWidth: 168 }}>
+        <Popover.Dialog className="p-0 outline-none flex flex-col py-1">
           <button
             type="button"
             onClick={() => {
@@ -77,9 +68,9 @@ function MemberMenu({ member, orgId }: { member: OrgMember; orgId: string }) {
           >
             Remove member
           </button>
-        </div>
-      )}
-    </div>
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
   );
 }
 

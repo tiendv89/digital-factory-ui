@@ -1,35 +1,48 @@
 "use client";
 
-import { LayoutGrid, List, Plus, RefreshCw, Search, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { LayoutGrid, List, Plus, Search, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { FEATURE_COLUMNS, lifecycleMeta, toFeatureRows } from "./board-meta";
 import { FeatureCard } from "./feature-card";
 import { FeatureListView } from "./feature-list-view";
 import { useBoardContext } from "./kanban-board.context";
 import { NewFeatureModal } from "./new-feature-modal";
-import { LifecycleGlyph } from "./status-glyph";
+import { LifecycleGlyph, StatusGlyph } from "./status-glyph";
 
 type KanbanFilter = { id: string; stage: string };
-type ListFilter = { id: string; featureStatuses: string[] };
+type ListFilter = { id: string; label: string; taskStatuses: string[]; color: string };
 
 const KANBAN_FILTERS: KanbanFilter[] = [
   { id: "ready_for_implementation", stage: "ready_for_implementation" },
   { id: "in_implementation", stage: "in_implementation" },
-  { id: "blocked", stage: "blocked" },
+  { id: "in_handoff", stage: "in_handoff" },
 ];
 
 const LIST_FILTERS: ListFilter[] = [
-  { id: "in_progress", featureStatuses: ["in_design", "in_tdd", "ready_for_implementation", "in_implementation"] },
-  { id: "blocked", featureStatuses: ["blocked"] },
-  { id: "in_handoff", featureStatuses: ["in_handoff"] },
+  { id: "ready", label: "Ready", taskStatuses: ["ready", "todo"], color: "#8d8f95" },
+  { id: "in_progress", label: "In Progress", taskStatuses: ["in_progress"], color: "#58b0ff" },
+  { id: "blocked", label: "Blocked", taskStatuses: ["blocked"], color: "#f14d4c" },
 ];
 
 export function BoardView() {
-  const { features, openFeatureTab, featureSearchQuery, setFeatureSearchQuery, viewMode, setViewMode, workspaceDetail, reload, syncBoard, syncing } = useBoardContext();
+  const { features, openFeatureTab, featureSearchQuery, setFeatureSearchQuery, viewMode, setViewMode, workspaceDetail, reload } = useBoardContext();
 
   const [showNewFeature, setShowNewFeature] = useState(false);
   const [quickFilters, setQuickFilters] = useState<Set<string>>(new Set());
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "f") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
 
   const search = featureSearchQuery.trim().toLowerCase();
   const isList = viewMode === "list";
@@ -49,10 +62,10 @@ export function BoardView() {
 
   const activeKanbanStages = useMemo(() => new Set(KANBAN_FILTERS.filter((f) => quickFilters.has(f.id)).map((f) => f.stage)), [quickFilters]);
 
-  const activeListFeatureStatuses = useMemo(() => {
+  const activeListTaskStatuses = useMemo(() => {
     const set = new Set<string>();
     for (const f of LIST_FILTERS) {
-      if (quickFilters.has(f.id)) f.featureStatuses.forEach((s) => set.add(s));
+      if (quickFilters.has(f.id)) f.taskStatuses.forEach((s) => set.add(s));
     }
     return set;
   }, [quickFilters]);
@@ -68,11 +81,11 @@ export function BoardView() {
     if (!isList && activeKanbanStages.size > 0) {
       result = result.filter((f) => activeKanbanStages.has(f.featureStatus));
     }
-    if (isList && activeListFeatureStatuses.size > 0) {
-      result = result.filter((f) => activeListFeatureStatuses.has(f.featureStatus));
+    if (isList && activeListTaskStatuses.size > 0) {
+      result = result.filter((f) => f.tasks.some((t) => activeListTaskStatuses.has(t.status)));
     }
     return result;
-  }, [features, search, isList, activeKanbanStages, activeListFeatureStatuses]);
+  }, [features, search, isList, activeKanbanStages, activeListTaskStatuses]);
 
   const featureRows = useMemo(() => toFeatureRows(visibleFeatures), [visibleFeatures]);
 
@@ -87,6 +100,7 @@ export function BoardView() {
           <Search className="h-3 w-3 shrink-0" aria-hidden="true" />
           <span className="sr-only">Search features</span>
           <input
+            ref={searchRef}
             value={featureSearchQuery}
             onChange={(e) => setFeatureSearchQuery(e.target.value)}
             placeholder="Search features…"
@@ -103,10 +117,7 @@ export function BoardView() {
         <div className="flex items-center gap-2">
           {isList
             ? LIST_FILTERS.map((qf) => {
-                const representativeStatus = qf.featureStatuses[0] ?? qf.id;
-                const meta = lifecycleMeta(representativeStatus);
                 const active = quickFilters.has(qf.id);
-                const label = qf.id === "in_progress" ? "In Progress" : qf.id === "in_handoff" ? "In Handoff" : meta.label;
                 return (
                   <button
                     key={qf.id}
@@ -116,10 +127,10 @@ export function BoardView() {
                     className={
                       "flex h-[30px] items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors " + (active ? "" : "border-border text-text-secondary hover:bg-surface-subtle")
                     }
-                    style={active ? { borderColor: meta.color, backgroundColor: meta.bg, color: meta.color } : undefined}
+                    style={active ? { borderColor: qf.color, backgroundColor: `${qf.color}18`, color: qf.color } : undefined}
                   >
-                    <LifecycleGlyph stage={representativeStatus} size={11} />
-                    {label}
+                    <StatusGlyph status={qf.taskStatuses[0]!} size={11} />
+                    {qf.label}
                   </button>
                 );
               })
@@ -154,18 +165,6 @@ export function BoardView() {
           className="flex h-[30px] items-center gap-1.5 rounded-lg bg-primary px-3 text-xs font-medium text-white transition-colors hover:bg-primary-hover"
         >
           <Plus className="h-3.5 w-3.5" aria-hidden="true" /> New Feature
-        </button>
-
-        {/* Sync */}
-        <button
-          type="button"
-          onClick={() => syncBoard()}
-          disabled={syncing}
-          title="Sync workspace data"
-          className="flex h-7 items-center gap-1.5 rounded-md border border-border-control bg-surface-secondary px-3 text-xs text-text-primary transition-colors hover:bg-nav-item-hover disabled:opacity-50"
-        >
-          <RefreshCw className={"h-3 w-3" + (syncing ? " animate-spin" : "")} aria-hidden="true" />
-          Sync
         </button>
 
         {/* View toggle */}

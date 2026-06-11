@@ -1,7 +1,8 @@
 "use client";
 
+import { Popover } from "@heroui/react";
 import { Building2, Check, ChevronDown, ChevronRight, Plus, Settings } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import { CreateOrgModal } from "@/components/orgs/create-org-modal";
 import { OrgSettingsModal } from "@/components/orgs/org-settings-modal";
@@ -45,17 +46,6 @@ export function OrgWorkspaceSwitcher() {
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
   const [showOrgSettings, setShowOrgSettings] = useState(false);
   const [settingsTarget, setSettingsTarget] = useState<{ id: string; name: string } | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    setView("main");
-    function handlePointerDown(e: PointerEvent) {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [open]);
 
   const activeOrgId = activeMembership?.organization_id ?? "";
   // Filter by organization_id when summaries carry it (post-backend-update).
@@ -105,44 +95,42 @@ export function OrgWorkspaceSwitcher() {
 
   return (
     <>
-      <div ref={ref} className="relative" data-org-workspace-switcher>
-        {/* Trigger */}
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          aria-expanded={open}
-          aria-label="Switch organization or workspace"
-          onClick={() => setOpen((v) => !v)}
-          className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-text-primary transition-colors hover:bg-surface-secondary"
-        >
-          <IconSquare name={activeMembership?.organization_name} seed={activeMembership?.organization_id ?? "org"} size={18} />
-          <span className="max-w-28 truncate">{activeMembership?.organization_name ?? "—"}</span>
-          {activeWorkspace && (
-            <>
-              <span className="text-text-muted" aria-hidden="true">
-                /
-              </span>
-              <IconSquare name={activeWorkspace.name} seed={activeWorkspace.id} size={18} />
-              <span className="max-w-28 truncate">{activeWorkspace.name}</span>
-            </>
-          )}
-          <ChevronDown className={"h-3 w-3 shrink-0 text-text-muted transition-transform " + (open ? "rotate-180" : "")} aria-hidden="true" />
-        </button>
-
-        {/* Popup */}
-        {open && (
-          <div
-            className="absolute left-0 top-full z-50 mt-1.5 overflow-hidden rounded-xl border"
-            style={{
-              width: 300,
-              backgroundColor: "#2d2d2d",
-              borderColor: "#454545",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.5)",
-            }}
-            role="dialog"
-            aria-label="Organization and workspace switcher"
+      <Popover
+        isOpen={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (o) setView("main");
+        }}
+        data-org-workspace-switcher
+      >
+        <Popover.Trigger>
+          <button
+            type="button"
+            aria-label="Switch organization or workspace"
+            className="flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-text-primary transition-colors hover:bg-surface-secondary"
           >
-            {/* ── Main view ────────────────────────────────────────────── */}
+            <IconSquare name={activeMembership?.organization_name} seed={activeMembership?.organization_id ?? "org"} size={18} />
+            <span className="max-w-28 truncate">{activeMembership?.organization_name ?? "—"}</span>
+            {activeWorkspace && (
+              <>
+                <span className="text-text-muted" aria-hidden="true">
+                  /
+                </span>
+                <IconSquare name={activeWorkspace.name} seed={activeWorkspace.id} size={18} />
+                <span className="max-w-28 truncate">{activeWorkspace.name}</span>
+              </>
+            )}
+            <ChevronDown className={"h-3 w-3 shrink-0 text-text-muted transition-transform " + (open ? "rotate-180" : "")} aria-hidden="true" />
+          </button>
+        </Popover.Trigger>
+
+        <Popover.Content
+          placement="bottom start"
+          className="p-0 overflow-hidden rounded-xl border"
+          style={{ width: 300, backgroundColor: "#2d2d2d", borderColor: "#454545", boxShadow: "0 12px 32px rgba(0,0,0,0.5)" }}
+        >
+          <Popover.Dialog className="p-0 outline-none">
+            {/* ── Main view ──────────────────────────────────────────────── */}
             {view === "main" && (
               <>
                 {/* Org header */}
@@ -174,33 +162,31 @@ export function OrgWorkspaceSwitcher() {
                   <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-widest" style={{ color: "#9d9d9d" }}>
                     Workspaces
                   </p>
-                  {accessibleSummaries.map((ws) => {
-                    return (
-                      <div key={ws.id} className="group relative flex items-center transition-colors hover:bg-white/5">
-                        <button type="button" onClick={() => handleSwitchWorkspace(ws.id)} className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left">
-                          <IconSquare name={ws.name} seed={ws.id} size={26} />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-[13px] font-medium text-text-primary">{ws.name}</p>
-                          </div>
-                        </button>
-                        <div className="flex shrink-0 items-center gap-1 pr-2.5">
-                          {ws.id === activeWorkspace?.id && <Check className="h-3 w-3 text-primary" aria-hidden="true" />}
-                          <button
-                            type="button"
-                            aria-label={`Settings for ${ws.name}`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setOpen(false);
-                              setSettingsTarget({ id: ws.id, name: ws.name });
-                            }}
-                            className="flex h-5 w-5 items-center justify-center rounded text-text-muted opacity-0 transition-opacity hover:bg-white/10 hover:text-text-primary group-hover:opacity-100"
-                          >
-                            <Settings className="h-3 w-3" aria-hidden="true" />
-                          </button>
+                  {accessibleSummaries.map((ws) => (
+                    <div key={ws.id} className="group relative flex items-center transition-colors hover:bg-white/5">
+                      <button type="button" onClick={() => handleSwitchWorkspace(ws.id)} className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left">
+                        <IconSquare name={ws.name} seed={ws.id} size={26} />
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[13px] font-medium text-text-primary">{ws.name}</p>
                         </div>
+                      </button>
+                      <div className="flex shrink-0 items-center gap-1 pr-2.5">
+                        {ws.id === activeWorkspace?.id && <Check className="h-3 w-3 text-primary" aria-hidden="true" />}
+                        <button
+                          type="button"
+                          aria-label={`Settings for ${ws.name}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpen(false);
+                            setSettingsTarget({ id: ws.id, name: ws.name });
+                          }}
+                          className="flex h-5 w-5 items-center justify-center rounded text-text-muted opacity-0 transition-opacity hover:bg-white/10 hover:text-text-primary group-hover:opacity-100"
+                        >
+                          <Settings className="h-3 w-3" aria-hidden="true" />
+                        </button>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                   {accessibleSummaries.length === 0 && <p className="px-3 py-2 text-xs italic text-text-muted">No workspaces yet</p>}
                 </div>
 
@@ -227,7 +213,7 @@ export function OrgWorkspaceSwitcher() {
               </>
             )}
 
-            {/* ── Switch-org view ───────────────────────────────────────── */}
+            {/* ── Switch-org view ─────────────────────────────────────────── */}
             {view === "switch-org" && (
               <>
                 <div className="flex items-center gap-2 border-b px-3 py-2.5" style={{ borderColor: "#3c3c3c" }}>
@@ -294,9 +280,9 @@ export function OrgWorkspaceSwitcher() {
                 </div>
               </>
             )}
-          </div>
-        )}
-      </div>
+          </Popover.Dialog>
+        </Popover.Content>
+      </Popover>
 
       {showOrgSettings && activeMembership && <OrgSettingsModal membership={activeMembership} onClose={() => setShowOrgSettings(false)} />}
       {showCreateOrg && <CreateOrgModal onClose={() => setShowCreateOrg(false)} onSuccess={() => setShowCreateOrg(false)} />}
