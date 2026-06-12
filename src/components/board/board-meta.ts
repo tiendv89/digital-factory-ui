@@ -4,9 +4,9 @@ import { FEATURE_MODE_STATUSES } from "@/utils/board/status";
 // Status + lifecycle metadata — exact values from the Figma design brief
 // (~/Downloads/design-brief/src/app/components/data.ts).
 
-export type BriefStatus = "todo" | "ready" | "in_progress" | "in_review" | "reviewing" | "review_passed" | "change_requested" | "review_incomplete" | "blocked" | "done" | "cancelled";
+type BriefStatus = "todo" | "ready" | "in_progress" | "in_review" | "reviewing" | "review_passed" | "change_requested" | "review_incomplete" | "blocked" | "done" | "cancelled";
 
-export const STATUS_META: Record<BriefStatus, { label: string; color: string; bg: string; glyph: string }> = {
+const STATUS_META: Record<BriefStatus, { label: string; color: string; bg: string; glyph: string }> = {
   todo: { label: "Todo", color: "oklch(0.65 0.01 270)", bg: "oklch(0.65 0.01 270 / 0.15)", glyph: "○" },
   ready: { label: "Ready", color: "oklch(0.72 0.13 230)", bg: "oklch(0.72 0.13 230 / 0.15)", glyph: "◐" },
   in_progress: { label: "In Progress", color: "oklch(0.74 0.15 250)", bg: "oklch(0.74 0.15 250 / 0.15)", glyph: "◑" },
@@ -46,21 +46,10 @@ export const FEATURE_COLUMNS: { id: string; label: string; color: string }[] = F
   color: lifecycleMeta(id).color,
 }));
 
-// The 7 kanban columns, in the exact order shown in Figma node 122-70.
-export const BOARD_COLUMNS: { id: BriefStatus; label: string }[] = [
-  { id: "todo", label: "TODO" },
-  { id: "ready", label: "READY" },
-  { id: "in_progress", label: "IN PROGRESS" },
-  { id: "blocked", label: "BLOCKED" },
-  { id: "in_review", label: "IN REVIEW" },
-  { id: "done", label: "DONE" },
-  { id: "cancelled", label: "CANCELLED" },
-];
-
 // Feature accent palette (brief uses per-feature colors). Derived deterministically.
 const FEATURE_COLORS = ["oklch(0.62 0.19 280)", "oklch(0.70 0.16 30)", "oklch(0.74 0.14 90)", "oklch(0.72 0.13 230)", "oklch(0.70 0.13 150)", "oklch(0.74 0.15 250)"];
 
-export function featureColor(seed: string): string {
+function featureColor(seed: string): string {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) {
     hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
@@ -76,20 +65,6 @@ export type BoardAssignee = {
   working: boolean;
 } | null;
 
-export type BoardTask = {
-  raw: ParsedTask;
-  id: string;
-  title: string;
-  status: string;
-  featureId: string;
-  featureName: string;
-  featureColor: string;
-  blockedReason?: string;
-  assignee: BoardAssignee;
-  /** sibling task statuses for the progress-dots row */
-  siblings: { id: string; status: string }[];
-};
-
 const DONE_LIKE = new Set(["done", "cancelled", "review_passed"]);
 
 export function deriveBoardAssignee(task: ParsedTask): BoardAssignee {
@@ -99,27 +74,6 @@ export function deriveBoardAssignee(task: ParsedTask): BoardAssignee {
   const name = ex.last_updated_by ?? (isAgent ? "agent" : "user");
   const working = isAgent && (task.status === "in_progress" || task.status === "reviewing");
   return { name, type: isAgent ? "agent" : "human", working };
-}
-
-/** Flatten the workspace's features into brief-shaped board tasks. */
-export function toBoardTasks(features: ParsedFeature[]): BoardTask[] {
-  return features.flatMap((feature) => {
-    const name = feature.title || feature.id;
-    const color = featureColor(feature.id);
-    const siblings = feature.tasks.map((t) => ({ id: t.id, status: t.status }));
-    return feature.tasks.map((task) => ({
-      raw: task,
-      id: task.id,
-      title: task.title,
-      status: task.status,
-      featureId: feature.id,
-      featureName: name,
-      featureColor: color,
-      blockedReason: task.blockedReason,
-      assignee: deriveBoardAssignee(task),
-      siblings,
-    }));
-  });
 }
 
 export type BoardFeatureRow = {

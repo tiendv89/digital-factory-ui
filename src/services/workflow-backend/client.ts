@@ -13,7 +13,6 @@ import type {
   ImportWorkspaceRequest,
   PagedFeatures,
   PagedTasks,
-  TaskDetail,
   TaskSummary,
   WorkspaceDetail,
   WorkspaceSummary,
@@ -21,7 +20,7 @@ import type {
 
 type ResponseBody<T> = { success: boolean; data?: T; error?: ApiError };
 
-export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method?.toUpperCase() ?? "GET") as "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   const data = init?.body !== undefined ? (typeof init.body === "string" ? (JSON.parse(init.body) as unknown) : init.body) : undefined;
 
@@ -71,6 +70,10 @@ export async function getWorkspace(workspaceId: string): Promise<WorkspaceDetail
   return request<WorkspaceDetail>(`/api/workspaces/${workspaceId}`);
 }
 
+export async function deleteWorkspace(workspaceId: string): Promise<void> {
+  await request<void>(`/api/workspaces/${workspaceId}`, { method: "DELETE" });
+}
+
 export async function createFeature(workspaceId: string, body: CreateFeatureRequest): Promise<FeatureSummary> {
   return request<FeatureSummary>(`/api/workspaces/${workspaceId}/features`, {
     method: "POST",
@@ -80,12 +83,6 @@ export async function createFeature(workspaceId: string, body: CreateFeatureRequ
 
 export async function syncWorkspace(workspaceId: string): Promise<WorkspaceDetail> {
   return request<WorkspaceDetail>(`/api/workspaces/${workspaceId}/sync`, { method: "POST" });
-}
-
-export async function searchFeatures(workspaceId: string, params?: URLSearchParams): Promise<FeatureSummary[]> {
-  const qs = params?.toString() ? `?${params.toString()}` : "";
-  const result = await request<FeatureSummary[] | PagedFeatures>(`/api/workspaces/${workspaceId}/features${qs}`);
-  return unwrapItems(result);
 }
 
 export async function searchFeaturesPage(workspaceId: string, params?: URLSearchParams): Promise<PagedFeatures> {
@@ -102,26 +99,6 @@ export async function searchWorkspaceTasks(workspaceId: string, params?: URLSear
   const qs = params?.toString() ? `?${params.toString()}` : "";
   const result = await request<TaskSummary[] | PagedTasks>(`/api/workspaces/${workspaceId}/tasks${qs}`);
   return unwrapItems(result);
-}
-
-export async function searchWorkspaceTasksPage(workspaceId: string, params?: URLSearchParams): Promise<PagedTasks> {
-  const qs = params?.toString() ? `?${params.toString()}` : "";
-  const result = await request<TaskSummary[] | PagedTasks>(`/api/workspaces/${workspaceId}/tasks${qs}`);
-  return normalizePagedTasks(result);
-}
-
-export async function getWorkspaceTask(workspaceId: string, taskId: string): Promise<TaskDetail> {
-  return request<TaskDetail>(`/api/workspaces/${workspaceId}/tasks/${taskId}`);
-}
-
-export async function searchFeatureTasks(workspaceId: string, featureId: string, params?: URLSearchParams): Promise<TaskSummary[]> {
-  const qs = params?.toString() ? `?${params.toString()}` : "";
-  const result = await request<TaskSummary[] | PagedTasks>(`/api/workspaces/${workspaceId}/features/${featureId}/tasks${qs}`);
-  return unwrapItems(result);
-}
-
-export async function getFeatureTask(workspaceId: string, featureId: string, taskId: string): Promise<TaskDetail> {
-  return request<TaskDetail>(`/api/workspaces/${workspaceId}/features/${featureId}/tasks/${taskId}`);
 }
 
 export async function getFeatureTaskList(workspaceId: string, params?: URLSearchParams): Promise<FeatureTaskPage> {
@@ -148,19 +125,6 @@ function unwrapItems<T>(result: T[] | { items: T[] }): T[] {
 }
 
 function normalizePagedFeatures(result: FeatureSummary[] | PagedFeatures): PagedFeatures {
-  if (Array.isArray(result)) {
-    return { items: result, total: result.length, page: 1, limit: result.length };
-  }
-  const items = Array.isArray(result.items) ? result.items : [];
-  return {
-    items,
-    total: typeof result.total === "number" ? result.total : items.length,
-    page: typeof result.page === "number" ? result.page : 1,
-    limit: typeof result.limit === "number" ? result.limit : items.length,
-  };
-}
-
-function normalizePagedTasks(result: TaskSummary[] | PagedTasks): PagedTasks {
   if (Array.isArray(result)) {
     return { items: result, total: result.length, page: 1, limit: result.length };
   }

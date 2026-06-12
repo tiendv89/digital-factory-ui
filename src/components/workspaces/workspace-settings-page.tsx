@@ -7,9 +7,10 @@ import { useMemo, useState } from "react";
 import { Avatar, Button, Field, Input } from "@/components/common";
 import { deriveIconColor, ICON_COLORS } from "@/components/settings/icon-colors";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
-import { useCancelInvitation, useInviteMember, useRemoveMember, useWorkspaceInvitations, useWorkspaceMembers } from "@/hooks/admin/use-admin-members";
+import { useCancelOrgInvitation, useInviteOrgMember, useOrgInvitations, useOrgMembers, useRemoveOrgMember } from "@/hooks/admin/use-org-settings";
+import { useDeleteWorkspace } from "@/hooks/workspaces/use-delete-workspace";
 import { useOrgWorkspaceSelection } from "@/hooks/workspaces/use-org-workspace-selection";
-import type { Member } from "@/services/user-service";
+import type { OrgMember } from "@/services/user-service";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,7 +26,6 @@ const WS_TABS: { id: TabId; label: string; icon: React.ComponentType<{ className
 // ─── Role badge ───────────────────────────────────────────────────────────────
 
 const ROLE_STYLE: Record<string, { label: string; className: string }> = {
-  platform_admin: { label: "Owner", className: "bg-amber-500/20 text-amber-400" },
   admin: { label: "Admin", className: "bg-blue-500/20 text-blue-400" },
   member: { label: "Member", className: "bg-white/8 text-[#9d9d9d]" },
   agent: { label: "Agent", className: "bg-blue-500/20 text-blue-400" },
@@ -130,8 +130,8 @@ function GeneralTab({ workspaceId, name, slug }: { workspaceId: string; name: st
 
 // ─── Members tab ─────────────────────────────────────────────────────────────
 
-function MemberMenu({ member, workspaceId }: { member: Member; workspaceId: string }) {
-  const removeMember = useRemoveMember(workspaceId);
+function MemberMenu({ member, orgId }: { member: OrgMember; orgId: string }) {
+  const removeMember = useRemoveOrgMember(orgId);
   const [open, setOpen] = useState(false);
 
   return (
@@ -164,11 +164,11 @@ function MemberMenu({ member, workspaceId }: { member: Member; workspaceId: stri
   );
 }
 
-function MembersTab({ workspaceId }: { workspaceId: string }) {
-  const { members, loading, error } = useWorkspaceMembers(workspaceId);
-  const { invitations, loading: invLoading } = useWorkspaceInvitations(workspaceId);
-  const inviteMutation = useInviteMember(workspaceId);
-  const cancelInvitation = useCancelInvitation(workspaceId);
+function MembersTab({ orgId }: { orgId: string }) {
+  const { members, loading, error } = useOrgMembers(orgId);
+  const { invitations, loading: invLoading } = useOrgInvitations(orgId);
+  const inviteMutation = useInviteOrgMember(orgId);
+  const cancelInvitation = useCancelOrgInvitation(orgId);
 
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteError, setInviteError] = useState<string | null>(null);
@@ -243,7 +243,7 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
                   <p className="truncate font-mono text-xs text-text-muted">{m.display_name ? m.email : "—"}</p>
                 </div>
                 <RoleBadge role={m.role} />
-                {m.role !== "platform_admin" ? <MemberMenu member={m} workspaceId={workspaceId} /> : <div className="w-7 shrink-0" />}
+                <MemberMenu member={m} orgId={orgId} />
               </div>
             ))
           )}
@@ -280,8 +280,26 @@ function MembersTab({ workspaceId }: { workspaceId: string }) {
 
 // ─── Danger zone tab ─────────────────────────────────────────────────────────
 
-function DangerZoneTab({ workspaceName, slug }: { workspaceName: string; slug: string }) {
+function DangerZoneTab({ workspaceId, workspaceName, slug, onDeleted }: { workspaceId: string; workspaceName: string; slug: string; onDeleted?: () => void }) {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const { removeWorkspace } = useWorkspaceContext();
+  const deleteMutation = useDeleteWorkspace();
+
+  const handleDelete = async () => {
+    setDeleteError(null);
+    if (deleteConfirmText !== slug) {
+      setDeleteError(`Type "${slug}" to confirm deletion.`);
+      return;
+    }
+    try {
+      await deleteMutation.mutateAsync(workspaceId);
+      removeWorkspace(workspaceId);
+      onDeleted?.();
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : "Deletion failed");
+    }
+  };
 
   return (
     <div className="space-y-4" data-ws-danger>
@@ -302,14 +320,29 @@ function DangerZoneTab({ workspaceName, slug }: { workspaceName: string; slug: s
             <Input
               id="ws-delete-confirm"
               value={deleteConfirmText}
-              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              onChange={(e) => {
+                setDeleteConfirmText(e.target.value);
+                setDeleteError(null);
+              }}
               placeholder={slug}
               className="font-mono focus:border-danger focus:ring-danger"
             />
           </div>
-          <Button variant="danger" disabled={deleteConfirmText !== slug} leftIcon={<Trash2 className="h-3.5 w-3.5" />} aria-label="Delete workspace permanently">
+          <Button
+            variant="danger"
+            onClick={() => void handleDelete()}
+            disabled={deleteMutation.isPending || deleteConfirmText !== slug}
+            loading={deleteMutation.isPending}
+            leftIcon={<Trash2 className="h-3.5 w-3.5" />}
+            aria-label="Delete workspace permanently"
+          >
             Delete workspace
           </Button>
+          {(deleteError || deleteMutation.error) && (
+            <p className="text-xs text-danger" role="alert">
+              {deleteError ?? deleteMutation.error?.message}
+            </p>
+          )}
         </div>
       </section>
 
@@ -330,7 +363,7 @@ function DangerZoneTab({ workspaceName, slug }: { workspaceName: string; slug: s
 
 // ─── WorkspaceSettingsPage ────────────────────────────────────────────────────
 
-export function WorkspaceSettingsPage({ workspaceId: propWorkspaceId, orgId: propOrgId }: { workspaceId?: string; orgId?: string } = {}) {
+function WorkspaceSettingsPage({ workspaceId: propWorkspaceId, orgId: propOrgId, onWorkspaceDeleted }: { workspaceId?: string; orgId?: string; onWorkspaceDeleted?: () => void } = {}) {
   const [activeTab, setActiveTab] = useState<TabId>("general");
   const { selectedWorkspaceId, summaries } = useWorkspaceContext();
   const { activeMembership } = useOrgWorkspaceSelection();
@@ -387,12 +420,12 @@ export function WorkspaceSettingsPage({ workspaceId: propWorkspaceId, orgId: pro
           })}
         </nav>
       </aside>
-
+      add
       {/* Content */}
       <main id={`ws-settings-panel-${activeTab}`} role="tabpanel" aria-label={WS_TABS.find((t) => t.id === activeTab)?.label} className="min-w-0 flex-1 overflow-y-auto p-6">
         {activeTab === "general" && <GeneralTab workspaceId={workspaceId} name={name} slug={slug} />}
-        {activeTab === "members" && <MembersTab workspaceId={workspaceId} />}
-        {activeTab === "danger-zone" && <DangerZoneTab workspaceName={name} slug={slug} />}
+        {activeTab === "members" && <MembersTab orgId={ws?.organization_id ?? orgId} />}
+        {activeTab === "danger-zone" && <DangerZoneTab workspaceId={workspaceId} workspaceName={name} slug={slug} onDeleted={onWorkspaceDeleted} />}
       </main>
     </div>
   );
@@ -400,7 +433,7 @@ export function WorkspaceSettingsPage({ workspaceId: propWorkspaceId, orgId: pro
 
 // ─── WorkspaceSettingsModal ───────────────────────────────────────────────────
 
-export function WorkspaceSettingsModal({ workspaceId, orgId, workspaceName, onClose }: { workspaceId: string; orgId: string; workspaceName: string; onClose: () => void }) {
+export function WorkspaceSettingsModal({ workspaceId, orgId, onClose }: { workspaceId: string; orgId: string; onClose: () => void }) {
   return (
     <Modal.Root
       isOpen
@@ -410,10 +443,7 @@ export function WorkspaceSettingsModal({ workspaceId, orgId, workspaceName, onCl
     >
       <Modal.Backdrop variant="opaque" isDismissable>
         <Modal.Container placement="center">
-          <Modal.Dialog
-            data-ws-settings-modal
-            className="p-0 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-[13px] border border-border bg-surface shadow-[0_8px_20px_rgba(0,0,0,0.5)]"
-          >
+          <Modal.Dialog data-ws-settings-modal className="p-0 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-card border border-border bg-surface shadow-modal">
             <header className="flex shrink-0 items-center justify-between border-b border-border px-5 py-3.5">
               <h2 className="text-sm font-semibold text-text-primary">Workspace settings</h2>
               <button
@@ -426,7 +456,7 @@ export function WorkspaceSettingsModal({ workspaceId, orgId, workspaceName, onCl
               </button>
             </header>
             <div className="flex min-h-0 flex-1 overflow-hidden">
-              <WorkspaceSettingsPage workspaceId={workspaceId} orgId={orgId} />
+              <WorkspaceSettingsPage workspaceId={workspaceId} orgId={orgId} onWorkspaceDeleted={onClose} />
             </div>
           </Modal.Dialog>
         </Modal.Container>

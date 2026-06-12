@@ -19,27 +19,6 @@ function toSlug(value: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
-const PLANS = [
-  {
-    id: "free",
-    name: "Free",
-    price: "$0/mo",
-    features: ["Up to 3 members", "2 agent sessions", "5 active features"],
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "$29/mo",
-    features: ["Unlimited members", "10 concurrent agents", "Unlimited features", "Priority support"],
-  },
-  {
-    id: "enterprise",
-    name: "Enterprise",
-    price: "Custom",
-    features: ["SSO & SAML", "Audit logs", "Custom agent models", "SLA guarantee"],
-  },
-] as const;
-
 type CreateWorkspaceModalProps = {
   onClose: () => void;
   onSuccess?: () => void;

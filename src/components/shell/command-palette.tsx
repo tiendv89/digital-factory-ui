@@ -32,12 +32,12 @@ type PaletteItem = NavItem | ActionItem;
 
 // ── Static item registries ─────────────────────────────────────────────────────
 
-export const NAV_ITEMS: NavItem[] = [
+const NAV_ITEMS: NavItem[] = [
   { kind: "nav", id: "nav-board", label: "Board", hint: "Go to Board", icon: LayoutGrid, href: "/board" },
   { kind: "nav", id: "nav-settings", label: "Settings", hint: "Go to Settings", icon: Settings, href: "/settings" },
 ];
 
-export const ACTION_ITEMS: ActionItem[] = [
+const ACTION_ITEMS: ActionItem[] = [
   {
     kind: "action",
     id: "action-approve-design",
@@ -67,7 +67,7 @@ export const ACTION_ITEMS: ActionItem[] = [
   },
 ];
 
-export const AGENT_ITEMS: ActionItem[] = [
+const AGENT_ITEMS: ActionItem[] = [
   {
     kind: "action",
     id: "agent-start-run",
@@ -90,7 +90,7 @@ export const AGENT_ITEMS: ActionItem[] = [
 
 // ── Filter helper ─────────────────────────────────────────────────────────────
 
-export function filterItems<T extends { label: string; hint: string }>(items: T[], query: string): T[] {
+function filterItems<T extends { label: string; hint: string }>(items: T[], query: string): T[] {
   if (!query.trim()) return items;
   const q = query.toLowerCase();
   return items.filter((item) => item.label.toLowerCase().includes(q) || item.hint.toLowerCase().includes(q));

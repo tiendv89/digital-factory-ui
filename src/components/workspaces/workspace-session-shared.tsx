@@ -1,15 +1,9 @@
 "use client";
 
 import { AlertCircle } from "lucide-react";
-import { type ReactNode, useEffect } from "react";
+import { useEffect } from "react";
 
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
-import { WorkspaceHeader } from "@/components/workspaces/workspace-header";
-import type { WorkspaceDetail } from "@/services/workflow-backend";
-
-export type TaskSessionPageProps = {
-  taskId: string;
-};
 
 export type FeatureSessionPageProps = {
   featureId: string;
@@ -72,19 +66,4 @@ export function useWorkspaceRoute(workspaceId: string) {
     workspaceError,
     isReady: activeWorkspace?.id === workspaceId,
   };
-}
-
-export function WorkspaceSessionShell({ workspace, children }: { workspace: WorkspaceDetail; children: ReactNode }) {
-  return (
-    <main className="flex h-screen flex-col bg-bg">
-      <WorkspaceHeader
-        workspaceName={workspace.name || workspace.slug}
-        featureCount={workspace.features.length}
-        taskCount={workspace.tasks.length}
-        sourceState={workspace.source_state}
-        showTitle={false}
-      />
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
-    </main>
-  );
 }

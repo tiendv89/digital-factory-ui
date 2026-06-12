@@ -1,16 +1,10 @@
-export type WorkspaceId = string;
-export type FeatureId = string;
-export type TaskId = string;
-export type FeatureName = string;
-export type TaskName = string;
-
-export type SourceState = {
+type SourceState = {
   stale: boolean;
   last_synced_at?: string;
   error_code?: string;
 };
 
-export type TaskCounts = {
+type TaskCounts = {
   total: number;
   done: number;
   in_progress: number;
@@ -26,7 +20,7 @@ export type PullRequestRef = {
   url?: string | null;
 };
 
-export type TaskLogEntry = {
+type TaskLogEntry = {
   action: string;
   by: string;
   at: string;
@@ -53,7 +47,7 @@ export type WorkspaceSummary = {
   updated_at: string;
 };
 
-export type StageReview = {
+type StageReview = {
   reviewed_at?: string | null;
   reviewed_by?: string | null;
   review_status?: string | null;
@@ -85,14 +79,14 @@ export type PagedFeatures = {
   limit: number;
 };
 
-export type FeatureDocument = {
+type FeatureDocument = {
   document_type: string;
   source_path: string;
   url: string;
   content?: string;
 };
 
-export type TaskExecution = {
+type TaskExecution = {
   actor_type: string;
   last_updated_by?: string;
   last_updated_at?: string;

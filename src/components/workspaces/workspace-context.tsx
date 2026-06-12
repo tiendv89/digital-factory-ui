@@ -60,6 +60,7 @@ export type WorkspaceContextValue = {
 
   selectWorkspace: (workspaceId: string) => void;
   addWorkspace: (detail: WorkspaceDetail) => void;
+  removeWorkspace: (workspaceId: string) => void;
   importWorkspace: (body: ImportWorkspaceRequest) => Promise<void>;
   clearImportError: () => void;
   syncCurrentWorkspace: () => Promise<void>;
@@ -209,6 +210,28 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       loadWorkspace(workspaceId);
     },
     [loadWorkspace, setStoredSelectedId, resetTabs],
+  );
+
+  // Removes a deleted workspace from the local list. When the removed workspace
+  // was the active one, falls back to the next remaining workspace, or clears
+  // the selection and returns to the board (empty state) when none remain.
+  const removeWorkspace = useCallback(
+    (workspaceId: string) => {
+      const remaining = summaries.filter((s) => s.id !== workspaceId);
+      setSummaries(remaining);
+      if (selectedWorkspaceId === workspaceId) {
+        const next = remaining[0];
+        if (next) {
+          selectWorkspace(next.id);
+        } else {
+          setStoredSelectedId(null);
+          setActiveWorkspace(null);
+          resetTabs();
+          router.push("/board");
+        }
+      }
+    },
+    [summaries, selectedWorkspaceId, selectWorkspace, setStoredSelectedId, resetTabs, router],
   );
 
   const importWorkspaceFn = useCallback(
@@ -463,6 +486,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       refreshingWorkspace,
       selectWorkspace,
       addWorkspace,
+      removeWorkspace,
       importWorkspace: importWorkspaceFn,
       clearImportError,
       syncCurrentWorkspace,
@@ -496,6 +520,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       refreshingWorkspace,
       selectWorkspace,
       addWorkspace,
+      removeWorkspace,
       importWorkspaceFn,
       clearImportError,
       syncCurrentWorkspace,

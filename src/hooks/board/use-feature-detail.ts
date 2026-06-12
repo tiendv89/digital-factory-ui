@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { workspaceKeys } from "@/constants/query-keys";
-import { getFeature, getFeatureTask } from "@/services/workflow-backend/client";
-import type { ApiError, FeatureDetail, TaskDetail } from "@/services/workflow-backend/types";
+import { getFeature } from "@/services/workflow-backend/client";
+import type { ApiError, FeatureDetail } from "@/services/workflow-backend/types";
 
 export type UseFeatureDetailResult = {
   feature: FeatureDetail | null;
@@ -24,30 +24,6 @@ export function useFeatureDetail(workspaceId: string | null, featureId: string |
 
   return {
     feature: data ?? null,
-    loading: isFetching && !data,
-    error: error ?? null,
-    reload: () => void refetch(),
-  };
-}
-
-export type UseFeatureTaskResult = {
-  task: TaskDetail | null;
-  loading: boolean;
-  error: ApiError | null;
-  reload: () => void;
-};
-
-export function useFeatureTask(workspaceId: string | null, featureId: string | null, taskId: string | null): UseFeatureTaskResult {
-  const enabled = Boolean(workspaceId && featureId && taskId);
-
-  const { data, isFetching, error, refetch } = useQuery<TaskDetail, ApiError>({
-    queryKey: enabled ? workspaceKeys.featureTask(workspaceId!, featureId!, taskId!) : ["workspace-feature-task-disabled"],
-    queryFn: () => getFeatureTask(workspaceId!, featureId!, taskId!),
-    enabled,
-  });
-
-  return {
-    task: data ?? null,
     loading: isFetching && !data,
     error: error ?? null,
     reload: () => void refetch(),

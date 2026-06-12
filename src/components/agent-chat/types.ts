@@ -1,4 +1,4 @@
-export type MessageRole = "user" | "assistant";
+type MessageRole = "user" | "assistant";
 
 export type HermesMessage = {
   id: string;

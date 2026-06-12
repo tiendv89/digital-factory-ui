@@ -2,10 +2,11 @@
 
 import { Zap } from "lucide-react";
 
-import { getUserServiceBase } from "@/services/user-service";
+import { getBffBaseUrl } from "@/constants/axios";
 
 function getProviderUrl(provider: "google" | "github"): string {
-  return `${getUserServiceBase()}/auth/${provider}/start`;
+  // OAuth login is owned by the BFF at the bare origin.
+  return `${getBffBaseUrl()}/auth/${provider}/start`;
 }
 
 const PROVIDER_BUTTON =

@@ -37,7 +37,7 @@ export function buildFeatureParams(params: FeatureSearchParams): URLSearchParams
   return sp;
 }
 
-export function buildTaskParams(params: TaskSearchParams): URLSearchParams {
+function buildTaskParams(params: TaskSearchParams): URLSearchParams {
   const sp = new URLSearchParams();
   if (params.task_id) sp.set("task_id", params.task_id);
   if (params.title) sp.set("title", params.title);
@@ -72,10 +72,3 @@ export function buildFeatureTaskParams(params: FeatureTaskParams): URLSearchPara
   if (params.sort) sp.set("sort", params.sort);
   return sp;
 }
-
-export const TASK_MODE_FEATURE_TASK_PARAMS: FeatureTaskParams = {
-  status: ["blocked", "in_progress", "reviewing", "in_review", "ready"],
-  sort: "task_id_asc",
-  page: 1,
-  limit: 50,
-};

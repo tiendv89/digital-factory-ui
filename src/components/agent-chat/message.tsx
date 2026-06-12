@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 
 import type { HermesMessage } from "./types";
 
-export function MessageContent({ content }: { content: string }) {
+function MessageContent({ content }: { content: string }) {
   return (
     <div data-message-content className="prose prose-sm max-w-none text-text-primary">
       <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>

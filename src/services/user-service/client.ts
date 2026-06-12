@@ -1,15 +1,11 @@
 import axios from "axios";
 
-import { userServiceApi } from "@/constants/axios";
+import { getBffBaseUrl, userServiceApi } from "@/constants/axios";
 
 import type {
   ChangeOrgMemberRoleRequest,
   CreateOrgRequest,
-  DataEnvelope,
-  InvitationsResponse,
-  InviteRequest,
   MeData,
-  MembersResponse,
   MeResponse,
   Org,
   OrgInvitation,
@@ -18,17 +14,11 @@ import type {
   OrgMember,
   OrgMembersResponse,
   OrgResponse,
-  OrgWorkspace,
-  OrgWorkspacesResponse,
   RoleChangeRequest,
   TransferOrgOwnershipRequest,
   UpdateMeRequest,
   UpdateOrgRequest,
 } from "./types";
-
-export function getUserServiceBase(): string {
-  return process.env.NEXT_PUBLIC_USER_SERVICE_URL ?? "https://workflow-user-service-api.kitelabs.io";
-}
 
 export function getMeData(response: MeResponse | MeData): MeData {
   return "data" in response ? response.data : response;
@@ -60,7 +50,8 @@ export async function fetchMe(): Promise<MeResponse> {
 }
 
 export async function logout(): Promise<void> {
-  await userServiceApi.post("/auth/logout").catch(() => undefined);
+  // Logout is owned by the BFF at the bare origin (not under a service prefix).
+  await axios.post(`${getBffBaseUrl()}/auth/logout`, null, { withCredentials: true }).catch(() => undefined);
 }
 
 export async function updateMe(body: UpdateMeRequest): Promise<MeResponse> {
@@ -72,47 +63,8 @@ export async function updateMe(body: UpdateMeRequest): Promise<MeResponse> {
   }
 }
 
-export async function fetchWorkspaceMembers(workspaceId: string): Promise<MembersResponse> {
-  try {
-    const { data } = await userServiceApi.get<DataEnvelope<MembersResponse> | MembersResponse>(`/api/admin/workspace/${workspaceId}/members`);
-    return "data" in data ? data.data : data;
-  } catch (err) {
-    handleApiError(err, "Failed to fetch members");
-  }
-}
-
-export async function fetchWorkspaceInvitations(workspaceId: string): Promise<InvitationsResponse> {
-  try {
-    const { data } = await userServiceApi.get<DataEnvelope<InvitationsResponse> | InvitationsResponse>(`/api/admin/workspace/${workspaceId}/invitations`);
-    return "data" in data ? data.data : data;
-  } catch (err) {
-    handleApiError(err, "Failed to fetch invitations");
-  }
-}
-
-export async function inviteMember(workspaceId: string, body: InviteRequest): Promise<void> {
-  try {
-    await userServiceApi.post(`/api/admin/workspace/${workspaceId}/invitations`, body);
-  } catch (err) {
-    handleApiError(err, "Failed to invite member");
-  }
-}
-
-export async function removeMember(workspaceId: string, userId: string): Promise<void> {
-  try {
-    await userServiceApi.delete(`/api/admin/workspace/${workspaceId}/members/${userId}`);
-  } catch (err) {
-    handleApiError(err, "Failed to remove member");
-  }
-}
-
-export async function cancelInvitation(workspaceId: string, invitationId: string): Promise<void> {
-  try {
-    await userServiceApi.delete(`/api/admin/workspace/${workspaceId}/invitations/${invitationId}`);
-  } catch (err) {
-    handleApiError(err, "Failed to cancel invitation");
-  }
-}
+// Workspace-level member/invitation management has been removed; members and
+// invitations are managed at the org level (see the fetchOrg* functions below).
 
 // ─── Org-admin client methods ─────────────────────────────────────────────────
 
@@ -128,11 +80,6 @@ function unwrapOrgMembers(json: OrgMembersResponse | { data: OrgMembersResponse 
 function unwrapOrgInvitations(json: OrgInvitationsResponse | { data: OrgInvitationsResponse }): OrgInvitation[] {
   const body = "data" in json ? json.data : json;
   return body.invitations;
-}
-
-function unwrapOrgWorkspaces(json: OrgWorkspacesResponse | { data: OrgWorkspacesResponse }): OrgWorkspace[] {
-  const body = "data" in json ? json.data : json;
-  return body.workspaces;
 }
 
 export async function createOrg(body: CreateOrgRequest): Promise<Org> {
@@ -209,15 +156,6 @@ export async function cancelOrgInvitation(orgId: string, invitationId: string): 
     await userServiceApi.delete(`/api/orgs/${orgId}/invitations/${invitationId}`);
   } catch (err) {
     handleApiError(err, "Failed to cancel org invitation");
-  }
-}
-
-export async function fetchOrgWorkspaces(orgId: string): Promise<OrgWorkspace[]> {
-  try {
-    const { data } = await userServiceApi.get<OrgWorkspacesResponse | { data: OrgWorkspacesResponse }>(`/api/orgs/${orgId}/workspaces`);
-    return unwrapOrgWorkspaces(data);
-  } catch (err) {
-    handleApiError(err, "Failed to fetch org workspaces");
   }
 }
 

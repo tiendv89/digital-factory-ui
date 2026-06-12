@@ -85,9 +85,6 @@ export type BoardContextValue = {
 };
 
 const BoardContext = createContext<BoardContextValue | null>(null);
-export type BoardTrackingContextValue = Pick<BoardContextValue, "trackedFeatures" | "openTaskTab" | "openTaskTabNewSession">;
-
-const BoardTrackingContext = createContext<BoardTrackingContextValue | null>(null);
 
 export type BoardProviderProps = {
   workspaceDetail: WorkspaceDetail;
@@ -448,34 +445,13 @@ export function BoardProvider({ workspaceDetail, children, initialMode }: BoardP
     ],
   );
 
-  const trackingValue = useMemo<BoardTrackingContextValue>(
-    () => ({
-      trackedFeatures,
-      openTaskTab,
-      openTaskTabNewSession,
-    }),
-    [trackedFeatures, openTaskTab, openTaskTabNewSession],
-  );
-
-  return (
-    <BoardContext.Provider value={value}>
-      <BoardTrackingContext.Provider value={trackingValue}>{children}</BoardTrackingContext.Provider>
-    </BoardContext.Provider>
-  );
+  return <BoardContext.Provider value={value}>{children}</BoardContext.Provider>;
 }
 
 export function useBoardContext(): BoardContextValue {
   const ctx = useContext(BoardContext);
   if (!ctx) {
     throw new Error("useBoardContext must be used within a BoardProvider");
-  }
-  return ctx;
-}
-
-export function useBoardTrackingContext(): BoardTrackingContextValue {
-  const ctx = useContext(BoardTrackingContext);
-  if (!ctx) {
-    throw new Error("useBoardTrackingContext must be used within a BoardProvider");
   }
   return ctx;
 }

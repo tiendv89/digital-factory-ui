@@ -2,12 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 
-export type SlashCommand = {
+type SlashCommand = {
   name: string;
   hint: string;
 };
 
-export const COMMANDS: SlashCommand[] = [
+const COMMANDS: SlashCommand[] = [
   { name: "/write-product-spec", hint: "Draft or update the product spec" },
   { name: "/write-technical-design", hint: "Draft or update the technical design" },
   { name: "/get-feature-state", hint: "Show current feature lifecycle state" },
@@ -20,7 +20,7 @@ type SlashCommandPickerProps = {
   onClose: () => void;
 };
 
-export function filterCommands(query: string): SlashCommand[] {
+function filterCommands(query: string): SlashCommand[] {
   if (!query) return [];
   const normalized = query.toLowerCase();
   return COMMANDS.filter((c) => c.name.includes(normalized));

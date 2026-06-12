@@ -75,7 +75,7 @@ export function FeatureListView({ rows, onTaskClick }: { rows: BoardFeatureRow[]
             </button>
 
             {!groupCollapsed &&
-              groupRows.map(({ feature, name, color, pct }) => {
+              groupRows.map(({ feature, color, pct }) => {
                 const featureCollapsed = collapsedFeatures.includes(feature.id);
                 const assignees = Array.from(
                   new Map(

@@ -17,7 +17,6 @@ interface OrgMembersTabProps {
 }
 
 const ROLE_STYLE: Record<string, { label: string; className: string }> = {
-  platform_admin: { label: "Owner", className: "bg-amber-500/20 text-amber-400" },
   admin: { label: "Admin", className: "bg-blue-500/20 text-blue-400" },
   member: { label: "Member", className: "bg-white/8 text-[#9d9d9d]" },
 };
@@ -75,8 +74,7 @@ function MemberMenu({ member, orgId }: { member: OrgMember; orgId: string }) {
 }
 
 function MemberRow({ member, isCurrentUser, canEdit, orgId }: { member: OrgMember; isCurrentUser: boolean; canEdit: boolean; orgId: string }) {
-  const isOwner = member.role === "platform_admin";
-  const showMenu = canEdit && !isOwner;
+  const showMenu = canEdit;
 
   return (
     <div className="flex items-center gap-3 border-b py-3 last:border-b-0" style={{ borderColor: "#2e2e2e" }} data-member-row={member.user_id}>
@@ -103,7 +101,7 @@ export function OrgMembersTab({ orgId, currentUserId, userRole }: OrgMembersTabP
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteError, setInviteError] = useState<string | null>(null);
 
-  const canEdit = userRole === "admin" || userRole === "platform_admin";
+  const canEdit = userRole === "admin";
 
   const handleInvite = async () => {
     setInviteError(null);

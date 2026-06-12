@@ -4,7 +4,7 @@ import React from "react";
 
 import { cn } from "./cn";
 
-export type BadgeTone = "neutral" | "primary" | "success" | "warning" | "danger" | "purple";
+type BadgeTone = "neutral" | "primary" | "success" | "warning" | "danger" | "purple";
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   tone?: BadgeTone;

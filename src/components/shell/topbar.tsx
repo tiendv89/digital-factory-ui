@@ -4,7 +4,6 @@ import { Search } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useSession } from "@/components/auth";
 import { OrgWorkspaceSwitcher } from "@/components/orgs/org-workspace-switcher";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
 
@@ -47,7 +46,6 @@ type TopbarProps = {
 
 export function Topbar({ onCommandPalette }: TopbarProps) {
   const pathname = usePathname();
-  const { logout } = useSession();
   const segments = useBreadcrumbs(pathname);
 
   return (

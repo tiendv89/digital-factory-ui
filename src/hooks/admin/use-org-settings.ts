@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { ChangeOrgMemberRoleRequest, Org, OrgInvitation, OrgInviteRequest, OrgMember, OrgWorkspace, TransferOrgOwnershipRequest, UpdateOrgRequest } from "@/services/user-service";
+import type { ChangeOrgMemberRoleRequest, Org, OrgInvitation, OrgInviteRequest, OrgMember, TransferOrgOwnershipRequest, UpdateOrgRequest } from "@/services/user-service";
 import {
   cancelOrgInvitation,
   changeOrgMemberRole,
@@ -10,7 +10,6 @@ import {
   fetchOrg,
   fetchOrgInvitations,
   fetchOrgMembers,
-  fetchOrgWorkspaces,
   inviteOrgMember,
   removeOrgMember,
   transferOrgOwnership,
@@ -21,7 +20,6 @@ const orgKeys = {
   org: (orgId: string) => ["org", orgId] as const,
   members: (orgId: string) => ["org", orgId, "members"] as const,
   invitations: (orgId: string) => ["org", orgId, "invitations"] as const,
-  workspaces: (orgId: string) => ["org", orgId, "workspaces"] as const,
 };
 
 export function useOrg(orgId: string | null) {
@@ -109,15 +107,6 @@ export function useCancelOrgInvitation(orgId: string) {
       void queryClient.invalidateQueries({ queryKey: orgKeys.invitations(orgId) });
     },
   });
-}
-
-export function useOrgWorkspaces(orgId: string | null) {
-  const { data, isLoading, error } = useQuery<OrgWorkspace[], Error>({
-    queryKey: orgId ? orgKeys.workspaces(orgId) : ["org-workspaces-disabled"],
-    queryFn: () => fetchOrgWorkspaces(orgId!),
-    enabled: Boolean(orgId),
-  });
-  return { workspaces: data ?? [], loading: isLoading, error: error ?? null };
 }
 
 export function useTransferOrgOwnership(orgId: string) {

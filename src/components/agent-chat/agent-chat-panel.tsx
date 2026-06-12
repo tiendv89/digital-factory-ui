@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { ChatSessionSummary } from "@/services/workflow-backend/chat";
-import { createChatSession, getSessionMessages, listChatSessions, streamChatTurn } from "@/services/workflow-backend/chat";
+import type { ChatSessionSummary } from "@/services/hermes-agent/chat";
+import { createChatSession, getSessionMessages, listChatSessions, streamChatTurn } from "@/services/hermes-agent/chat";
 
 import { Conversation } from "./conversation";
 import { MessageThread } from "./message-thread";

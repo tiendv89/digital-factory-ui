@@ -1,6 +1,7 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
 import type { HermesMessage, ToolCallEntry } from "@/components/agent-chat/types";
+import { getBffBaseUrl } from "@/constants/axios";
 
 export type ChatSessionSummary = {
   id: string;
@@ -19,12 +20,16 @@ export type HermesEvent =
   | { type: "error"; message: string }
   | { type: "done" };
 
+// The app talks to hermes-agent's workflow_gateway (routes under /api/v1)
+// through the BFF, which injects the trusted caller identity (X-User-Id) behind
+// the shared service token. The browser never sends user_id itself.
 function getApiBase(): string {
-  return process.env.NEXT_PUBLIC_WORKFLOW_API_URL ?? "https://workflow-backend-api.kitelabs.io";
+  return `${getBffBaseUrl()}/bff/hermes-agent`;
 }
 
 export async function listChatSessions(workspaceId: string, featureId: string): Promise<ChatSessionSummary[]> {
-  const res = await fetch(`${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/sessions`, { credentials: "include" });
+  const qs = new URLSearchParams({ workspace_id: workspaceId, feature_id: featureId }).toString();
+  const res = await fetch(`${getApiBase()}/api/v1/sessions?${qs}`, { credentials: "include" });
   if (!res.ok) throw new Error(`listChatSessions failed (${res.status})`);
   const body = (await res.json()) as { sessions: ChatSessionSummary[] };
   return body.sessions;
@@ -43,12 +48,12 @@ type RawSessionMessage = {
 /**
  * Fetch the full transcript for an existing session, oldest-first.
  *
- * The backend returns user/assistant/tool rows; we render user and assistant
+ * The gateway returns user/assistant/tool rows; we render user and assistant
  * messages and attach any tool calls recorded on assistant turns (already
  * completed, so their status is "done").
  */
-export async function getSessionMessages(workspaceId: string, featureId: string, sessionId: string): Promise<HermesMessage[]> {
-  const res = await fetch(`${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/sessions/${sessionId}/messages`, { credentials: "include" });
+export async function getSessionMessages(_workspaceId: string, _featureId: string, sessionId: string): Promise<HermesMessage[]> {
+  const res = await fetch(`${getApiBase()}/api/v1/sessions/${sessionId}/messages`, { credentials: "include" });
   if (!res.ok) throw new Error(`getSessionMessages failed (${res.status})`);
   const body = (await res.json()) as { messages: RawSessionMessage[] };
   return (body.messages ?? [])
@@ -79,11 +84,11 @@ function parseToolCalls(raw: unknown): ToolCallEntry[] {
 }
 
 export async function createChatSession(workspaceId: string, featureId: string): Promise<{ session_id: string }> {
-  const res = await fetch(`${getApiBase()}/api/workspaces/${workspaceId}/features/${featureId}/chat/session`, {
+  const res = await fetch(`${getApiBase()}/api/v1/session`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({}),
+    body: JSON.stringify({ workspace_id: workspaceId, feature_id: featureId }),
   });
 
   if (!res.ok) {
@@ -105,13 +110,15 @@ export type StreamChatTurnParams = {
 export function streamChatTurn(params: StreamChatTurnParams, onEvent: (event: HermesEvent) => void, onDone: () => void, onError: (err: Error) => void): AbortController {
   const ctrl = new AbortController();
 
-  fetchEventSource(`${getApiBase()}/api/workspaces/${params.workspaceId}/features/${params.featureId}/chat`, {
+  fetchEventSource(`${getApiBase()}/api/v1/chat`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       session_id: params.sessionId,
       message: params.message,
+      workspace_id: params.workspaceId,
+      feature_id: params.featureId,
     }),
     signal: ctrl.signal,
     openWhenHidden: true,
@@ -156,8 +163,8 @@ type OpenAIChunk = {
 };
 
 /**
- * Parse one hermes-native /v1/chat/completions SSE frame into zero or more
- * internal HermesEvents.
+ * Parse one hermes-native chat SSE frame into zero or more internal
+ * HermesEvents.
  *
  * The wire format (see hermes-agent workflow_gateway/streaming/sse.py):
  *   - `event: hermes.tool.progress` → { tool, toolCallId, status }

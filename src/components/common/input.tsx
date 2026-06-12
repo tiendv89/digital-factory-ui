@@ -15,10 +15,6 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
   return <input ref={ref} className={cn(FIELD_BASE, "h-9", className)} {...props} />;
 });
 
-export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...props }, ref) {
-  return <textarea ref={ref} className={cn(FIELD_BASE, "py-2 leading-[19.5px]", className)} {...props} />;
-});
-
 interface FieldProps {
   label?: React.ReactNode;
   hint?: React.ReactNode;

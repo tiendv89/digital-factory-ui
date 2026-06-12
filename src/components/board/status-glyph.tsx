@@ -1,93 +1,31 @@
 "use client";
 
+import { CheckCircle2, Circle, CircleCheck, CircleDashed, CircleDot, CircleMinus, CircleX } from "lucide-react";
+
 import { lifecycleMeta, statusMeta } from "./board-meta";
-
-type GP = { size: number; color: string };
-
-function Todo({ size, color }: GP) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
-      <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-function InProgress({ size, color }: GP) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
-      <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" fill="none" />
-      {/* left half filled */}
-      <path d="M8 1.5 A6.5 6.5 0 0 0 8 14.5 Z" fill={color} />
-    </svg>
-  );
-}
-
-function InReview({ size, color }: GP) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
-      <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" />
-      <circle cx="8" cy="8" r="2.5" fill={color} />
-    </svg>
-  );
-}
-
-function Blocked({ size, color }: GP) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
-      <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" />
-      <path d="M5.5 5.5 L10.5 10.5 M10.5 5.5 L5.5 10.5" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function Done({ size, color }: GP) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" aria-hidden>
-      <circle cx="8" cy="8" r="7.5" fill={color} />
-    </svg>
-  );
-}
-
-function ReviewPassed({ size, color }: GP) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
-      <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" />
-      <path d="M5.5 8.5 L7 10 L10.5 6" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function Cancelled({ size, color }: GP) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none" aria-hidden>
-      <circle cx="8" cy="8" r="6.5" stroke={color} strokeWidth="1.5" />
-      <line x1="4.5" y1="8" x2="11.5" y2="8" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
 
 function GlyphIcon({ status, size }: { status: string; size: number }) {
   const { color } = statusMeta(status);
-  const p = { size, color };
+  const props = { size, color, "aria-hidden": true } as const;
   switch (status) {
     case "done":
-      return <Done {...p} />;
+      return <CheckCircle2 {...props} />;
     case "review_passed":
-      return <ReviewPassed {...p} />;
+      return <CircleCheck {...props} />;
     case "in_progress":
     case "ready":
-      return <InProgress {...p} />;
+      return <CircleDashed {...props} />;
     case "in_review":
     case "reviewing":
     case "review_incomplete":
-      return <InReview {...p} />;
+      return <CircleDot {...props} />;
     case "blocked":
     case "change_requested":
-      return <Blocked {...p} />;
+      return <CircleX {...props} />;
     case "cancelled":
-      return <Cancelled {...p} />;
+      return <CircleMinus {...props} />;
     default:
-      return <Todo {...p} />;
+      return <Circle {...props} />;
   }
 }
 

@@ -1,4 +1,4 @@
-export interface MeUser {
+interface MeUser {
   id: string;
   email: string;
   display_name: string | null;
@@ -26,37 +26,6 @@ export interface MeResponse {
   data: MeData;
 }
 
-export interface Member {
-  user_id: string;
-  email: string;
-  display_name: string | null;
-  role: string;
-}
-
-export interface Invitation {
-  id: string;
-  email: string;
-  role: string;
-  expires_at: string;
-}
-
-export interface MembersResponse {
-  members: Member[];
-}
-
-export interface InvitationsResponse {
-  invitations: Invitation[];
-}
-
-export interface DataEnvelope<T> {
-  data: T;
-}
-
-export interface InviteRequest {
-  email: string;
-  role: string;
-}
-
 export interface UpdateMeRequest {
   display_name?: string | null;
 }
@@ -67,7 +36,7 @@ export interface RoleChangeRequest {
 
 // ─── Org-admin types ──────────────────────────────────────────────────────────
 
-export type OrgRole = "member" | "admin" | "platform_admin";
+export type OrgRole = "member" | "admin";
 
 export interface Org {
   id: string;
@@ -91,12 +60,6 @@ export interface OrgInvitation {
   expires_at: string;
 }
 
-export interface OrgWorkspace {
-  id: string;
-  name: string;
-  slug: string;
-}
-
 export interface CreateOrgRequest {
   name: string;
   slug: string;
@@ -112,10 +75,6 @@ export interface OrgMembersResponse {
 
 export interface OrgInvitationsResponse {
   invitations: OrgInvitation[];
-}
-
-export interface OrgWorkspacesResponse {
-  workspaces: OrgWorkspace[];
 }
 
 export interface UpdateOrgRequest {

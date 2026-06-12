@@ -13,7 +13,7 @@ type PromptInputTextareaProps = {
   placeholder?: string;
 };
 
-export function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder = "Message the agent…" }: PromptInputTextareaProps) {
+function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder = "Message the agent…" }: PromptInputTextareaProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
 
   function handleChange(e: ChangeEvent<HTMLTextAreaElement>) {
@@ -56,7 +56,7 @@ type PromptInputSubmitProps = {
   onClick: () => void;
 };
 
-export function PromptInputSubmit({ disabled, onClick }: PromptInputSubmitProps) {
+function PromptInputSubmit({ disabled, onClick }: PromptInputSubmitProps) {
   return (
     <button
       type="submit"
@@ -75,7 +75,7 @@ type PromptInputToolbarProps = {
   children?: React.ReactNode;
 };
 
-export function PromptInputToolbar({ children }: PromptInputToolbarProps) {
+function PromptInputToolbar({ children }: PromptInputToolbarProps) {
   return (
     <div data-prompt-toolbar className="flex items-center justify-between gap-2 px-2 pb-2">
       {children}

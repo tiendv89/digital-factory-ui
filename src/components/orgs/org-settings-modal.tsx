@@ -50,7 +50,7 @@ export function OrgSettingsModal({ membership, onClose, onOrgDeleted }: OrgSetti
     onClose();
   }, [onOrgDeleted, onClose]);
 
-  const canAccessDanger = userRole === "admin" || userRole === "platform_admin";
+  const canAccessDanger = userRole === "admin";
 
   return (
     <Modal.Root
@@ -122,8 +122,8 @@ export function OrgSettingsModal({ membership, onClose, onOrgDeleted }: OrgSetti
                 </nav>
 
                 <div className="mt-auto px-1.5 pt-3">
-                  <Badge tone={userRole === "platform_admin" ? "purple" : userRole === "admin" ? "primary" : "neutral"} className="capitalize">
-                    {userRole === "platform_admin" ? "platform admin" : userRole}
+                  <Badge tone={userRole === "admin" ? "primary" : "neutral"} className="capitalize">
+                    {userRole}
                   </Badge>
                 </div>
               </aside>

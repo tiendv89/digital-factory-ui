@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChatSessionSummary } from "@/services/workflow-backend/chat";
+import type { ChatSessionSummary } from "@/services/hermes-agent/chat";
 
 type SessionHistoryListProps = {
   sessions: ChatSessionSummary[];

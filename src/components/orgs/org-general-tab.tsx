@@ -33,7 +33,7 @@ export function OrgGeneralTab({ orgId, userRole, orgColor }: OrgGeneralTabProps)
     }
   }, [org]);
 
-  const canEdit = userRole === "admin" || userRole === "platform_admin";
+  const canEdit = userRole === "admin";
 
   const handleSave = async () => {
     await updateOrgMutation.mutateAsync({ name: name.trim(), slug: slug.trim() });

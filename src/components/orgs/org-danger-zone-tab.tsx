@@ -28,9 +28,9 @@ export function OrgDangerZoneTab({ orgId, orgName, currentUserId, userRole, onOr
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const canEdit = userRole === "admin" || userRole === "platform_admin";
+  const canEdit = userRole === "admin";
 
-  const eligibleForTransfer = members.filter((m) => m.user_id !== currentUserId && m.role !== "platform_admin");
+  const eligibleForTransfer = members.filter((m) => m.user_id !== currentUserId);
 
   const handleTransfer = async () => {
     setTransferError(null);

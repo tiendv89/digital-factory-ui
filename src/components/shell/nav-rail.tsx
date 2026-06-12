@@ -26,10 +26,6 @@ const SETTINGS_ITEM: NavItem = {
   icon: Settings,
 };
 
-type NavRailProps = {
-  onCommandPalette?: () => void;
-};
-
 function NavRailLink({ item, active }: { item: NavItem; active: boolean }) {
   const { label, href, icon: Icon } = item;
   return (
@@ -81,7 +77,7 @@ function TasksNavButton({ active }: { active: boolean }) {
   );
 }
 
-export function NavRail({ onCommandPalette }: NavRailProps) {
+export function NavRail() {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 

@@ -1,62 +1,26 @@
-import type { ActivityEvent, FeatureDetail, FeatureSummary, FeatureWithTasks, PullRequestRef, TaskDetail, TaskSummary, TaskSummaryWithUpdatedAt, WorkspaceDetail } from "@/services/workflow-backend";
-import type { LogEntry, ParsedFeature, ParsedFeatureActivityEntry, ParsedTask } from "@/services/yaml-parser";
+import type { FeatureSummary, FeatureWithTasks, PullRequestRef, TaskSummary, TaskSummaryWithUpdatedAt, WorkspaceDetail } from "@/services/workflow-backend";
+import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 
 function adaptPullRequestRef(ref: PullRequestRef | null | undefined) {
   return ref?.url ? { url: ref.url, status: ref.status ?? "" } : undefined;
 }
 
-function adaptActivityEvent(event: ActivityEvent): LogEntry {
-  return {
-    action: event.action,
-    by: event.actor,
-    at: event.occurred_at,
-    ...(event.note ? { note: event.note } : {}),
-  };
-}
-
-function adaptFeatureActivity(feature: FeatureDetail): ParsedFeatureActivityEntry[] | undefined {
-  if (!feature.activity) return undefined;
-
-  const tasksByBackendId = new Map(feature.tasks.map((task) => [task.id, task]));
-
-  return feature.activity.map((event) => {
-    const task = event.task_id ? tasksByBackendId.get(event.task_id) : undefined;
-    return {
-      ...adaptActivityEvent(event),
-      targetId: task?.task_name ?? event.task_id ?? feature.feature_name,
-      targetTitle: task?.title ?? feature.title,
-      ...(event.scope ? { scope: event.scope } : {}),
-    };
-  });
-}
-
-function findWorkspacePullRequestRef(task: TaskDetail): PullRequestRef | null | undefined {
-  return task.workspace_pr ?? (task.pr_refs ?? []).find((ref) => ref.label?.toLowerCase().includes("workspace"));
-}
-
-function findRepositoryPullRequestRef(task: TaskDetail): PullRequestRef | null | undefined {
-  if (task.pr) return task.pr;
-
-  const workspacePr = findWorkspacePullRequestRef(task);
-  return (task.pr_refs ?? []).find((ref) => ref.url !== workspacePr?.url);
-}
-
 /** Feature lifecycle statuses that are valid for feature-level display. */
-export const FEATURE_LIFECYCLE_STATUSES = ["in_design", "in_tdd", "ready_for_implementation", "in_implementation", "in_handoff", "done", "blocked", "cancelled"] as const;
+const FEATURE_LIFECYCLE_STATUSES = ["in_design", "in_tdd", "ready_for_implementation", "in_implementation", "in_handoff", "done", "blocked", "cancelled"] as const;
 
-export type FeatureLifecycleStatus = (typeof FEATURE_LIFECYCLE_STATUSES)[number];
+type FeatureLifecycleStatus = (typeof FEATURE_LIFECYCLE_STATUSES)[number];
 
 const FEATURE_LIFECYCLE_STATUS_SET: ReadonlySet<string> = new Set(FEATURE_LIFECYCLE_STATUSES);
 
-export function isFeatureLifecycleStatus(value: string): value is FeatureLifecycleStatus {
+function isFeatureLifecycleStatus(value: string): value is FeatureLifecycleStatus {
   return FEATURE_LIFECYCLE_STATUS_SET.has(value);
 }
 
-export function normalizeFeatureLifecycleStatus(value: string): FeatureLifecycleStatus | "unknown" {
+function normalizeFeatureLifecycleStatus(value: string): FeatureLifecycleStatus | "unknown" {
   return isFeatureLifecycleStatus(value) ? value : "unknown";
 }
 
-export function adaptTaskSummary(task: TaskSummary | TaskSummaryWithUpdatedAt): ParsedTask {
+function adaptTaskSummary(task: TaskSummary | TaskSummaryWithUpdatedAt): ParsedTask {
   const blockedReason = task.blocked_reason && task.blocked_reason.trim() !== "" ? task.blocked_reason : task.is_blocked ? "blocked" : undefined;
 
   const withUpdatedAt = task as TaskSummaryWithUpdatedAt;
@@ -95,18 +59,7 @@ export function adaptFeatureWithTasksToFeatures(features: FeatureWithTasks[]): P
   }));
 }
 
-export function adaptTaskDetail(task: TaskDetail): ParsedTask {
-  return {
-    ...adaptTaskSummary(task),
-    pr: adaptPullRequestRef(findRepositoryPullRequestRef(task)),
-    workspace_pr: adaptPullRequestRef(findWorkspacePullRequestRef(task)),
-    dependsOn: task.depends_on ?? [],
-    log: task.activity ? task.activity.map(adaptActivityEvent) : task.log,
-    ...(task.blocked_reason ? { blockedReason: task.blocked_reason } : {}),
-  };
-}
-
-export function adaptFeatureSummary(feature: FeatureSummary, tasks: TaskSummary[]): ParsedFeature {
+function adaptFeatureSummary(feature: FeatureSummary, tasks: TaskSummary[]): ParsedFeature {
   const featureTasks = tasks.filter((t) => t.feature_id === feature.id).map(adaptTaskSummary);
 
   return {
@@ -171,18 +124,4 @@ export function adaptFeatureSummaries(features: FeatureSummary[]): ParsedFeature
     taskCounts: f.task_counts,
     updatedAt: f.updated_at,
   }));
-}
-
-export function adaptFeatureDetail(feature: FeatureDetail): ParsedFeature {
-  return {
-    id: feature.feature_name,
-    title: feature.title,
-    featureStatus: normalizeFeatureLifecycleStatus(feature.status),
-    tasks: feature.tasks.map(adaptTaskSummary),
-    activity: adaptFeatureActivity(feature),
-    backendId: feature.feature_id,
-    currentStage: feature.current_stage,
-    taskCounts: feature.task_counts,
-    updatedAt: feature.updated_at,
-  };
 }

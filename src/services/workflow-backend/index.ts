@@ -1,49 +1,15 @@
-export {
-  createFeature,
-  createWorkspace,
-  getFeature,
-  getFeatureTask,
-  getFeatureTaskList,
-  getWorkspace,
-  getWorkspaceTask,
-  importWorkspace,
-  listActivity,
-  listWorkspaces,
-  request,
-  searchFeatures,
-  searchFeaturesPage,
-  searchFeatureTasks,
-  searchWorkspaceTasks,
-  searchWorkspaceTasksPage,
-  syncWorkspace,
-} from "./client";
-export type { FeatureSearchParams, FeatureTaskParams, TaskSearchParams } from "./query-params";
-export { buildFeatureParams, buildFeatureTaskParams, buildTaskParams, SIDEBAR_TASK_PARAMS, TASK_MODE_FEATURE_TASK_PARAMS } from "./query-params";
+export { createFeature, createWorkspace, deleteWorkspace, getWorkspace, importWorkspace, listWorkspaces, searchFeaturesPage, searchWorkspaceTasks, syncWorkspace } from "./client";
+export type { FeatureSearchParams } from "./query-params";
+export { buildFeatureParams, SIDEBAR_TASK_PARAMS } from "./query-params";
 export type {
-  ActivityEvent,
   ApiError,
-  CreateFeatureRequest,
   CreateWorkspaceRequest,
-  FeatureDetail,
-  FeatureDocument,
-  FeatureId,
-  FeatureName,
   FeatureSummary,
-  FeatureTaskPage,
   FeatureWithTasks,
   ImportWorkspaceRequest,
-  PagedFeatures,
-  PagedTasks,
   PullRequestRef,
-  SourceState,
-  TaskCounts,
-  TaskDetail,
-  TaskExecution,
-  TaskId,
-  TaskName,
   TaskSummary,
   TaskSummaryWithUpdatedAt,
   WorkspaceDetail,
-  WorkspaceId,
   WorkspaceSummary,
 } from "./types";

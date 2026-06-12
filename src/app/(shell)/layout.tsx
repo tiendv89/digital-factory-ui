@@ -26,7 +26,7 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
 
   return (
     <div data-shell-layout className="flex h-full min-h-screen">
-      <NavRail onCommandPalette={openPalette} />
+      <NavRail />
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar onCommandPalette={openPalette} />
         <main data-shell-main className="flex-1 overflow-auto">

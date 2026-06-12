@@ -287,9 +287,7 @@ export function OrgWorkspaceSwitcher() {
       {showOrgSettings && activeMembership && <OrgSettingsModal membership={activeMembership} onClose={() => setShowOrgSettings(false)} />}
       {showCreateOrg && <CreateOrgModal onClose={() => setShowCreateOrg(false)} onSuccess={() => setShowCreateOrg(false)} />}
       {showCreateWorkspace && <CreateWorkspaceModal onClose={() => setShowCreateWorkspace(false)} onSuccess={() => setShowCreateWorkspace(false)} />}
-      {settingsTarget && (
-        <WorkspaceSettingsModal workspaceId={settingsTarget.id} orgId={activeMembership?.organization_id ?? ""} workspaceName={settingsTarget.name} onClose={() => setSettingsTarget(null)} />
-      )}
+      {settingsTarget && <WorkspaceSettingsModal workspaceId={settingsTarget.id} orgId={activeMembership?.organization_id ?? ""} onClose={() => setSettingsTarget(null)} />}
     </>
   );
 }
