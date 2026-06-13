@@ -2,17 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { listTools } from "@/services/hermes-agent/tools";
+
 type SlashCommand = {
   name: string;
   hint: string;
 };
 
-const COMMANDS: SlashCommand[] = [
-  { name: "/write-product-spec", hint: "Draft or update the product spec" },
-  { name: "/write-technical-design", hint: "Draft or update the technical design" },
-  { name: "/get-feature-state", hint: "Show current feature lifecycle state" },
-  { name: "/get-workspace-context", hint: "Show repos, roles, model policy" },
-];
+function toolNameToSlash(name: string): string {
+  return "/" + name.replace(/_/g, "-");
+}
 
 type SlashCommandPickerProps = {
   query: string;
@@ -20,17 +19,34 @@ type SlashCommandPickerProps = {
   onClose: () => void;
 };
 
-function filterCommands(query: string): SlashCommand[] {
+function filterCommands(commands: SlashCommand[], query: string): SlashCommand[] {
   if (!query) return [];
   const normalized = query.toLowerCase();
-  return COMMANDS.filter((c) => c.name.includes(normalized));
+  return commands.filter((c) => c.name.includes(normalized));
 }
 
 export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPickerProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [commands, setCommands] = useState<SlashCommand[]>([]);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const filtered = filterCommands(query);
+  // Fetch live tools list from hermes
+  useEffect(() => {
+    let cancelled = false;
+    listTools()
+      .then((tools) => {
+        if (cancelled) return;
+        setCommands(tools.map((t) => ({ name: toolNameToSlash(t.name), hint: t.description })));
+      })
+      .catch(() => {
+        // On error keep empty — picker simply shows nothing
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = filterCommands(commands, query);
 
   // Reset active index when query changes
   useEffect(() => {

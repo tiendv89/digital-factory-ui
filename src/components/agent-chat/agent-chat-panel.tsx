@@ -18,10 +18,11 @@ type AgentChatPanelProps = {
   workspaceId: string;
   featureId: string;
   onArtifactSaved?: (artifact: "product_spec" | "technical_design") => void;
+  onStageTransition?: () => void;
   requestSessionId?: string | null;
 };
 
-export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, requestSessionId }: AgentChatPanelProps) {
+export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStageTransition, requestSessionId }: AgentChatPanelProps) {
   const [panelMode, setPanelMode] = useState<PanelMode>({ mode: "history" });
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -220,7 +221,7 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, reques
       {/* Body */}
       {isActive ? (
         <Conversation>
-          <MessageThread messages={messages} status={status} />
+          <MessageThread messages={messages} status={status} onStageTransition={onStageTransition} />
         </Conversation>
       ) : (
         <SessionHistoryList sessions={sessions} loading={sessionsLoading} onSelect={handleSessionSelect} />
