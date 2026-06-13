@@ -231,9 +231,15 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
   }, [workspaceId, featureId]);
 
   const handleArtifactSaved = useCallback(
-    (_a: "product_spec" | "technical_design") => {
+    (a: "product_spec" | "technical_design") => {
       void queryClient.invalidateQueries({
         queryKey: workspaceKeys.feature(workspaceId, featureId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: workspaceKeys.documentContent(workspaceId, featureId, a),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: workspaceKeys.documentPr(workspaceId, featureId),
       });
     },
     [queryClient, workspaceId, featureId],
