@@ -2,17 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { listTools } from "@/services/hermes-agent/tools";
+
 type SlashCommand = {
   name: string;
   hint: string;
 };
 
-const COMMANDS: SlashCommand[] = [
-  { name: "/write-product-spec", hint: "Draft or update the product spec" },
-  { name: "/write-technical-design", hint: "Draft or update the technical design" },
-  { name: "/get-feature-state", hint: "Show current feature lifecycle state" },
-  { name: "/get-workspace-context", hint: "Show repos, roles, model policy" },
-];
+function toolNameToSlash(name: string): string {
+  return "/" + name.replace(/_/g, "-");
+}
 
 type SlashCommandPickerProps = {
   query: string;
@@ -20,22 +19,45 @@ type SlashCommandPickerProps = {
   onClose: () => void;
 };
 
-function filterCommands(query: string): SlashCommand[] {
+function filterCommands(commands: SlashCommand[], query: string): SlashCommand[] {
   if (!query) return [];
   const normalized = query.toLowerCase();
-  return COMMANDS.filter((c) => c.name.includes(normalized));
+  return commands.filter((c) => c.name.includes(normalized));
 }
 
 export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPickerProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [commands, setCommands] = useState<SlashCommand[]>([]);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const filtered = filterCommands(query);
+  // Fetch live tools list from hermes
+  useEffect(() => {
+    let cancelled = false;
+    listTools()
+      .then((tools) => {
+        if (cancelled) return;
+        setCommands(tools.map((t) => ({ name: toolNameToSlash(t.name), hint: t.description })).sort((a, b) => a.name.localeCompare(b.name)));
+      })
+      .catch(() => {
+        // On error keep empty — picker simply shows nothing
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = filterCommands(commands, query);
 
   // Reset active index when query changes
   useEffect(() => {
     setActiveIndex(0);
   }, [query]);
+
+  // Keep the highlighted command scrolled into view as the user arrows through.
+  useEffect(() => {
+    const active = listRef.current?.querySelector('[data-active="true"]');
+    active?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, filtered.length]);
 
   // Keyboard handler attached to document — picks up events while picker is open
   useEffect(() => {
@@ -46,7 +68,8 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setActiveIndex((i) => (i - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1));
-      } else if (e.key === "Enter") {
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        // Tab autocompletes the highlighted command into the input, just like Enter.
         e.preventDefault();
         if (filtered[activeIndex]) {
           onSelect(filtered[activeIndex].name);
@@ -68,7 +91,7 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
       data-slash-command-picker
       role="listbox"
       aria-label="Slash commands"
-      className="absolute bottom-full left-0 right-0 z-50 mb-1 overflow-hidden rounded-md border border-border bg-surface shadow-md"
+      className="absolute bottom-full left-3 right-3 z-50 mb-1 overflow-hidden rounded-md border border-border bg-surface shadow-md"
     >
       <ul ref={listRef} className="max-h-48 overflow-y-auto py-1">
         {filtered.map((cmd, idx) => (

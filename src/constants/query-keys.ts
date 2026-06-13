@@ -39,4 +39,8 @@ export const workspaceKeys = {
   taskModeFeatures: (workspaceId: string, params: FeatureTaskParams): QueryKey => ["workspace", workspaceId, "task-mode-features", normalizeFeatureTaskParams(params)] as const,
 
   activity: (workspaceId: string): QueryKey => ["workspace", workspaceId, "activity", "client"] as const,
+
+  documentContent: (workspaceId: string, featureId: string, documentType: string): QueryKey => ["workspace", workspaceId, "feature", featureId, "document", documentType, "content"] as const,
+
+  documentPr: (workspaceId: string, featureId: string): QueryKey => ["workspace", workspaceId, "feature", featureId, "document", "pr"] as const,
 };

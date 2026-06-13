@@ -2,7 +2,7 @@
 
 import { Modal } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, FileText, Filter, Lock, Plus, X } from "lucide-react";
+import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, FileText, Filter, Lock, Plus, SquarePen, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -161,6 +161,7 @@ function SessionChat({
   name,
   onClose,
   onArtifactSaved,
+  onStageTransition,
 }: {
   workspaceId: string;
   featureId: string;
@@ -168,12 +169,25 @@ function SessionChat({
   name: string;
   onClose: () => void;
   onArtifactSaved: (a: "product_spec" | "technical_design") => void;
+  onStageTransition?: () => void;
 }) {
+  // Bumped to ask the embedded panel to start a fresh conversation.
+  const [newChatSignal, setNewChatSignal] = useState(0);
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-4" style={{ backgroundColor: "#252526" }}>
         <Lock className="h-3 w-3 shrink-0 text-text-muted" />
         <span className="flex-1 truncate text-xs font-semibold text-text-primary">{name}</span>
+        <button
+          type="button"
+          onClick={() => setNewChatSignal((n) => n + 1)}
+          aria-label="New chat"
+          title="New chat"
+          className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/40 hover:text-text-primary"
+        >
+          <SquarePen className="h-3 w-3" aria-hidden="true" />
+          New chat
+        </button>
         <button
           type="button"
           onClick={onClose}
@@ -184,7 +198,14 @@ function SessionChat({
         </button>
       </header>
       <div className="min-h-0 flex-1">
-        <AgentChatPanel workspaceId={workspaceId} featureId={featureId} requestSessionId={sessionId} onArtifactSaved={onArtifactSaved} />
+        <AgentChatPanel
+          workspaceId={workspaceId}
+          featureId={featureId}
+          requestSessionId={sessionId}
+          newChatSignal={newChatSignal}
+          onArtifactSaved={onArtifactSaved}
+          onStageTransition={onStageTransition}
+        />
       </div>
     </div>
   );
@@ -201,7 +222,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
 
   const { collapsedWorkbenchSections, toggleWorkbenchSection } = useBoardStore();
   const [activeTab, setActiveTab] = useState<DocTab>("product_spec");
-  const [activeChannel, setActiveChannel] = useState<ActiveSession | null>({ id: "", name: "New session" });
+  const [activeChannel, setActiveChannel] = useState<ActiveSession | null>({ id: "", name: "Agent chat" });
   const [dockCollapsed, setDockCollapsed] = useState(false);
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [selectorSearch, setSelectorSearch] = useState("");
@@ -229,13 +250,25 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
   }, [workspaceId, featureId]);
 
   const handleArtifactSaved = useCallback(
-    (_a: "product_spec" | "technical_design") => {
+    (a: "product_spec" | "technical_design") => {
       void queryClient.invalidateQueries({
         queryKey: workspaceKeys.feature(workspaceId, featureId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: workspaceKeys.documentContent(workspaceId, featureId, a),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: workspaceKeys.documentPr(workspaceId, featureId),
       });
     },
     [queryClient, workspaceId, featureId],
   );
+
+  const handleStageTransition = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: workspaceKeys.feature(workspaceId, featureId),
+    });
+  }, [queryClient, workspaceId, featureId]);
 
   const handleOpenTaskTab = useCallback(
     (taskId: string, taskName: string, title: string) => {
@@ -555,7 +588,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
               ))}
 
             {/* Sessions */}
-            <SectionLabel collapsed={sessionsCollapsed} onToggle={() => toggleWorkbenchSection("sessions")} onAdd={() => setActiveChannel({ id: "", name: "New session" })} icon={Bot}>
+            <SectionLabel collapsed={sessionsCollapsed} onToggle={() => toggleWorkbenchSection("sessions")} onAdd={() => setActiveChannel({ id: "", name: "Agent chat" })} icon={Bot}>
               Sessions
             </SectionLabel>
             {!sessionsCollapsed &&
@@ -599,6 +632,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
               name={activeChannel.name}
               onClose={() => setActiveChannel(null)}
               onArtifactSaved={handleArtifactSaved}
+              onStageTransition={handleStageTransition}
             />
           </div>
         )}
