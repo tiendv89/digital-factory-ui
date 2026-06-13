@@ -9,7 +9,22 @@ export type ChatSessionSummary = {
   started_at: number;
   last_active_at: number;
   last_message_excerpt: string;
+  /** Last model used in the session, so reopening restores the selection. */
+  model?: string | null;
 };
+
+export type ModelOption = {
+  id: string;
+  label: string;
+  provider: string;
+};
+
+/** Fetch the catalog of selectable chat models and the server default. */
+export async function listModels(): Promise<{ models: ModelOption[]; default: string }> {
+  const res = await fetch(`${getApiBase()}/api/v1/models`, { credentials: "include" });
+  if (!res.ok) throw new Error(`listModels failed (${res.status})`);
+  return (await res.json()) as { models: ModelOption[]; default: string };
+}
 
 export type HermesEvent =
   | { type: "delta"; text: string }
@@ -105,6 +120,8 @@ export type StreamChatTurnParams = {
   featureId: string;
   sessionId: string;
   message: string;
+  /** Catalog model id; empty reuses the session's model, then the server default. */
+  model?: string;
 };
 
 export function streamChatTurn(params: StreamChatTurnParams, onEvent: (event: HermesEvent) => void, onDone: () => void, onError: (err: Error) => void): AbortController {
@@ -119,6 +136,7 @@ export function streamChatTurn(params: StreamChatTurnParams, onEvent: (event: He
       message: params.message,
       workspace_id: params.workspaceId,
       feature_id: params.featureId,
+      model: params.model ?? "",
     }),
     signal: ctrl.signal,
     openWhenHidden: true,

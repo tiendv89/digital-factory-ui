@@ -1,7 +1,7 @@
 "use client";
 
-import { Bot, Wrench } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { Bot, ChevronRight, Loader2, Wrench } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 import { ConversationContent, useConversationScroll } from "./conversation";
 import { Loader } from "./loader";
@@ -40,7 +40,7 @@ export function MessageThread({ messages, status, onStageTransition }: MessageTh
 
   if (messages.length === 0 && !isStreaming && status !== "connecting") {
     return (
-      <div data-message-thread-empty className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+      <div data-message-thread-empty className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface">
           <Bot className="h-5 w-5 text-text-muted" />
         </div>
@@ -57,18 +57,14 @@ export function MessageThread({ messages, status, onStageTransition }: MessageTh
           <Message message={msg} />
           {msg.toolCalls && msg.toolCalls.length > 0 && (
             <div className="flex flex-col gap-1 pl-2">
-              {msg.toolCalls.map((tc) => (
-                <ToolCallRow key={tc.callId} toolCall={tc} onStageTransition={onStageTransition} />
-              ))}
+              <ToolCallGroup toolCalls={msg.toolCalls} onStageTransition={onStageTransition} />
             </div>
           )}
         </div>
       ))}
       {(isStreaming || status === "connecting") && (
         <div className="flex justify-start">
-          <div className="rounded-lg bg-surface-secondary px-3 py-2">
-            <Loader />
-          </div>
+          <Loader />
         </div>
       )}
     </ConversationContent>
@@ -80,8 +76,103 @@ type ToolCallRowProps = {
   onStageTransition?: () => void;
 };
 
+// Friendly, past-tense labels in the spirit of Claude's transcript ("Ran code",
+// "Read file"). Unknown tools fall back to a humanized version of their name.
+const TOOL_LABELS: Record<string, string> = {
+  execute_code: "Ran code",
+  workflow_request_approval: "Requested approval",
+  workflow_edit_document: "Edited document",
+  workflow_write_product_spec: "Wrote product spec",
+  workflow_write_technical_design: "Wrote technical design",
+};
+
+function toolLabel(name: string): string {
+  if (TOOL_LABELS[name]) return TOOL_LABELS[name];
+  const spaced = name.replace(/_/g, " ").trim();
+  return spaced ? spaced.charAt(0).toUpperCase() + spaced.slice(1) : "Tool call";
+}
+
+function formatOutput(output: unknown): string {
+  if (typeof output === "string") return output;
+  try {
+    return JSON.stringify(output, null, 2);
+  } catch {
+    return String(output);
+  }
+}
+
+type ToolCallGroupProps = {
+  toolCalls: ToolCallEntry[];
+  onStageTransition?: () => void;
+};
+
+/**
+ * Collapses a turn's tool calls into a single line. While the agent is working
+ * it shows the current (last) tool with a spinner; once finished it collapses
+ * to a "N tool calls" summary. Either way it expands to the full list on click.
+ *
+ * Interactive cards (approval, document edits) are pulled out and always
+ * rendered in full — they carry actionable UI that shouldn't be hidden.
+ */
+function ToolCallGroup({ toolCalls, onStageTransition }: ToolCallGroupProps) {
+  const [expanded, setExpanded] = useState(false);
+
+  const cards: ToolCallEntry[] = [];
+  const steps: ToolCallEntry[] = [];
+  for (const tc of toolCalls) {
+    if (tc.status === "done" && tc.output != null) {
+      if (tc.name === "workflow_request_approval" && extractApprovalOutput(tc.output)) {
+        cards.push(tc);
+        continue;
+      }
+      if (DOCUMENT_EDIT_TOOLS.has(tc.name) && extractDocumentEditOutput(tc.output)) {
+        cards.push(tc);
+        continue;
+      }
+    }
+    steps.push(tc);
+  }
+
+  const renderedCards = cards.map((tc) => <ToolCallRow key={tc.callId} toolCall={tc} onStageTransition={onStageTransition} />);
+
+  if (steps.length === 0) {
+    return <>{renderedCards}</>;
+  }
+
+  const running = steps.some((tc) => tc.status === "running");
+  const last = steps[steps.length - 1];
+  const summary = running ? toolLabel(last.name) : `${steps.length} tool ${steps.length === 1 ? "call" : "calls"}`;
+
+  return (
+    <>
+      <div data-tool-call-group data-running={running} className="flex flex-col">
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          aria-expanded={expanded}
+          className="group flex items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-xs text-text-muted transition-colors hover:bg-surface-secondary hover:text-text-secondary"
+        >
+          {running ? <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden="true" /> : <Wrench className="h-3 w-3 shrink-0" aria-hidden="true" />}
+          <span className="font-medium">{summary}</span>
+          {running && <span className="text-text-muted/70">…</span>}
+          <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`} aria-hidden="true" />
+        </button>
+        {expanded && (
+          <div className="mt-1 flex flex-col gap-1 border-l border-border pl-2.5">
+            {steps.map((tc) => (
+              <ToolCallRow key={tc.callId} toolCall={tc} onStageTransition={onStageTransition} />
+            ))}
+          </div>
+        )}
+      </div>
+      {renderedCards}
+    </>
+  );
+}
+
 function ToolCallRow({ toolCall, onStageTransition }: ToolCallRowProps) {
   const { name, status, output } = toolCall;
+  const [expanded, setExpanded] = useState(false);
 
   if (status === "done" && output !== undefined) {
     if (name === "workflow_request_approval") {
@@ -99,12 +190,28 @@ function ToolCallRow({ toolCall, onStageTransition }: ToolCallRowProps) {
     }
   }
 
+  const isRunning = status === "running";
+  const hasOutput = status === "done" && output !== undefined && output !== null && formatOutput(output).trim().length > 0;
+
   return (
-    <div data-tool-call className="flex items-center gap-1.5 text-xs text-text-muted">
-      <Wrench className="h-3 w-3 shrink-0" aria-hidden="true" />
-      <span className="font-mono">{name}</span>
-      {status === "running" && <span className="text-text-muted">(running…)</span>}
-      {status === "done" && <span className="text-success">(done)</span>}
+    <div data-tool-call data-status={status} className="flex flex-col">
+      <button
+        type="button"
+        disabled={!hasOutput}
+        onClick={() => hasOutput && setExpanded((v) => !v)}
+        aria-expanded={hasOutput ? expanded : undefined}
+        className={`group flex items-center gap-1.5 rounded-md px-1 py-0.5 text-left text-xs text-text-muted transition-colors ${
+          hasOutput ? "cursor-pointer hover:bg-surface-secondary hover:text-text-secondary" : "cursor-default"
+        }`}
+      >
+        {isRunning ? <Loader2 className="h-3 w-3 shrink-0 animate-spin" aria-hidden="true" /> : <Wrench className="h-3 w-3 shrink-0" aria-hidden="true" />}
+        <span className="font-medium">{toolLabel(name)}</span>
+        {isRunning && <span className="text-text-muted/70">…</span>}
+        {hasOutput && <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`} aria-hidden="true" />}
+      </button>
+      {hasOutput && expanded && (
+        <pre className="mt-1 max-h-64 overflow-auto rounded-md border border-border bg-surface-secondary px-2.5 py-2 text-[11px] leading-relaxed text-text-secondary">{formatOutput(output)}</pre>
+      )}
     </div>
   );
 }

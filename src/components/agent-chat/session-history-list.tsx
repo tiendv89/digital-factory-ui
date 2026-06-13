@@ -1,5 +1,7 @@
 "use client";
 
+import { Clock, MessageSquareText, Sparkles } from "lucide-react";
+
 import type { ChatSessionSummary } from "@/services/hermes-agent/chat";
 
 type SessionHistoryListProps = {
@@ -19,32 +21,66 @@ function formatRelativeDate(ts: number): string {
   return `${Math.floor(diff / 86_400_000)}d ago`;
 }
 
+function SkeletonRow() {
+  return (
+    <div className="flex animate-pulse items-start gap-3 rounded-lg border border-border/50 bg-surface-secondary/30 px-3 py-2.5">
+      <div className="h-7 w-7 shrink-0 rounded-md bg-surface-hover" />
+      <div className="min-w-0 flex-1 space-y-1.5 py-0.5">
+        <div className="h-2.5 w-1/2 rounded bg-surface-hover" />
+        <div className="h-2 w-4/5 rounded bg-surface-hover" />
+      </div>
+    </div>
+  );
+}
+
 export function SessionHistoryList({ sessions, loading, onSelect }: SessionHistoryListProps) {
   if (loading) {
     return (
-      <div data-session-history-list className="flex flex-1 items-center justify-center">
-        <span className="text-xs text-text-secondary">Loading…</span>
+      <div data-session-history-list className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <SkeletonRow key={i} />
+        ))}
       </div>
     );
   }
 
   if (sessions.length === 0) {
     return (
-      <div data-session-history-list className="flex flex-1 items-center justify-center px-4 text-center">
-        <p className="text-xs text-text-secondary">No conversations yet.</p>
+      <div data-session-history-list className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-secondary text-text-muted">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div className="space-y-1">
+          <p className="text-[13px] font-medium text-text-secondary">No conversations yet</p>
+          <p className="text-[11px] text-text-muted">Start a new chat below to see it appear here.</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div data-session-history-list className="flex flex-1 flex-col overflow-y-auto">
+    <div data-session-history-list className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2">
       {sessions.map((s) => (
-        <button key={s.id} data-session-row={s.id} type="button" onClick={() => onSelect(s.id)} className="flex w-full flex-col gap-0.5 px-3 py-2 text-left hover:bg-surface-hover">
-          <div className="flex items-center justify-between gap-2">
-            <span className="truncate text-xs font-semibold text-text-primary">{s.title}</span>
-            <span className="shrink-0 text-xs text-text-secondary">{formatRelativeDate(s.last_active_at)}</span>
+        <button
+          key={s.id}
+          data-session-row={s.id}
+          type="button"
+          onClick={() => onSelect(s.id)}
+          className="group flex w-full items-start gap-3 rounded-lg border border-border/60 bg-surface-secondary/40 px-3 py-2.5 text-left transition-all duration-150 hover:border-primary/40 hover:bg-surface-secondary hover:shadow-sm"
+        >
+          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-muted transition-colors group-hover:border-primary/40 group-hover:text-primary">
+            <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />
           </div>
-          {s.last_message_excerpt && <span className="line-clamp-1 text-xs text-text-secondary">{s.last_message_excerpt}</span>}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-[13px] font-semibold text-text-primary">{s.title || "Untitled session"}</span>
+              <span className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-text-muted">
+                <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                {formatRelativeDate(s.last_active_at)}
+              </span>
+            </div>
+            {s.last_message_excerpt && <span className="mt-0.5 line-clamp-2 text-xs leading-snug text-text-secondary">{s.last_message_excerpt}</span>}
+          </div>
         </button>
       ))}
     </div>

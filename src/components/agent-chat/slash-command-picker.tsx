@@ -36,7 +36,7 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
     listTools()
       .then((tools) => {
         if (cancelled) return;
-        setCommands(tools.map((t) => ({ name: toolNameToSlash(t.name), hint: t.description })));
+        setCommands(tools.map((t) => ({ name: toolNameToSlash(t.name), hint: t.description })).sort((a, b) => a.name.localeCompare(b.name)));
       })
       .catch(() => {
         // On error keep empty — picker simply shows nothing
@@ -53,6 +53,12 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
     setActiveIndex(0);
   }, [query]);
 
+  // Keep the highlighted command scrolled into view as the user arrows through.
+  useEffect(() => {
+    const active = listRef.current?.querySelector('[data-active="true"]');
+    active?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, filtered.length]);
+
   // Keyboard handler attached to document — picks up events while picker is open
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -62,7 +68,8 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setActiveIndex((i) => (i - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1));
-      } else if (e.key === "Enter") {
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        // Tab autocompletes the highlighted command into the input, just like Enter.
         e.preventDefault();
         if (filtered[activeIndex]) {
           onSelect(filtered[activeIndex].name);
@@ -84,7 +91,7 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
       data-slash-command-picker
       role="listbox"
       aria-label="Slash commands"
-      className="absolute bottom-full left-0 right-0 z-50 mb-1 overflow-hidden rounded-md border border-border bg-surface shadow-md"
+      className="absolute bottom-full left-3 right-3 z-50 mb-1 overflow-hidden rounded-md border border-border bg-surface shadow-md"
     >
       <ul ref={listRef} className="max-h-48 overflow-y-auto py-1">
         {filtered.map((cmd, idx) => (
