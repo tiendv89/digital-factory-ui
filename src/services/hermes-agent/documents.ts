@@ -16,24 +16,16 @@ function getApiBase(): string {
   return `${getBffBaseUrl()}/bff/hermes-agent`;
 }
 
-export async function saveDocument(
-  featureId: string,
-  document: "product_spec" | "technical_design",
-  content: string,
-  baseSha: string | null,
-): Promise<SaveDocumentResult> {
-  const res = await fetch(
-    `${getApiBase()}/api/v1/features/${featureId}/document`,
-    {
-      method: "PUT",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({ document, content, base_sha: baseSha }),
+export async function saveDocument(featureId: string, document: "product_spec" | "technical_design", content: string, baseSha: string | null): Promise<SaveDocumentResult> {
+  const res = await fetch(`${getApiBase()}/api/v1/features/${featureId}/document`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
     },
-  );
+    body: JSON.stringify({ document, content, base_sha: baseSha }),
+  });
 
   if (res.status === 409) {
     throw new StaleDocumentError();

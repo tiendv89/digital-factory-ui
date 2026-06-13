@@ -11,24 +11,15 @@ export type DocumentPrStatus = {
   url: string | null;
 };
 
-export async function getDocumentContent(
-  workspaceId: string,
-  featureId: string,
-  documentType: "product_spec" | "technical_design",
-): Promise<DocumentContent> {
+export async function getDocumentContent(workspaceId: string, featureId: string, documentType: "product_spec" | "technical_design"): Promise<DocumentContent> {
   const res = await workflowApi.get<{
     success: boolean;
     data: DocumentContent;
-  }>(
-    `/api/workspaces/${workspaceId}/features/${featureId}/documents/${documentType}/content`,
-  );
+  }>(`/api/workspaces/${workspaceId}/features/${featureId}/documents/${documentType}/content`);
   return res.data.data;
 }
 
-export async function getDocumentPrStatus(
-  workspaceId: string,
-  featureId: string,
-): Promise<DocumentPrStatus> {
+export async function getDocumentPrStatus(workspaceId: string, featureId: string): Promise<DocumentPrStatus> {
   const res = await workflowApi.get<{
     success: boolean;
     data: DocumentPrStatus;

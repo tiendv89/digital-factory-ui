@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { StaleDocumentError, saveDocument } from "@/services/hermes-agent/documents";
+import { saveDocument, StaleDocumentError } from "@/services/hermes-agent/documents";
 
 // Mock the constants/axios module to avoid env dependency
 vi.mock("@/constants/axios", () => ({
