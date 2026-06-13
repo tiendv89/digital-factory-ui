@@ -6,14 +6,21 @@ import { useEffect, useRef } from "react";
 import { ConversationContent, useConversationScroll } from "./conversation";
 import { Loader } from "./loader";
 import { Message } from "./message";
-import type { ChatStatus, HermesMessage } from "./types";
+import type { ApprovalRequest } from "./tool-cards/approval-card";
+import { ApprovalCard } from "./tool-cards/approval-card";
+import type { DocumentEditOutput } from "./tool-cards/document-edit-card";
+import { DocumentEditCard } from "./tool-cards/document-edit-card";
+import type { ChatStatus, HermesMessage, ToolCallEntry } from "./types";
+
+const DOCUMENT_EDIT_TOOLS = new Set(["workflow_edit_document", "workflow_write_product_spec", "workflow_write_technical_design"]);
 
 type MessageThreadProps = {
   messages: HermesMessage[];
   status: ChatStatus;
+  onStageTransition?: () => void;
 };
 
-export function MessageThread({ messages, status }: MessageThreadProps) {
+export function MessageThread({ messages, status, onStageTransition }: MessageThreadProps) {
   const isStreaming = status === "streaming";
   const { scrollRef, isAtBottomRef } = useConversationScroll();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -51,7 +58,7 @@ export function MessageThread({ messages, status }: MessageThreadProps) {
           {msg.toolCalls && msg.toolCalls.length > 0 && (
             <div className="flex flex-col gap-1 pl-2">
               {msg.toolCalls.map((tc) => (
-                <ToolCallRow key={tc.callId} name={tc.name} status={tc.status} />
+                <ToolCallRow key={tc.callId} toolCall={tc} onStageTransition={onStageTransition} />
               ))}
             </div>
           )}
@@ -68,7 +75,30 @@ export function MessageThread({ messages, status }: MessageThreadProps) {
   );
 }
 
-function ToolCallRow({ name, status }: { name: string; status: "running" | "done" }) {
+type ToolCallRowProps = {
+  toolCall: ToolCallEntry;
+  onStageTransition?: () => void;
+};
+
+function ToolCallRow({ toolCall, onStageTransition }: ToolCallRowProps) {
+  const { name, status, output } = toolCall;
+
+  if (status === "done" && output !== undefined) {
+    if (name === "workflow_request_approval") {
+      const approvalOutput = extractApprovalOutput(output);
+      if (approvalOutput) {
+        return <ApprovalCard output={approvalOutput} onTransitionSuccess={onStageTransition} />;
+      }
+    }
+
+    if (DOCUMENT_EDIT_TOOLS.has(name)) {
+      const editOutput = extractDocumentEditOutput(output);
+      if (editOutput) {
+        return <DocumentEditCard toolName={name} output={editOutput} />;
+      }
+    }
+  }
+
   return (
     <div data-tool-call className="flex items-center gap-1.5 text-xs text-text-muted">
       <Wrench className="h-3 w-3 shrink-0" aria-hidden="true" />
@@ -77,4 +107,20 @@ function ToolCallRow({ name, status }: { name: string; status: "running" | "done
       {status === "done" && <span className="text-success">(done)</span>}
     </div>
   );
+}
+
+function extractApprovalOutput(output: unknown): ApprovalRequest | null {
+  if (!output || typeof output !== "object") return null;
+  const o = output as Record<string, unknown>;
+  const req = (o.approval_request ?? null) as Record<string, unknown> | null;
+  if (!req) return null;
+  if (typeof req.feature_id !== "string" || typeof req.stage !== "string" || typeof req.review_status !== "string") {
+    return null;
+  }
+  return { feature_id: req.feature_id, stage: req.stage, review_status: req.review_status };
+}
+
+function extractDocumentEditOutput(output: unknown): DocumentEditOutput | null {
+  if (!output || typeof output !== "object") return null;
+  return output as DocumentEditOutput;
 }

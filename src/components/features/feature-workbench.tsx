@@ -161,6 +161,7 @@ function SessionChat({
   name,
   onClose,
   onArtifactSaved,
+  onStageTransition,
 }: {
   workspaceId: string;
   featureId: string;
@@ -168,6 +169,7 @@ function SessionChat({
   name: string;
   onClose: () => void;
   onArtifactSaved: (a: "product_spec" | "technical_design") => void;
+  onStageTransition?: () => void;
 }) {
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -184,7 +186,7 @@ function SessionChat({
         </button>
       </header>
       <div className="min-h-0 flex-1">
-        <AgentChatPanel workspaceId={workspaceId} featureId={featureId} requestSessionId={sessionId} onArtifactSaved={onArtifactSaved} />
+        <AgentChatPanel workspaceId={workspaceId} featureId={featureId} requestSessionId={sessionId} onArtifactSaved={onArtifactSaved} onStageTransition={onStageTransition} />
       </div>
     </div>
   );
@@ -236,6 +238,12 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
     },
     [queryClient, workspaceId, featureId],
   );
+
+  const handleStageTransition = useCallback(() => {
+    void queryClient.invalidateQueries({
+      queryKey: workspaceKeys.feature(workspaceId, featureId),
+    });
+  }, [queryClient, workspaceId, featureId]);
 
   const handleOpenTaskTab = useCallback(
     (taskId: string, taskName: string, title: string) => {
@@ -599,6 +607,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
               name={activeChannel.name}
               onClose={() => setActiveChannel(null)}
               onArtifactSaved={handleArtifactSaved}
+              onStageTransition={handleStageTransition}
             />
           </div>
         )}
