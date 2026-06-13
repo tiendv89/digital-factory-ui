@@ -1,9 +1,12 @@
 "use client";
 
-import { Check, Code2, FileText } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Check, Code2, ExternalLink, FileText, GitPullRequest } from "lucide-react";
 import { type ReactNode } from "react";
 
 import { FeatureDocumentPanel } from "@/components/board/feature-document-panel";
+import { workspaceKeys } from "@/constants/query-keys";
+import { getDocumentPrStatus } from "@/services/workflow-backend/documents";
 import type { FeatureDetail } from "@/services/workflow-backend/types";
 
 export type DocTab = "product_spec" | "technical_design";
@@ -35,30 +38,87 @@ function DocTabButton({ label, icon, trailing, active, onClick, dataAttr }: { la
   );
 }
 
+function PrStatusIndicator({ workspaceId, featureId }: { workspaceId: string; featureId: string }) {
+  const { data: prStatus, error: prStatusError } = useQuery({
+    queryKey: workspaceKeys.documentPr(workspaceId, featureId),
+    queryFn: () => getDocumentPrStatus(workspaceId, featureId),
+    staleTime: 60_000,
+  });
+
+  if (prStatusError) return null;
+
+  if (!prStatus || prStatus.state === "none") {
+    return (
+      <span data-pr-indicator="none" className="flex items-center gap-1 text-xs text-text-muted" title="No document PR">
+        <GitPullRequest className="h-3.5 w-3.5" aria-hidden="true" />
+        No PR
+      </span>
+    );
+  }
+
+  if (prStatus.state === "open" && prStatus.url) {
+    return (
+      <a
+        href={prStatus.url}
+        target="_blank"
+        rel="noreferrer noopener"
+        data-pr-indicator="open"
+        className="flex items-center gap-1 text-xs text-success transition-colors hover:underline"
+        title="View open document PR on GitHub"
+      >
+        <GitPullRequest className="h-3.5 w-3.5" aria-hidden="true" />
+        PR open
+        <ExternalLink className="h-3 w-3" aria-hidden="true" />
+      </a>
+    );
+  }
+
+  if (prStatus.state === "merged") {
+    return (
+      <span data-pr-indicator="merged" className="flex items-center gap-1 text-xs text-text-muted" title="Document PR merged">
+        <GitPullRequest className="h-3.5 w-3.5" aria-hidden="true" />
+        PR merged
+        {prStatus.url && (
+          <a href={prStatus.url} target="_blank" rel="noreferrer noopener" className="ml-0.5 transition-opacity hover:opacity-80" title="View on GitHub">
+            <ExternalLink className="h-3 w-3" aria-hidden="true" />
+          </a>
+        )}
+      </span>
+    );
+  }
+
+  return null;
+}
+
 export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: FeatureIDEDocsPanelProps) {
   const hasProductSpec = feature.stages?.product_spec?.review_status === "approved";
   const hasTechnicalDesign = feature.stages?.technical_design?.review_status === "approved";
 
   return (
     <div data-feature-ide-docs-panel className="flex h-full flex-col overflow-hidden bg-bg">
-      {/* Tab bar */}
-      <div role="tablist" aria-label="Feature documents" className="flex shrink-0 items-center gap-0 border-b border-border bg-surface px-2">
-        <DocTabButton
-          label="Product Spec"
-          icon={<FileText className="h-3.5 w-3.5" aria-hidden="true" />}
-          trailing={hasProductSpec ? <Check className="h-3 w-3 text-success" aria-hidden="true" /> : undefined}
-          active={activeTab === "product_spec"}
-          onClick={() => onTabChange("product_spec")}
-          dataAttr="data-docs-tab-product-spec"
-        />
-        <DocTabButton
-          label="Tech Design"
-          icon={<Code2 className="h-3.5 w-3.5" aria-hidden="true" />}
-          trailing={hasTechnicalDesign ? <Check className="h-3 w-3 text-success" aria-hidden="true" /> : undefined}
-          active={activeTab === "technical_design"}
-          onClick={() => onTabChange("technical_design")}
-          dataAttr="data-docs-tab-tech-design"
-        />
+      {/* Tab bar + PR indicator */}
+      <div className="flex shrink-0 items-center justify-between border-b border-border bg-surface px-2">
+        <div role="tablist" aria-label="Feature documents" className="flex items-center gap-0">
+          <DocTabButton
+            label="Product Spec"
+            icon={<FileText className="h-3.5 w-3.5" aria-hidden="true" />}
+            trailing={hasProductSpec ? <Check className="h-3 w-3 text-success" aria-hidden="true" /> : undefined}
+            active={activeTab === "product_spec"}
+            onClick={() => onTabChange("product_spec")}
+            dataAttr="data-docs-tab-product-spec"
+          />
+          <DocTabButton
+            label="Tech Design"
+            icon={<Code2 className="h-3.5 w-3.5" aria-hidden="true" />}
+            trailing={hasTechnicalDesign ? <Check className="h-3 w-3 text-success" aria-hidden="true" /> : undefined}
+            active={activeTab === "technical_design"}
+            onClick={() => onTabChange("technical_design")}
+            dataAttr="data-docs-tab-tech-design"
+          />
+        </div>
+        <div className="pr-2">
+          <PrStatusIndicator workspaceId={feature.workspace_id} featureId={feature.feature_id} />
+        </div>
       </div>
 
       {/* Content */}
