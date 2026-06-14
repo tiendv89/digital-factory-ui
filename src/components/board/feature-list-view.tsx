@@ -3,7 +3,7 @@
 import { ChevronDown, ChevronRight, LayoutList } from "lucide-react";
 import { useMemo } from "react";
 
-import type { ParsedTask } from "@/services/yaml-parser";
+import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import { useBoardStore } from "@/stores/board";
 
 import { BoardAvatar } from "./board-avatar";
@@ -21,7 +21,7 @@ function statusSortIndex(status: string) {
   return i === -1 ? STATUS_ORDER.length - 2 : i;
 }
 
-export function FeatureListView({ rows, onTaskClick }: { rows: BoardFeatureRow[]; onTaskClick: (task: ParsedTask) => void }) {
+export function FeatureListView({ rows, onTaskClick, onFeatureClick }: { rows: BoardFeatureRow[]; onTaskClick: (task: ParsedTask) => void; onFeatureClick: (feature: ParsedFeature) => void }) {
   const { collapsedFeatures, collapsedGroups, toggleFeatureCollapsed, toggleGroupCollapsed } = useBoardStore();
 
   const groups = useMemo(() => {
@@ -100,9 +100,14 @@ export function FeatureListView({ rows, onTaskClick }: { rows: BoardFeatureRow[]
                           {featureCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
                         </button>
                         <LifecycleGlyph stage={feature.featureStatus} size={12} />
-                        <div className="flex min-w-0 flex-col">
+                        <button
+                          type="button"
+                          onClick={() => onFeatureClick(feature)}
+                          className="flex min-w-0 flex-col rounded text-left transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                          title="Open feature"
+                        >
                           <span className="truncate text-[13px] font-semibold text-text-primary">{feature.id}</span>
-                        </div>
+                        </button>
                       </div>
 
                       <span className="inline-flex h-5 w-fit items-center rounded-full px-2 text-[10px] font-semibold" style={{ backgroundColor: meta.bg, color: meta.color }}>

@@ -13,7 +13,13 @@ import { MarkdownBlock } from "./markdown-block";
 
 type FeatureDocumentPanelProps = {
   feature: FeatureDetail;
-  documentType: "product_spec" | "technical_design";
+  documentType: "product_spec" | "technical_design" | "handoff";
+};
+
+const DOC_TITLES: Record<FeatureDocumentPanelProps["documentType"], string> = {
+  product_spec: "Product Spec",
+  technical_design: "Technical Design",
+  handoff: "Handoff",
 };
 
 type EditMode = "view" | "edit";
@@ -31,7 +37,7 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
     error: fetchError,
   } = useQuery({
     queryKey: contentQueryKey,
-    queryFn: () => getDocumentContent(feature.workspace_id, feature.feature_id, documentType as "product_spec" | "technical_design"),
+    queryFn: () => getDocumentContent(feature.workspace_id, feature.feature_id, documentType),
     enabled: !!doc,
     staleTime: 30_000,
   });
@@ -114,13 +120,16 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
     return () => window.removeEventListener("beforeunload", handler);
   }, [isDirty]);
 
-  const docTitle = documentType === "product_spec" ? "Product Spec" : "Technical Design";
+  const docTitle = DOC_TITLES[documentType];
+  // Handoff is read-only for now — the hermes save path only knows product_spec
+  // and technical_design, so we don't surface an Edit button for it.
+  const canEdit = documentType !== "handoff";
   const githubUrl = docContent?.url ?? doc?.url;
 
   if (!doc) {
     return (
       <div data-feature-doc-empty={documentType} className="flex flex-1 flex-col items-center justify-center gap-2 py-20">
-        <p className="text-sm text-text-muted">{documentType === "product_spec" ? "No product spec available." : "No technical design available."}</p>
+        <p className="text-sm text-text-muted">{`No ${docTitle.toLowerCase()} available.`}</p>
       </div>
     );
   }
@@ -142,7 +151,7 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
                 <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
               </a>
             )}
-            {mode === "view" && !isLoading && (
+            {mode === "view" && !isLoading && canEdit && (
               <button
                 type="button"
                 data-doc-edit-btn={documentType}

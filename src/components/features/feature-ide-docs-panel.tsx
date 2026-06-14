@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Check, Code2, ExternalLink, FileText, GitPullRequest } from "lucide-react";
+import { Check, Code2, ExternalLink, FileText, GitPullRequest, Rocket } from "lucide-react";
 import { type ReactNode } from "react";
 
 import { FeatureDocumentPanel } from "@/components/board/feature-document-panel";
@@ -9,7 +9,7 @@ import { workspaceKeys } from "@/constants/query-keys";
 import { getDocumentPrStatus } from "@/services/workflow-backend/documents";
 import type { FeatureDetail } from "@/services/workflow-backend/types";
 
-export type DocTab = "product_spec" | "technical_design";
+export type DocTab = "product_spec" | "technical_design" | "handoff";
 
 type FeatureIDEDocsPanelProps = {
   feature: FeatureDetail;
@@ -93,6 +93,7 @@ function PrStatusIndicator({ workspaceId, featureId }: { workspaceId: string; fe
 export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: FeatureIDEDocsPanelProps) {
   const hasProductSpec = feature.stages?.product_spec?.review_status === "approved";
   const hasTechnicalDesign = feature.stages?.technical_design?.review_status === "approved";
+  const hasHandoff = feature.stages?.handoff?.review_status === "approved";
 
   return (
     <div data-feature-ide-docs-panel className="flex h-full flex-col overflow-hidden bg-bg">
@@ -115,6 +116,14 @@ export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: Feature
             onClick={() => onTabChange("technical_design")}
             dataAttr="data-docs-tab-tech-design"
           />
+          <DocTabButton
+            label="Handoff"
+            icon={<Rocket className="h-3.5 w-3.5" aria-hidden="true" />}
+            trailing={hasHandoff ? <Check className="h-3 w-3 text-success" aria-hidden="true" /> : undefined}
+            active={activeTab === "handoff"}
+            onClick={() => onTabChange("handoff")}
+            dataAttr="data-docs-tab-handoff"
+          />
         </div>
         <div className="pr-2">
           <PrStatusIndicator workspaceId={feature.workspace_id} featureId={feature.feature_id} />
@@ -125,6 +134,7 @@ export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: Feature
       <div className="flex-1 overflow-y-auto">
         {activeTab === "product_spec" && <FeatureDocumentPanel feature={feature} documentType="product_spec" />}
         {activeTab === "technical_design" && <FeatureDocumentPanel feature={feature} documentType="technical_design" />}
+        {activeTab === "handoff" && <FeatureDocumentPanel feature={feature} documentType="handoff" />}
       </div>
     </div>
   );

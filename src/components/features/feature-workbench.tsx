@@ -2,7 +2,7 @@
 
 import { Modal } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, FileText, Filter, Lock, Plus, SquarePen, X } from "lucide-react";
+import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, Code2, Files, FileText, Filter, Lock, Plus, Rocket, SquarePen, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -104,10 +104,10 @@ function FeaturePreviewPanel({ workspaceId, featureId }: { workspaceId: string; 
   );
 }
 
-const ARTIFACTS: { label: string; tab: DocTab | null }[] = [
-  { label: "Product Spec", tab: "product_spec" },
-  { label: "Technical Design", tab: "technical_design" },
-  { label: "Handoffs", tab: null },
+const ARTIFACTS: { label: string; tab: DocTab; icon: React.ComponentType<{ className?: string }> }[] = [
+  { label: "Product Spec", tab: "product_spec", icon: FileText },
+  { label: "Technical Design", tab: "technical_design", icon: Code2 },
+  { label: "Handoffs", tab: "handoff", icon: Rocket },
 ];
 
 type ActiveSession = { id: string; name: string };
@@ -548,7 +548,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
             </div>
 
             {/* Artifacts */}
-            <SectionLabel collapsed={artifactsCollapsed} onToggle={() => toggleWorkbenchSection("artifacts")} icon={FileText}>
+            <SectionLabel collapsed={artifactsCollapsed} onToggle={() => toggleWorkbenchSection("artifacts")} icon={Files}>
               Artifacts
             </SectionLabel>
             {!artifactsCollapsed &&
@@ -556,11 +556,11 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
                 <button
                   key={a.label}
                   type="button"
-                  onClick={() => a.tab && setActiveTab(a.tab)}
+                  onClick={() => setActiveTab(a.tab)}
                   className="cursor-pointer flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] transition-colors hover:bg-white/5"
-                  style={{ color: a.tab && activeTab === a.tab ? "#d4d4d4" : "#cccccc" }}
+                  style={{ color: activeTab === a.tab ? "#d4d4d4" : "#cccccc" }}
                 >
-                  <span className="text-[12px] text-text-muted">›</span>
+                  <a.icon className="h-3.5 w-3.5 shrink-0 text-text-muted" />
                   {a.label}
                 </button>
               ))}

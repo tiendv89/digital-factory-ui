@@ -202,6 +202,7 @@ export function BoardView() {
       {isList ? (
         <FeatureListView
           rows={featureRows}
+          onFeatureClick={(feature) => openFeatureTab(feature)}
           onTaskClick={(task) => {
             const parent = visibleFeatures.find((f) => f.tasks.some((t) => t.id === task.id));
             if (parent) openFeatureTab(parent);
