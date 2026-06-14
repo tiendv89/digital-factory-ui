@@ -417,22 +417,24 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
 
   // Reuse existing hermes event parsing for agent output frames
   const legacyEvents = parseHermesEvents(eventType, raw);
-  return legacyEvents.map((e): ThreadEvent => {
+  return legacyEvents.flatMap((e): ThreadEvent[] => {
     if (e.type === "delta") {
-      return { type: "delta", messageId: String(raw.message_id ?? ""), text: e.text };
+      return [{ type: "delta", messageId: String(raw.message_id ?? ""), text: e.text }];
     }
     if (e.type === "tool_start") {
-      return { type: "tool_start", messageId: String(raw.message_id ?? ""), callId: e.callId, name: e.name };
+      return [{ type: "tool_start", messageId: String(raw.message_id ?? ""), callId: e.callId, name: e.name }];
     }
     if (e.type === "tool_result") {
-      return { type: "tool_result", messageId: String(raw.message_id ?? ""), callId: e.callId, name: e.name, output: e.output };
+      return [{ type: "tool_result", messageId: String(raw.message_id ?? ""), callId: e.callId, name: e.name, output: e.output }];
     }
     if (e.type === "artifact_saved") {
-      return { type: "artifact_saved", artifact: e.artifact };
+      return [{ type: "artifact_saved", artifact: e.artifact }];
     }
     if (e.type === "error") {
-      return { type: "error", message: e.message };
+      return [{ type: "error", message: e.message }];
     }
-    return { type: "done" };
+    // "usage" and any unknown legacy event types are not applicable in
+    // the thread event model — skip silently rather than emitting a spurious done.
+    return [];
   });
 }
