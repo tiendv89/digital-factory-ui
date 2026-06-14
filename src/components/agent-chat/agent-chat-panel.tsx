@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { ChatSessionSummary, ModelOption } from "@/services/hermes-agent/chat";
-import { createChatSession, getSessionMessages, listChatSessions, listModels, streamChatTurn } from "@/services/hermes-agent/chat";
+import type { ChatSessionSummary, ModelOption, ThreadEvent } from "@/services/hermes-agent/chat";
+import { createChatSession, getSessionMessages, getThreadMessages, listChatSessions, listModels, sendThreadMessage, streamChatTurn, subscribeToThread } from "@/services/hermes-agent/chat";
 
 import { Conversation } from "./conversation";
 import { MessageThread } from "./message-thread";
@@ -22,9 +22,15 @@ type AgentChatPanelProps = {
   requestSessionId?: string | null;
   /** Bumping this value (from the parent header) starts a fresh conversation. */
   newChatSignal?: number;
+  /**
+   * When true, use the new persistent subscription transport (T6).
+   * Defaults to false to preserve backward-compat with the legacy per-turn
+   * `/chat` endpoint during the migration period.
+   */
+  useSubscriptionTransport?: boolean;
 };
 
-export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStageTransition, requestSessionId, newChatSignal }: AgentChatPanelProps) {
+export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStageTransition, requestSessionId, newChatSignal, useSubscriptionTransport = false }: AgentChatPanelProps) {
   const [panelMode, setPanelMode] = useState<PanelMode>({ mode: "history" });
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -41,8 +47,15 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
   // re-render the whole thread and re-parse the growing markdown on every token,
   // which visibly stutters. Instead we buffer incoming text and flush it once
   // per animation frame, so renders are capped at the display refresh rate.
-  const deltaBufferRef = useRef("");
+  const deltaBufferRef = useRef<Map<string, string>>(new Map());
   const flushRafRef = useRef<number | null>(null);
+
+  // Track the last seen message id for ?since= replay on reconnect.
+  const lastMessageIdRef = useRef<string | null>(null);
+  // Track the active subscription session id (for cleanup on session change).
+  const subscriptionSessionRef = useRef<string | null>(null);
+  // Track the streaming assistant message id for delta accumulation.
+  const streamingAssistantIdRef = useRef<string | null>(null);
 
   const nextId = () => {
     msgIdCounter.current += 1;
@@ -97,10 +110,124 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
     setPanelMode({ mode: "active", sessionId, sessionTitle });
   }, []);
 
+  // ─── Persistent subscription transport ──────────────────────────────────────
+
+  const flushDeltasForMessage = useCallback((messageId: string) => {
+    flushRafRef.current = null;
+    const text = deltaBufferRef.current.get(messageId);
+    if (!text) return;
+    deltaBufferRef.current.delete(messageId);
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content: m.content + text } : m)));
+  }, []);
+
+  const scheduleFlush = useCallback(
+    (messageId: string) => {
+      if (flushRafRef.current != null) return;
+      flushRafRef.current = requestAnimationFrame(() => flushDeltasForMessage(messageId));
+    },
+    [flushDeltasForMessage],
+  );
+
+  const finalizeStreamForMessage = useCallback(
+    (messageId: string) => {
+      if (flushRafRef.current != null) {
+        cancelAnimationFrame(flushRafRef.current);
+        flushRafRef.current = null;
+      }
+      flushDeltasForMessage(messageId);
+    },
+    [flushDeltasForMessage],
+  );
+
+  const handleThreadEvent = useCallback(
+    (event: ThreadEvent) => {
+      if (event.type === "message.created") {
+        const msg = event.message;
+        lastMessageIdRef.current = msg.id;
+        setMessages((prev) => {
+          // Avoid duplicating a message optimistically added by handleSubmit
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
+        // If this is an assistant message arriving via stream, track it for deltas
+        if (msg.role === "assistant") {
+          streamingAssistantIdRef.current = msg.id;
+          setStatus("streaming");
+        }
+      } else if (event.type === "delta") {
+        const targetId = event.messageId || streamingAssistantIdRef.current;
+        if (!targetId) return;
+        deltaBufferRef.current.set(targetId, (deltaBufferRef.current.get(targetId) ?? "") + event.text);
+        scheduleFlush(targetId);
+      } else if (event.type === "tool_start") {
+        const targetId = event.messageId || streamingAssistantIdRef.current;
+        if (!targetId) return;
+        const toolEntry: ToolCallEntry = { callId: event.callId, name: event.name, status: "running" };
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m.id !== targetId) return m;
+            const existing = m.toolCalls ?? [];
+            const hasEntry = existing.some((tc) => tc.callId === event.callId);
+            return {
+              ...m,
+              toolCalls: hasEntry ? existing.map((tc) => (tc.callId === event.callId ? { ...tc, name: event.name } : tc)) : [...existing, toolEntry],
+            };
+          }),
+        );
+      } else if (event.type === "tool_result") {
+        const targetId = event.messageId || streamingAssistantIdRef.current;
+        if (!targetId) return;
+        setMessages((prev) =>
+          prev.map((m) => (m.id === targetId ? { ...m, toolCalls: (m.toolCalls ?? []).map((tc) => (tc.callId === event.callId ? { ...tc, status: "done" as const, output: event.output } : tc)) } : m)),
+        );
+      } else if (event.type === "artifact_saved") {
+        onArtifactSaved?.(event.artifact);
+      } else if (event.type === "agent.working") {
+        setStatus("streaming");
+      } else if (event.type === "error") {
+        const targetId = streamingAssistantIdRef.current;
+        if (targetId) finalizeStreamForMessage(targetId);
+        if (targetId) {
+          setMessages((prev) => prev.map((m) => (m.id === targetId ? { ...m, content: m.content || `Error: ${event.message}` } : m)));
+        }
+        setStatus("error");
+      } else if (event.type === "done") {
+        const targetId = streamingAssistantIdRef.current;
+        if (targetId) finalizeStreamForMessage(targetId);
+        streamingAssistantIdRef.current = null;
+        setStatus("idle");
+      }
+    },
+    [onArtifactSaved, scheduleFlush, finalizeStreamForMessage],
+  );
+
+  /** Open (or reopen) the persistent subscription for a thread. */
+  const openSubscription = useCallback(
+    (sessionId: string, since?: string) => {
+      abortRef.current?.abort();
+      abortRef.current = subscribeToThread(
+        sessionId,
+        since ?? null,
+        handleThreadEvent,
+        () => {
+          // Stream closed cleanly — mark idle if no pending deltas
+          setStatus((prev) => (prev === "streaming" ? "idle" : prev));
+        },
+        (err) => {
+          if (err?.name === "AbortError") return;
+          setStatus("error");
+        },
+      );
+      subscriptionSessionRef.current = sessionId;
+    },
+    [handleThreadEvent],
+  );
+
+  // ─── Session select / history load ──────────────────────────────────────────
+
   const handleSessionSelect = useCallback(
     async (id: string) => {
       const session = sessions.find((s) => s.id === id);
-      // Restore the session's last-used model when it's still a known option.
       if (session?.model && models.some((m) => m.id === session.model)) {
         setSelectedModel(session.model);
       }
@@ -109,16 +236,29 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
       setPanelMode({ mode: "active", sessionId: id, sessionTitle: session?.title ?? "" });
       setStatus("connecting");
       try {
-        const history = await getSessionMessages(workspaceId, featureId, id);
+        let history: HermesMessage[];
+        if (useSubscriptionTransport) {
+          history = await getThreadMessages(id);
+        } else {
+          history = await getSessionMessages(workspaceId, featureId, id);
+        }
         setMessages(history);
+        // Track last message id for reconnect replay
+        const last = history[history.length - 1];
+        if (last) lastMessageIdRef.current = last.id;
         setStatus("idle");
+        if (useSubscriptionTransport) {
+          openSubscription(id);
+        }
       } catch {
-        // graceful: show empty transcript if history can't be loaded
         setMessages([]);
         setStatus("idle");
+        if (useSubscriptionTransport) {
+          openSubscription(id);
+        }
       }
     },
-    [sessions, workspaceId, featureId, models],
+    [sessions, workspaceId, featureId, models, useSubscriptionTransport, openSubscription],
   );
 
   const requestedRef = useRef<string | null>(null);
@@ -128,11 +268,20 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
     void handleSessionSelect(requestSessionId);
   }, [requestSessionId, handleSessionSelect]);
 
-  // Start a fresh conversation: drop the current transcript and enter an
-  // active-but-sessionless state. A new session is created on the first message.
+  // Abort the subscription when the component unmounts or the session changes.
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
+
   const handleNewChat = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
+    subscriptionSessionRef.current = null;
+    lastMessageIdRef.current = null;
+    streamingAssistantIdRef.current = null;
+    deltaBufferRef.current.clear();
     setMessages([]);
     setInputValue("");
     setPickerOpen(false);
@@ -140,8 +289,6 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
     setPanelMode({ mode: "active", sessionId: "", sessionTitle: "" });
   }, []);
 
-  // The parent header owns the "New chat" button; it bumps newChatSignal to ask
-  // the panel to reset. Ignore the initial value so we don't reset on mount.
   useEffect(() => {
     if (newChatSignal === undefined || newChatSignal === 0) return;
     handleNewChat();
@@ -165,6 +312,8 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
     setPickerOpen(false);
   }, []);
 
+  // ─── Submit ──────────────────────────────────────────────────────────────────
+
   const handleSubmit = useCallback(async () => {
     if (!inputValue.trim() || status === "connecting" || status === "streaming") {
       return;
@@ -182,6 +331,9 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
         sessionId = created.session_id;
         sessionTitle = inputValue.trim().slice(0, 60);
         enterActiveMode(sessionId, sessionTitle);
+        if (useSubscriptionTransport) {
+          openSubscription(sessionId);
+        }
       } catch {
         setStatus("error");
         return;
@@ -199,6 +351,21 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
 
     setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
+
+    if (useSubscriptionTransport) {
+      // Send via POST; response (and any agent reply) arrive on the subscription.
+      setStatus("streaming");
+      try {
+        await sendThreadMessage(sessionId, userMsg.content);
+        // Status will be updated by the subscription event handler once the
+        // message.created / agent.working / done events arrive.
+      } catch {
+        setStatus("error");
+      }
+      return;
+    }
+
+    // ── Legacy per-turn streaming (backward-compat) ──────────────────────────
     setStatus("streaming");
 
     const assistantId = nextId();
@@ -206,12 +373,12 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
 
     const flushDelta = () => {
       flushRafRef.current = null;
-      const text = deltaBufferRef.current;
+      const text = deltaBufferRef.current.get(assistantId) ?? "";
       if (!text) return;
-      deltaBufferRef.current = "";
+      deltaBufferRef.current.delete(assistantId);
       setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + text } : m)));
     };
-    const scheduleFlush = () => {
+    const scheduleFlushLegacy = () => {
       if (flushRafRef.current != null) return;
       flushRafRef.current = requestAnimationFrame(flushDelta);
     };
@@ -227,17 +394,14 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
       { workspaceId, featureId, sessionId, message: userMsg.content, model: selectedModel },
       (event) => {
         if (event.type === "delta") {
-          deltaBufferRef.current += event.text;
-          scheduleFlush();
+          deltaBufferRef.current.set(assistantId, (deltaBufferRef.current.get(assistantId) ?? "") + event.text);
+          scheduleFlushLegacy();
         } else if (event.type === "tool_start") {
           const toolEntry: ToolCallEntry = {
             callId: event.callId,
             name: event.name,
             status: "running",
           };
-          // The backend can emit repeated "running" progress events for the
-          // same callId. Append only on first sight; otherwise refresh the
-          // existing entry in place so we never stack duplicate rows.
           setMessages((prev) =>
             prev.map((m) => {
               if (m.id !== assistantId) return m;
@@ -288,11 +452,10 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
         setStatus("error");
       },
     );
-  }, [inputValue, status, panelMode, workspaceId, featureId, selectedModel, onArtifactSaved, enterActiveMode]);
+  }, [inputValue, status, panelMode, workspaceId, featureId, selectedModel, onArtifactSaved, enterActiveMode, useSubscriptionTransport, openSubscription]);
 
   const isActive = panelMode.mode === "active";
 
-  // Sent user prompts, newest first — used for CLI-style Up/Down history recall.
   const promptHistory = useMemo(
     () =>
       messages
