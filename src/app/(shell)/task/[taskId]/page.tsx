@@ -21,7 +21,7 @@ function LoadingState() {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4">
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-4">
       <AlertCircle className="h-8 w-8 text-danger" />
       <p className="text-sm text-text-secondary">{message}</p>
     </div>
