@@ -352,6 +352,7 @@ export async function sendThreadMessage(threadId: string, content: string): Prom
 export function subscribeToThread(threadId: string, since: string | null, onEvent: (event: ThreadEvent) => void, onDone: () => void, onError: (err: Error) => void): AbortController {
   const ctrl = new AbortController();
   const sinceQs = since ? `?since=${encodeURIComponent(since)}` : "";
+  let errorReported = false;
 
   fetchEventSource(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/stream${sinceQs}`, {
     method: "GET",
@@ -374,6 +375,7 @@ export function subscribeToThread(threadId: string, since: string | null, onEven
       }
     },
     onerror(err) {
+      errorReported = true;
       onError(err instanceof Error ? err : new Error(String(err)));
       throw err; // prevent fetchEventSource auto-retry
     },
@@ -381,7 +383,7 @@ export function subscribeToThread(threadId: string, since: string | null, onEven
       onDone();
     },
   }).catch((err) => {
-    if ((err as Error)?.name !== "AbortError") {
+    if (!errorReported && (err as Error)?.name !== "AbortError") {
       onError(err instanceof Error ? err : new Error(String(err)));
     }
   });

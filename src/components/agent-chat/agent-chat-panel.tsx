@@ -56,6 +56,9 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
   const subscriptionSessionRef = useRef<string | null>(null);
   // Track the streaming assistant message id for delta accumulation.
   const streamingAssistantIdRef = useRef<string | null>(null);
+  // Stable ref to openSubscription so the onDone reconnect callback can call
+  // the latest version without a stale closure.
+  const openSubscriptionRef = useRef<(sessionId: string, since?: string) => void>(() => {});
 
   const nextId = () => {
     msgIdCounter.current += 1;
@@ -205,23 +208,34 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
   const openSubscription = useCallback(
     (sessionId: string, since?: string) => {
       abortRef.current?.abort();
-      abortRef.current = subscribeToThread(
+      const ctrl = subscribeToThread(
         sessionId,
         since ?? null,
         handleThreadEvent,
         () => {
           // Stream closed cleanly — mark idle if no pending deltas
           setStatus((prev) => (prev === "streaming" ? "idle" : prev));
+          // Reconnect with replay if the close wasn't intentional
+          if (subscriptionSessionRef.current && !ctrl.signal.aborted) {
+            const cursor = lastMessageIdRef.current ?? undefined;
+            openSubscriptionRef.current(subscriptionSessionRef.current, cursor);
+          }
         },
         (err) => {
           if (err?.name === "AbortError") return;
           setStatus("error");
         },
       );
+      abortRef.current = ctrl;
       subscriptionSessionRef.current = sessionId;
     },
     [handleThreadEvent],
   );
+  // Keep the ref in sync with the latest openSubscription so the onDone reconnect
+  // callback can always call the current version without a stale closure.
+  useEffect(() => {
+    openSubscriptionRef.current = openSubscription;
+  }, [openSubscription]);
 
   // ─── Session select / history load ──────────────────────────────────────────
 
