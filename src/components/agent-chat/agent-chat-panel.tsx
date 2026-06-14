@@ -2,15 +2,27 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import type { ChatSessionSummary, ModelOption, ThreadEvent } from "@/services/hermes-agent/chat";
-import { createChatSession, getSessionMessages, getThreadMessages, listChatSessions, listModels, sendThreadMessage, streamChatTurn, subscribeToThread } from "@/services/hermes-agent/chat";
+import type { ChatSessionSummary, ModelOption, ThreadEvent, UnreadMentionCounts } from "@/services/hermes-agent/chat";
+import {
+  createChatSession,
+  getSessionMessages,
+  getThreadMembers,
+  getThreadMessages,
+  getUnreadMentions,
+  listChatSessions,
+  listModels,
+  markThreadRead,
+  sendThreadMessage,
+  streamChatTurn,
+  subscribeToThread,
+} from "@/services/hermes-agent/chat";
 
 import { Conversation } from "./conversation";
 import { MessageThread } from "./message-thread";
 import { PromptInput } from "./prompt-input";
 import { SessionHistoryList } from "./session-history-list";
 import { SlashCommandPicker } from "./slash-command-picker";
-import type { ChatStatus, HermesMessage, ToolCallEntry } from "./types";
+import type { ChatStatus, HermesMessage, ThreadMember, ToolCallEntry } from "./types";
 
 type PanelMode = { mode: "history" } | { mode: "active"; sessionId: string; sessionTitle: string };
 
@@ -40,6 +52,8 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
   const [pickerOpen, setPickerOpen] = useState(false);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
+  const [threadMembers, setThreadMembers] = useState<ThreadMember[]>([]);
+  const [unreadCounts, setUnreadCounts] = useState<UnreadMentionCounts>({ total: 0, perSession: {} });
   const abortRef = useRef<AbortController | null>(null);
   const msgIdCounter = useRef(0);
 
@@ -84,9 +98,25 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
     }
   }, [workspaceId, featureId]);
 
+  const refreshUnreadCounts = useCallback(async () => {
+    if (!workspaceId) return;
+    try {
+      const data = await getUnreadMentions(workspaceId);
+      setUnreadCounts(data);
+    } catch {
+      // Silently ignore — server may not have the endpoint yet
+    }
+  }, [workspaceId]);
+
   useEffect(() => {
     void fetchSessions();
   }, [fetchSessions]);
+
+  useEffect(() => {
+    void refreshUnreadCounts();
+    const id = setInterval(() => void refreshUnreadCounts(), 30_000);
+    return () => clearInterval(id);
+  }, [refreshUnreadCounts]);
 
   // Load the model catalog once and default the selection to the server default.
   useEffect(() => {
@@ -157,6 +187,8 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
           streamingAssistantIdRef.current = msg.id;
           setStatus("streaming");
         }
+        // Refresh unread counts in the background since a new message arrived
+        void refreshUnreadCounts();
       } else if (event.type === "delta") {
         const targetId = event.messageId || streamingAssistantIdRef.current;
         if (!targetId) return;
@@ -201,7 +233,7 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
         setStatus("idle");
       }
     },
-    [onArtifactSaved, scheduleFlush, finalizeStreamForMessage],
+    [onArtifactSaved, scheduleFlush, finalizeStreamForMessage, refreshUnreadCounts],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -247,8 +279,24 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
       }
       setMessages([]);
       setInputValue("");
+      setThreadMembers([]);
       setPanelMode({ mode: "active", sessionId: id, sessionTitle: session?.title ?? "" });
       setStatus("connecting");
+
+      // Mark thread as read and fetch members in parallel with message history
+      void markThreadRead(id).then(() => {
+        // Clear the local unread count immediately for this session
+        setUnreadCounts((prev) => ({
+          total: Math.max(0, prev.total - (prev.perSession[id] ?? 0)),
+          perSession: { ...prev.perSession, [id]: 0 },
+        }));
+      });
+      void getThreadMembers(id)
+        .then(setThreadMembers)
+        .catch(() => {
+          // If members fetch fails (e.g. server not yet updated), leave empty
+        });
+
       try {
         let history: HermesMessage[];
         if (useSubscriptionTransport) {
@@ -300,6 +348,7 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
     setInputValue("");
     setPickerOpen(false);
     setStatus("idle");
+    setThreadMembers([]);
     setPanelMode({ mode: "active", sessionId: "", sessionTitle: "" });
   }, []);
 
@@ -374,9 +423,7 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
         // Update the optimistic message's local counter ID to the server-assigned UUID
         // so the deduplication check in handleThreadEvent (m.id === msg.id) matches
         // and skips the duplicate when the message.created SSE event arrives.
-        setMessages((prev) =>
-          prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)),
-        );
+        setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)));
         // Status will be updated by the subscription event handler once the
         // message.created / agent.working / done events arrive.
       } catch {
@@ -493,7 +540,7 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
           <MessageThread messages={messages} status={status} onStageTransition={onStageTransition} />
         </Conversation>
       ) : (
-        <SessionHistoryList sessions={sessions} loading={sessionsLoading} onSelect={handleSessionSelect} />
+        <SessionHistoryList sessions={sessions} loading={sessionsLoading} onSelect={handleSessionSelect} unreadCounts={unreadCounts.perSession} />
       )}
 
       {/* Input */}
@@ -508,6 +555,7 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
           models={models}
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
+          members={threadMembers}
         />
       </div>
     </div>

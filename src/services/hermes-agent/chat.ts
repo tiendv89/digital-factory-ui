@@ -1,6 +1,6 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
-import type { HermesMessage, MessageAuthor, ToolCallEntry } from "@/components/agent-chat/types";
+import type { HermesMessage, MessageAuthor, ThreadMember, ToolCallEntry } from "@/components/agent-chat/types";
 import { getBffBaseUrl } from "@/constants/axios";
 
 export type ChatSessionSummary = {
@@ -437,4 +437,67 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
     // the thread event model — skip silently rather than emitting a spurious done.
     return [];
   });
+}
+
+// ─── Thread members + unread mentions (T7) ────────────────────────────────
+
+type RawThreadMember = {
+  id: string;
+  name: string;
+  handle?: string | null;
+  avatar_url?: string | null;
+  avatarUrl?: string | null;
+  role_label?: string | null;
+  roleLabel?: string | null;
+};
+
+/**
+ * Fetch the member list for a thread.  The `@agent` sentinel is always
+ * prepended so it appears first in the typeahead.
+ */
+export async function getThreadMembers(threadId: string): Promise<ThreadMember[]> {
+  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/members`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`getThreadMembers failed (${res.status})`);
+  const body = (await res.json()) as { members: RawThreadMember[] };
+  const humans: ThreadMember[] = (body.members ?? []).map((m) => ({
+    id: m.id,
+    name: m.name,
+    handle: m.handle ?? m.name.toLowerCase().replace(/\s+/g, ""),
+    avatarUrl: m.avatar_url ?? m.avatarUrl ?? null,
+    roleLabel: m.role_label ?? m.roleLabel ?? null,
+    kind: "user" as const,
+  }));
+  return [{ id: "agent", name: "Hermes Agent", handle: "agent", kind: "agent" as const }, ...humans];
+}
+
+export type UnreadMentionCounts = {
+  /** Workspace-level aggregate of unread mentions. */
+  total: number;
+  /** Per-thread/channel unread counts keyed by session id. */
+  perSession: Record<string, number>;
+};
+
+/** Fetch per-thread and aggregate unread mention counts for the given workspace. */
+export async function getUnreadMentions(workspaceId: string): Promise<UnreadMentionCounts> {
+  const qs = new URLSearchParams({ workspace_id: workspaceId }).toString();
+  const res = await fetch(`${getApiBase()}/api/v1/unread?${qs}`, { credentials: "include" });
+  if (!res.ok) throw new Error(`getUnreadMentions failed (${res.status})`);
+  return (await res.json()) as UnreadMentionCounts;
+}
+
+/**
+ * Mark all unread mentions in a thread as read (called when the thread is opened).
+ * Ignores 404/non-OK gracefully — the server may not have the endpoint yet.
+ */
+export async function markThreadRead(threadId: string): Promise<void> {
+  try {
+    await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/read`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // Best-effort — don't break the UX if this fails
+  }
 }

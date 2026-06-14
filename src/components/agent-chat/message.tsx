@@ -3,9 +3,57 @@
 import { Bot, User } from "lucide-react";
 import { memo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
+import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 
 import type { HermesMessage, MessageAuthor } from "./types";
+
+/**
+ * A minimal remark plugin that transforms `@handle` text tokens outside code
+ * blocks into inline HTML spans so they render as styled mention chips.
+ */
+function remarkMentions() {
+  return (tree: { type: string; children?: unknown[] }) => {
+    function walk(node: { type: string; children?: unknown[]; value?: string }) {
+      if (!node.children) return;
+      const newChildren: unknown[] = [];
+      for (const child of node.children) {
+        const c = child as { type: string; children?: unknown[]; value?: string };
+        // Skip code blocks to avoid mangling code samples
+        if (c.type === "code" || c.type === "inlineCode") {
+          newChildren.push(c);
+          continue;
+        }
+        if (c.type === "text" && typeof c.value === "string") {
+          const parts = c.value.split(/(@[a-zA-Z0-9_-]+)/g);
+          if (parts.length > 1) {
+            for (const part of parts) {
+              if (!part) continue;
+              if (/^@[a-zA-Z0-9_-]+$/.test(part)) {
+                const handle = part.slice(1);
+                const isAgent = handle === "agent";
+                const cls = isAgent
+                  ? "inline-flex items-center rounded px-1 py-px text-[11px] font-semibold bg-primary/15 text-primary border border-primary/25 no-underline"
+                  : "inline-flex items-center rounded px-1 py-px text-[11px] font-semibold bg-surface-secondary text-text-secondary border border-border no-underline";
+                newChildren.push({
+                  type: "html",
+                  value: `<span class="${cls}" data-mention data-handle="${handle}" aria-label="mention ${handle}">@${handle}</span>`,
+                });
+              } else {
+                newChildren.push({ type: "text", value: part });
+              }
+            }
+            continue;
+          }
+        }
+        walk(c);
+        newChildren.push(c);
+      }
+      node.children = newChildren;
+    }
+    walk(tree as { type: string; children?: unknown[]; value?: string });
+  };
+}
 
 // Explicit element styles so the transcript stays readable regardless of
 // whether the Tailwind typography (`prose`) plugin is active. Tuned for a
@@ -44,10 +92,36 @@ const markdownComponents: Components = {
   td: ({ children }) => <td className="border border-border px-2 py-1 text-text-secondary">{children}</td>,
 };
 
+/**
+ * Render user message text with `@handle` tokens highlighted as pill-shaped spans.
+ * User messages are plain text (not markdown), so we split by the @handle pattern
+ * and render each segment directly.
+ */
+function UserMessageContent({ content }: { content: string }) {
+  const parts = content.split(/(@[a-zA-Z0-9_-]+)/g);
+  if (parts.length === 1) {
+    return <span className="whitespace-pre-wrap">{content}</span>;
+  }
+  return (
+    <span className="whitespace-pre-wrap">
+      {parts.map((part, i) => {
+        if (/^@[a-zA-Z0-9_-]+$/.test(part)) {
+          return (
+            <span key={i} data-mention data-handle={part.slice(1)} className="rounded bg-white/20 px-1 py-px font-semibold">
+              {part}
+            </span>
+          );
+        }
+        return part;
+      })}
+    </span>
+  );
+}
+
 function MessageContent({ content }: { content: string }) {
   return (
     <div data-message-content className="max-w-none text-sm text-text-primary">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+      <ReactMarkdown remarkPlugins={[remarkGfm, remarkMentions]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
         {content}
       </ReactMarkdown>
     </div>
@@ -115,7 +189,7 @@ export const Message = memo(function Message({ message }: { message: HermesMessa
           </div>
         )}
         <div className="max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-white">
-          <span className="whitespace-pre-wrap">{message.content}</span>
+          <UserMessageContent content={message.content} />
         </div>
       </div>
     );

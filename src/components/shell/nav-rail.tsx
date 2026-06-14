@@ -3,10 +3,14 @@
 import { GitBranch, LayoutGrid, Settings, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "@/components/common";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
+import { getUnreadMentions } from "@/services/hermes-agent/chat";
 import { useBoardStore } from "@/stores/board";
+
+const UNREAD_POLL_INTERVAL_MS = 30_000;
 
 type NavItem = {
   label: string;
@@ -77,9 +81,37 @@ function TasksNavButton({ active }: { active: boolean }) {
   );
 }
 
+function useWorkspaceUnreadCount(): number {
+  const [count, setCount] = useState(0);
+  const { activeWorkspace } = useWorkspaceContext();
+  const workspaceId = activeWorkspace?.id ?? "";
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchCount = useCallback(async () => {
+    if (!workspaceId) return;
+    try {
+      const data = await getUnreadMentions(workspaceId);
+      setCount(data.total);
+    } catch {
+      // Silently ignore — server may not have this endpoint yet
+    }
+  }, [workspaceId]);
+
+  useEffect(() => {
+    void fetchCount();
+    timerRef.current = setInterval(() => void fetchCount(), UNREAD_POLL_INTERVAL_MS);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [fetchCount]);
+
+  return count;
+}
+
 export function NavRail() {
   const pathname = usePathname();
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  const unreadCount = useWorkspaceUnreadCount();
 
   const nonTaskItems = MAIN_ITEMS.filter((i) => i.href !== "/tasks");
 
@@ -91,9 +123,23 @@ export function NavRail() {
       </div>
 
       <div className="flex flex-1 flex-col items-center gap-1">
-        {nonTaskItems.map((item) => (
-          <NavRailLink key={item.href} item={item} active={isActive(item.href)} />
-        ))}
+        {nonTaskItems.map((item) => {
+          const isFeatureIde = item.href === "/feature";
+          return (
+            <div key={item.href} className="relative">
+              <NavRailLink item={item} active={isActive(item.href)} />
+              {isFeatureIde && unreadCount > 0 && (
+                <span
+                  data-unread-aggregate
+                  aria-label={`${unreadCount} unread mention${unreadCount === 1 ? "" : "s"}`}
+                  className="pointer-events-none absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-white"
+                >
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </div>
+          );
+        })}
         <TasksNavButton active={isActive("/tasks") || isActive("/task")} />
       </div>
 
