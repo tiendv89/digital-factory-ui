@@ -370,7 +370,13 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
       // Send via POST; response (and any agent reply) arrive on the subscription.
       setStatus("streaming");
       try {
-        await sendThreadMessage(sessionId, userMsg.content);
+        const { message_id } = await sendThreadMessage(sessionId, userMsg.content);
+        // Update the optimistic message's local counter ID to the server-assigned UUID
+        // so the deduplication check in handleThreadEvent (m.id === msg.id) matches
+        // and skips the duplicate when the message.created SSE event arrives.
+        setMessages((prev) =>
+          prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)),
+        );
         // Status will be updated by the subscription event handler once the
         // message.created / agent.working / done events arrive.
       } catch {
