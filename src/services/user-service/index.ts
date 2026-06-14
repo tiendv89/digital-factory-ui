@@ -7,8 +7,10 @@ export {
   fetchOrg,
   fetchOrgInvitations,
   fetchOrgMembers,
+  getCallerWorkspaceRole,
   getMeData,
   inviteOrgMember,
+  listWorkspaceMembers,
   logout,
   removeOrgMember,
   transferOrgOwnership,
@@ -16,6 +18,7 @@ export {
   updateOrg,
 } from "./client";
 export type {
+  CallerWorkspaceRoleResponse,
   ChangeOrgMemberRoleRequest,
   CreateOrgRequest,
   MeData,
@@ -29,4 +32,6 @@ export type {
   TransferOrgOwnershipRequest,
   UpdateMeRequest,
   UpdateOrgRequest,
+  WorkspaceMember,
+  WorkspaceRole,
 } from "./types";

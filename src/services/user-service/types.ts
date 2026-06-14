@@ -94,3 +94,22 @@ export interface ChangeOrgMemberRoleRequest {
 export interface TransferOrgOwnershipRequest {
   new_owner_user_id: string;
 }
+
+// ─── Workspace member/role types (T5/T8) ─────────────────────────────────────
+
+export type WorkspaceRole = "member" | "admin";
+
+export interface WorkspaceMember {
+  user_id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  role: WorkspaceRole;
+}
+
+export interface WorkspaceMembersResponse {
+  members: WorkspaceMember[];
+}
+
+export interface CallerWorkspaceRoleResponse {
+  role: WorkspaceRole;
+}
