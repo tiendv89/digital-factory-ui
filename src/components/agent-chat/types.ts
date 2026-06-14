@@ -24,3 +24,15 @@ export type ToolCallEntry = {
 };
 
 export type ChatStatus = "idle" | "connecting" | "streaming" | "error";
+
+/** A thread member — either a human workspace member or the `@agent` sentinel. */
+export type ThreadMember = {
+  id: string;
+  /** Display name shown in the picker. */
+  name: string;
+  /** Unique handle used as the `@handle` token in message text. */
+  handle: string;
+  avatarUrl?: string | null;
+  roleLabel?: string | null;
+  kind: "user" | "agent";
+};
