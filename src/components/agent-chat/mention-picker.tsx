@@ -110,5 +110,7 @@ export function detectMention(value: string, caretPos: number): { query: string;
 export function insertMention(value: string, atIndex: number, query: string, handle: string): string {
   const before = value.slice(0, atIndex);
   const after = value.slice(atIndex + 1 + query.length);
-  return `${before}@${handle} ${after}`;
+  // Skip the extra space if the remaining text already starts with one.
+  const sep = after.startsWith(" ") ? "" : " ";
+  return `${before}@${handle}${sep}${after}`;
 }
