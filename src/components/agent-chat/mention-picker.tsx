@@ -37,17 +37,21 @@ export function MentionPicker({ query, members, onSelect, onClose }: MentionPick
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
+        e.stopPropagation();
         setActiveIndex((i) => (i + 1) % Math.max(filtered.length, 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
+        e.stopPropagation();
         setActiveIndex((i) => (i - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1));
       } else if (e.key === "Enter" || e.key === "Tab") {
         e.preventDefault();
+        e.stopPropagation();
         if (filtered[activeIndex]) {
           onSelect(filtered[activeIndex]);
         }
       } else if (e.key === "Escape") {
         e.preventDefault();
+        e.stopPropagation();
         onClose();
       }
     }

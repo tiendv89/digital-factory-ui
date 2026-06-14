@@ -86,7 +86,7 @@ export function SessionHistoryList({ sessions, loading, onSelect, unreadCounts =
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
-                <span className={`truncate text-[13px] font-semibold ${unread > 0 ? "text-text-primary" : "text-text-primary"}`}>{s.title || "Untitled session"}</span>
+                <span className="truncate text-[13px] font-semibold text-text-primary">{s.title || "Untitled session"}</span>
                 <span className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-text-muted">
                   <Clock className="h-2.5 w-2.5" aria-hidden="true" />
                   {formatRelativeDate(s.last_active_at)}

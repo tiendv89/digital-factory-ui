@@ -55,7 +55,9 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
     // Manual edits exit history navigation.
     historyIndexRef.current = -1;
     onChange(e.target.value);
-    onCaretChange?.(e.target.selectionStart ?? e.target.value.length);
+    // onCaretChange is not called here — handleValueChange already runs detectMention on the new
+    // value. Calling onCaretChange would pass a stale `value` closure, overwriting the correct
+    // mention state with null on the first `@` keystroke.
     resize();
   }
 
