@@ -279,6 +279,7 @@ type RawThreadMessage = {
   role: string;
   content: string;
   created_at?: number;
+  author_id?: string | null;
   tool_calls?: unknown;
   author?: {
     id: string;
@@ -302,6 +303,8 @@ function rawMessageToHermesMessage(m: RawThreadMessage): HermesMessage {
     role: m.role as HermesMessage["role"],
     content: m.content ?? "",
     author,
+    authorId: m.author_id ?? author?.id,
+    createdAt: m.created_at,
   };
   const toolCalls = parseToolCalls(m.tool_calls);
   if (toolCalls.length > 0) msg.toolCalls = toolCalls;
@@ -327,7 +330,7 @@ export async function getThreadMessages(threadId: string, since?: string): Promi
  * Send a human message to the thread. Returns quickly (202); the actual
  * message and any triggered agent response arrive on the subscription stream.
  */
-export async function sendThreadMessage(threadId: string, content: string): Promise<{ message_id: string }> {
+export async function sendThreadMessage(threadId: string, content: string): Promise<{ message_id: string; agent_triggered: boolean }> {
   const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/messages`, {
     method: "POST",
     credentials: "include",
@@ -338,7 +341,11 @@ export async function sendThreadMessage(threadId: string, content: string): Prom
     const text = await res.text().catch(() => "");
     throw new Error(`sendThreadMessage failed (${res.status}): ${text}`);
   }
-  return (await res.json()) as { message_id: string };
+  // `agent_triggered` tells us whether an agent turn will run (explicit @agent
+  // mention, or a bare message in a feature thread). In a channel a bare message
+  // never triggers the agent, so the composer must not enter a blocking state.
+  const body = (await res.json()) as { message_id: string; agent_triggered?: boolean };
+  return { message_id: body.message_id, agent_triggered: body.agent_triggered ?? false };
 }
 
 /**
@@ -401,6 +408,22 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
 
   if (eventType === "agent.working") {
     return [{ type: "agent.working", sessionId: String(raw.session_id ?? "") }];
+  }
+
+  // The thread agent stream emits its own frames (NOT OpenAI chat chunks):
+  //   agent.delta → { content }      agent.done → { finish_reason }
+  // so they must be parsed here rather than falling through to parseHermesEvents.
+  if (eventType === "agent.delta") {
+    const content = typeof raw.content === "string" ? raw.content : "";
+    return content ? [{ type: "delta", messageId: String(raw.message_id ?? ""), text: content }] : [];
+  }
+
+  if (eventType === "agent.done") {
+    return [{ type: "done" }];
+  }
+
+  if (eventType === "agent.error") {
+    return [{ type: "error", message: String(raw.error ?? raw.message ?? "Agent error") }];
   }
 
   if (eventType === "typing") {
@@ -508,34 +531,38 @@ export type ChannelSummary = {
   id: string;
   name: string;
   description?: string | null;
-  workspace_id: string;
-  created_at: number;
-  member_count?: number;
+  /** Channels are feature-scoped: the feature this channel belongs to. */
+  feature_id?: string;
+  creator_user_id?: string;
+  started_at?: number;
+  last_active_at?: number;
 };
 
-/** List all public channels for a workspace. */
-export async function listChannels(workspaceId: string): Promise<ChannelSummary[]> {
-  const qs = new URLSearchParams({ workspace_id: workspaceId }).toString();
+/** List channels for a workspace, optionally scoped to a feature (channels are feature-scoped). */
+export async function listChannels(workspaceId: string, featureId?: string): Promise<ChannelSummary[]> {
+  const params: Record<string, string> = { workspace_id: workspaceId };
+  if (featureId !== undefined) params.feature_id = featureId;
+  const qs = new URLSearchParams(params).toString();
   const res = await fetch(`${getApiBase()}/api/v1/channels?${qs}`, { credentials: "include" });
   if (!res.ok) throw new Error(`listChannels failed (${res.status})`);
   const body = (await res.json()) as { channels: ChannelSummary[] };
   return body.channels ?? [];
 }
 
-/** Create a new channel (open to any workspace member). */
-export async function createChannel(workspaceId: string, name: string, description?: string): Promise<ChannelSummary> {
+/** Create a feature-scoped channel (open to any workspace member). Returns the new channel id. */
+export async function createChannel(workspaceId: string, featureId: string, name: string, description?: string): Promise<string> {
   const res = await fetch(`${getApiBase()}/api/v1/channels`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workspace_id: workspaceId, name, ...(description ? { description } : {}) }),
+    body: JSON.stringify({ workspace_id: workspaceId, feature_id: featureId, name, ...(description ? { description } : {}) }),
   });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`createChannel failed (${res.status}): ${text}`);
   }
-  const body = (await res.json()) as { channel: ChannelSummary };
-  return body.channel;
+  const body = (await res.json()) as { channel_id: string };
+  return body.channel_id;
 }
 
 /** Hard-delete a channel. Admin-only on the backend; returns 403 for non-admins. */
@@ -560,91 +587,4 @@ export async function joinChannel(channelId: string): Promise<void> {
     const text = await res.text().catch(() => "");
     throw new Error(`joinChannel failed (${res.status}): ${text}`);
   }
-}
-
-// ─── Thread membership API (T4/T8) ────────────────────────────────────────
-
-export type ChannelMember = {
-  user_id: string;
-  display_name: string | null;
-  avatar_url?: string | null;
-  role_label?: string | null;
-  added_at?: string;
-};
-
-/** List members of a thread/channel session. */
-export async function listThreadMembers(threadId: string): Promise<ChannelMember[]> {
-  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/members`, {
-    credentials: "include",
-  });
-  if (!res.ok) throw new Error(`listThreadMembers failed (${res.status})`);
-  const body = (await res.json()) as { members: ChannelMember[] };
-  return body.members ?? [];
-}
-
-/** Add a member to a thread/channel session. */
-export async function addThreadMember(threadId: string, userId: string): Promise<void> {
-  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/members`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ user_id: userId }),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`addThreadMember failed (${res.status}): ${text}`);
-  }
-}
-
-/** Remove a member from a thread/channel session. */
-export async function removeThreadMember(threadId: string, userId: string): Promise<void> {
-  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/members/${encodeURIComponent(userId)}`, {
-    method: "DELETE",
-    credentials: "include",
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`removeThreadMember failed (${res.status}): ${text}`);
-  }
-}
-
-// ─── Workspace Threads API (T9/T10) ───────────────────────────────────────
-
-export type WorkspaceThreadSummary = {
-  id: string;
-  title: string | null;
-  workspace_id: string;
-  created_at: number;
-  member_count?: number;
-};
-
-/**
- * List workspace-level threads (kind='thread', feature_id='') for the caller.
- * Returns own ∪ member-of threads; non-members are excluded by the backend.
- */
-export async function listWorkspaceThreads(workspaceId: string): Promise<WorkspaceThreadSummary[]> {
-  const qs = new URLSearchParams({ workspace_id: workspaceId }).toString();
-  const res = await fetch(`${getApiBase()}/api/v1/threads?${qs}`, { credentials: "include" });
-  if (!res.ok) throw new Error(`listWorkspaceThreads failed (${res.status})`);
-  const body = (await res.json()) as { threads: WorkspaceThreadSummary[] };
-  return body.threads ?? [];
-}
-
-/**
- * Create a new workspace-level team thread (kind='thread', feature_id='').
- * Creator is auto-joined; optional initial members may be provided.
- */
-export async function createWorkspaceThread(workspaceId: string, title?: string, members?: string[]): Promise<WorkspaceThreadSummary> {
-  const res = await fetch(`${getApiBase()}/api/v1/threads`, {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workspace_id: workspaceId, ...(title ? { title } : {}), ...(members?.length ? { members } : {}) }),
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`createWorkspaceThread failed (${res.status}): ${text}`);
-  }
-  const body = (await res.json()) as { thread: WorkspaceThreadSummary };
-  return body.thread;
 }

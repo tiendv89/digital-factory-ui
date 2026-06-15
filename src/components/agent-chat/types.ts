@@ -14,6 +14,10 @@ export type HermesMessage = {
   toolCalls?: ToolCallEntry[];
   /** Attribution added by T6; absent on legacy messages from before the migration. */
   author?: MessageAuthor;
+  /** Sender id (X-User-Id for humans) — resolved to a display name for channel view. */
+  authorId?: string;
+  /** Epoch seconds; used for the channel (Discord-style) timestamp. */
+  createdAt?: number;
 };
 
 export type ToolCallEntry = {

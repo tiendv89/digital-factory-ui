@@ -6,7 +6,6 @@ import type { ChatSessionSummary, ModelOption, ThreadEvent, UnreadMentionCounts 
 import {
   createChatSession,
   getSessionMessages,
-  getThreadMembers,
   getThreadMessages,
   getUnreadMentions,
   listChatSessions,
@@ -16,13 +15,37 @@ import {
   streamChatTurn,
   subscribeToThread,
 } from "@/services/hermes-agent/chat";
+import { fetchMe, getMeData, listWorkspaceMembers } from "@/services/user-service";
 
+import { type ChannelAuthor, ChannelMessageList } from "./channel-message-list";
 import { Conversation } from "./conversation";
 import { MessageThread } from "./message-thread";
 import { PromptInput } from "./prompt-input";
 import { SessionHistoryList } from "./session-history-list";
 import { SlashCommandPicker } from "./slash-command-picker";
 import type { ChatStatus, HermesMessage, ThreadMember, ToolCallEntry } from "./types";
+
+/** Derive a human display name: prefer the set display name, else the email's
+ * local part (e.g. "pentative@gmail.com" → "pentative"), else null. */
+function displayNameOf(displayName?: string | null, email?: string | null): string | null {
+  const name = displayName?.trim();
+  if (name) return name;
+  const local = email?.split("@")[0]?.trim();
+  return local || null;
+}
+
+/** Derive an @mention handle. MUST match hermes `handle_for` so the @token the
+ * user inserts resolves to a user_id on the backend. */
+function deriveHandle(displayName?: string | null, email?: string | null): string {
+  if (email) {
+    const local = email
+      .split("@")[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9._-]/g, "");
+    if (local) return local;
+  }
+  return (displayName ?? "").toLowerCase().replace(/[^a-z0-9._-]+/g, "");
+}
 
 type PanelMode = { mode: "history" } | { mode: "active"; sessionId: string; sessionTitle: string };
 
@@ -40,9 +63,23 @@ type AgentChatPanelProps = {
    * `/chat` endpoint during the migration period.
    */
   useSubscriptionTransport?: boolean;
+  /**
+   * Channel mode: never disable the composer while the agent streams — a
+   * multi-user channel is async, so users keep typing while the agent replies.
+   */
+  nonBlocking?: boolean;
 };
 
-export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStageTransition, requestSessionId, newChatSignal, useSubscriptionTransport = false }: AgentChatPanelProps) {
+export function AgentChatPanel({
+  workspaceId,
+  featureId,
+  onArtifactSaved,
+  onStageTransition,
+  requestSessionId,
+  newChatSignal,
+  useSubscriptionTransport = false,
+  nonBlocking = false,
+}: AgentChatPanelProps) {
   const [panelMode, setPanelMode] = useState<PanelMode>({ mode: "history" });
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(false);
@@ -52,8 +89,11 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
   const [pickerOpen, setPickerOpen] = useState(false);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
-  const [threadMembers, setThreadMembers] = useState<ThreadMember[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<UnreadMentionCounts>({ total: 0, perSession: {} });
+  // user_id → display identity, for the channel (Discord-style) author headers.
+  // name may be null when the workspace directory has no display name for a user.
+  const [workspaceMembers, setWorkspaceMembers] = useState<Record<string, { name: string | null; handle: string; avatarUrl: string | null }>>({});
+  const meRef = useRef<{ id: string; name: string; avatarUrl: string | null } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const msgIdCounter = useRef(0);
 
@@ -118,6 +158,48 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
     return () => clearInterval(id);
   }, [refreshUnreadCounts]);
 
+  // Channel (Discord-style) view needs display names: resolve workspace members
+  // and the caller's own identity so author_id → name/avatar.
+  useEffect(() => {
+    if (!nonBlocking || !workspaceId) return;
+    let cancelled = false;
+    void listWorkspaceMembers(workspaceId)
+      .then((list) => {
+        if (cancelled) return;
+        const map: Record<string, { name: string | null; handle: string; avatarUrl: string | null }> = {};
+        for (const m of list) map[m.user_id] = { name: displayNameOf(m.display_name, m.email), handle: deriveHandle(m.display_name, m.email), avatarUrl: m.avatar_url };
+        setWorkspaceMembers(map);
+      })
+      .catch(() => {});
+    void fetchMe()
+      .then((res) => {
+        if (cancelled) return;
+        const me = getMeData(res).user;
+        meRef.current = { id: me.id, name: displayNameOf(me.display_name, me.email) ?? "You", avatarUrl: me.avatar_url };
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [nonBlocking, workspaceId]);
+
+  const resolveChannelAuthor = useCallback(
+    (msg: HermesMessage): ChannelAuthor => {
+      if (msg.role === "assistant") return { name: "Agent", isAgent: true };
+      const id = msg.authorId ?? msg.author?.id;
+      // Prefer the server-resolved author (hermes resolves names via user-service).
+      if (msg.author?.name) return { name: msg.author.name, avatarUrl: msg.author.avatarUrl, isAgent: false };
+      // Then the caller's own identity (/me), then the workspace directory.
+      if (id && meRef.current && id === meRef.current.id) {
+        return { name: meRef.current.name, avatarUrl: meRef.current.avatarUrl, isAgent: false };
+      }
+      const member = id ? workspaceMembers[id] : undefined;
+      if (member?.name) return { name: member.name, avatarUrl: member.avatarUrl, isAgent: false };
+      return { name: "Member", avatarUrl: msg.author?.avatarUrl ?? member?.avatarUrl, isAgent: false };
+    },
+    [workspaceMembers],
+  );
+
   // Load the model catalog once and default the selection to the server default.
   useEffect(() => {
     let cancelled = false;
@@ -172,6 +254,18 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
     [flushDeltasForMessage],
   );
 
+  // The thread stream delivers agent output as agent.working/agent.delta frames
+  // with no assistant `message.created`, so we materialize a placeholder
+  // assistant message on first sign of agent activity and stream deltas into it.
+  const ensureStreamingAssistant = useCallback(() => {
+    if (streamingAssistantIdRef.current) return streamingAssistantIdRef.current;
+    msgIdCounter.current += 1;
+    const id = `msg-${msgIdCounter.current}`;
+    streamingAssistantIdRef.current = id;
+    setMessages((prev) => [...prev, { id, role: "assistant", content: "", toolCalls: [] }]);
+    return id;
+  }, []);
+
   const handleThreadEvent = useCallback(
     (event: ThreadEvent) => {
       if (event.type === "message.created") {
@@ -190,8 +284,7 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
         // Refresh unread counts in the background since a new message arrived
         void refreshUnreadCounts();
       } else if (event.type === "delta") {
-        const targetId = event.messageId || streamingAssistantIdRef.current;
-        if (!targetId) return;
+        const targetId = event.messageId || streamingAssistantIdRef.current || ensureStreamingAssistant();
         deltaBufferRef.current.set(targetId, (deltaBufferRef.current.get(targetId) ?? "") + event.text);
         scheduleFlush(targetId);
       } else if (event.type === "tool_start") {
@@ -218,6 +311,7 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
       } else if (event.type === "artifact_saved") {
         onArtifactSaved?.(event.artifact);
       } else if (event.type === "agent.working") {
+        ensureStreamingAssistant();
         setStatus("streaming");
       } else if (event.type === "error") {
         const targetId = streamingAssistantIdRef.current;
@@ -233,7 +327,7 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
         setStatus("idle");
       }
     },
-    [onArtifactSaved, scheduleFlush, finalizeStreamForMessage, refreshUnreadCounts],
+    [onArtifactSaved, scheduleFlush, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -279,23 +373,16 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
       }
       setMessages([]);
       setInputValue("");
-      setThreadMembers([]);
       setPanelMode({ mode: "active", sessionId: id, sessionTitle: session?.title ?? "" });
       setStatus("connecting");
 
-      // Mark thread as read and fetch members in parallel with message history
+      // Mark thread as read; clear its local unread count immediately.
       void markThreadRead(id).then(() => {
-        // Clear the local unread count immediately for this session
         setUnreadCounts((prev) => ({
           total: Math.max(0, prev.total - (prev.perSession[id] ?? 0)),
           perSession: { ...prev.perSession, [id]: 0 },
         }));
       });
-      void getThreadMembers(id)
-        .then(setThreadMembers)
-        .catch(() => {
-          // If members fetch fails (e.g. server not yet updated), leave empty
-        });
 
       try {
         let history: HermesMessage[];
@@ -348,7 +435,6 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
     setInputValue("");
     setPickerOpen(false);
     setStatus("idle");
-    setThreadMembers([]);
     setPanelMode({ mode: "active", sessionId: "", sessionTitle: "" });
   }, []);
 
@@ -378,7 +464,9 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
   // ─── Submit ──────────────────────────────────────────────────────────────────
 
   const handleSubmit = useCallback(async () => {
-    if (!inputValue.trim() || status === "connecting" || status === "streaming") {
+    if (!inputValue.trim()) return;
+    // In channel (non-blocking) mode, allow sending while the agent streams.
+    if (!nonBlocking && (status === "connecting" || status === "streaming")) {
       return;
     }
     setPickerOpen(false);
@@ -410,6 +498,10 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
       id: nextId(),
       role: "user",
       content: inputValue.trim(),
+      // Stamp own identity so the channel view labels/groups this message
+      // correctly before the server echo (which carries author_id) arrives.
+      authorId: meRef.current?.id,
+      createdAt: Date.now() / 1000,
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -417,15 +509,21 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
 
     if (useSubscriptionTransport) {
       // Send via POST; response (and any agent reply) arrive on the subscription.
-      setStatus("streaming");
+      // Optimistically reflect "connecting" but DON'T block on a streaming agent
+      // turn yet — only do that if the server says the agent was triggered.
+      setStatus("connecting");
       try {
-        const { message_id } = await sendThreadMessage(sessionId, userMsg.content);
+        const { message_id, agent_triggered } = await sendThreadMessage(sessionId, userMsg.content);
         // Update the optimistic message's local counter ID to the server-assigned UUID
         // so the deduplication check in handleThreadEvent (m.id === msg.id) matches
         // and skips the duplicate when the message.created SSE event arrives.
         setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)));
-        // Status will be updated by the subscription event handler once the
-        // message.created / agent.working / done events arrive.
+        // Only enter the blocking "streaming" state when an agent turn will run
+        // (explicit @agent mention, or a feature thread). In a channel a bare
+        // message never triggers the agent, so keep the composer free — otherwise
+        // the input stays disabled forever waiting for a reply that never comes.
+        // When triggered, the subscription event handler drives status to idle on done.
+        setStatus(agent_triggered ? "streaming" : "idle");
       } catch {
         setStatus("error");
       }
@@ -519,9 +617,19 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
         setStatus("error");
       },
     );
-  }, [inputValue, status, panelMode, workspaceId, featureId, selectedModel, onArtifactSaved, enterActiveMode, useSubscriptionTransport, openSubscription]);
+  }, [inputValue, status, panelMode, workspaceId, featureId, selectedModel, onArtifactSaved, enterActiveMode, useSubscriptionTransport, nonBlocking, openSubscription]);
 
   const isActive = panelMode.mode === "active";
+
+  // @mention candidates: the agent plus every workspace member (so anyone in
+  // the workspace can be tagged, not just current channel members). Handles
+  // match hermes `handle_for` so the tokens resolve server-side.
+  const mentionMembers = useMemo<ThreadMember[]>(() => {
+    const humans: ThreadMember[] = Object.entries(workspaceMembers)
+      .map(([id, m]) => ({ id, name: m.name ?? m.handle, handle: m.handle, avatarUrl: m.avatarUrl, kind: "user" as const }))
+      .filter((m) => m.handle);
+    return [{ id: "agent", name: "Hermes Agent", handle: "agent", kind: "agent" }, ...humans];
+  }, [workspaceMembers]);
 
   const promptHistory = useMemo(
     () =>
@@ -537,7 +645,11 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
       {/* Body */}
       {isActive ? (
         <Conversation>
-          <MessageThread messages={messages} status={status} onStageTransition={onStageTransition} />
+          {nonBlocking ? (
+            <ChannelMessageList messages={messages} status={status} resolveAuthor={resolveChannelAuthor} />
+          ) : (
+            <MessageThread messages={messages} status={status} onStageTransition={onStageTransition} />
+          )}
         </Conversation>
       ) : (
         <SessionHistoryList sessions={sessions} loading={sessionsLoading} onSelect={handleSessionSelect} unreadCounts={unreadCounts.perSession} />
@@ -551,11 +663,12 @@ export function AgentChatPanel({ workspaceId, featureId, onArtifactSaved, onStag
           onChange={handleInputChange}
           onSubmit={() => void handleSubmit()}
           status={status}
+          nonBlocking={nonBlocking}
           history={promptHistory}
           models={models}
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
-          members={threadMembers}
+          members={mentionMembers}
         />
       </div>
     </div>

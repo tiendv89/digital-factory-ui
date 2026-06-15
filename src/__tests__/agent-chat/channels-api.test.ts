@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.stubEnv("NEXT_PUBLIC_BFF_URL", "http://localhost:8090");
 
-const { listChannels, createChannel, deleteChannel, joinChannel, listThreadMembers, addThreadMember, removeThreadMember } = await import("@/services/hermes-agent/chat");
+const { listChannels, createChannel, deleteChannel, joinChannel } = await import("@/services/hermes-agent/chat");
 
 const BASE = "http://localhost:8090/bff/hermes-agent";
 
@@ -19,8 +19,8 @@ describe("listChannels", () => {
       ok: true,
       json: async () => ({
         channels: [
-          { id: "ch-1", name: "general", workspace_id: "ws-1", created_at: 1000 },
-          { id: "ch-2", name: "random", workspace_id: "ws-1", created_at: 2000, description: "misc" },
+          { id: "ch-1", name: "general", feature_id: "feat-1" },
+          { id: "ch-2", name: "random", feature_id: "feat-1", description: "misc" },
         ],
       }),
     } as Response);
@@ -31,6 +31,14 @@ describe("listChannels", () => {
     expect(result).toHaveLength(2);
     expect(result[0]).toMatchObject({ id: "ch-1", name: "general" });
     expect(result[1]).toMatchObject({ id: "ch-2", name: "random", description: "misc" });
+  });
+
+  it("scopes to a feature when featureId is given", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: true, json: async () => ({ channels: [] }) } as Response);
+
+    await listChannels("ws-1", "feat-1");
+
+    expect(fetch).toHaveBeenCalledWith(`${BASE}/api/v1/channels?workspace_id=ws-1&feature_id=feat-1`, { credentials: "include" });
   });
 
   it("returns empty array when channels key is absent", async () => {
@@ -57,29 +65,27 @@ describe("createChannel", () => {
     vi.unstubAllGlobals();
   });
 
-  it("POSTs to /api/v1/channels and returns the channel", async () => {
+  it("POSTs a feature-scoped channel and returns the new channel id", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({
-        channel: { id: "ch-new", name: "dev", workspace_id: "ws-1", created_at: 9999 },
-      }),
+      json: async () => ({ channel_id: "ch-new" }),
     } as Response);
 
-    const result = await createChannel("ws-1", "dev");
+    const result = await createChannel("ws-1", "feat-1", "dev");
 
     expect(fetch).toHaveBeenCalledWith(`${BASE}/api/v1/channels`, expect.objectContaining({ method: "POST", credentials: "include" }));
     const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
-    expect(JSON.parse(init.body as string)).toMatchObject({ workspace_id: "ws-1", name: "dev" });
-    expect(result).toMatchObject({ id: "ch-new", name: "dev" });
+    expect(JSON.parse(init.body as string)).toMatchObject({ workspace_id: "ws-1", feature_id: "feat-1", name: "dev" });
+    expect(result).toBe("ch-new");
   });
 
   it("includes description when provided", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ channel: { id: "ch-x", name: "qa", workspace_id: "ws-1", created_at: 1, description: "QA channel" } }),
+      json: async () => ({ channel_id: "ch-x" }),
     } as Response);
 
-    await createChannel("ws-1", "qa", "QA channel");
+    await createChannel("ws-1", "feat-1", "qa", "QA channel");
 
     const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
     expect(JSON.parse(init.body as string)).toMatchObject({ description: "QA channel" });
@@ -92,7 +98,7 @@ describe("createChannel", () => {
       text: async () => "name taken",
     } as Response);
 
-    await expect(createChannel("ws-1", "dup")).rejects.toThrow("createChannel failed (409)");
+    await expect(createChannel("ws-1", "feat-1", "dup")).rejects.toThrow("createChannel failed (409)");
   });
 });
 
@@ -154,108 +160,5 @@ describe("joinChannel", () => {
     } as Response);
 
     await expect(joinChannel("ch-99")).rejects.toThrow("joinChannel failed (404)");
-  });
-});
-
-describe("listThreadMembers", () => {
-  beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
-  });
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("fetches members for a thread", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        members: [
-          { user_id: "u1", display_name: "Alice", role_label: "admin" },
-          { user_id: "u2", display_name: "Bob", role_label: null },
-        ],
-      }),
-    } as Response);
-
-    const result = await listThreadMembers("t-1");
-
-    expect(fetch).toHaveBeenCalledWith(`${BASE}/api/v1/threads/t-1/members`, { credentials: "include" });
-    expect(result).toHaveLength(2);
-    expect(result[0]).toMatchObject({ user_id: "u1", display_name: "Alice" });
-  });
-
-  it("returns empty array when members key is absent", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: true, json: async () => ({}) } as Response);
-    const result = await listThreadMembers("t-1");
-    expect(result).toEqual([]);
-  });
-
-  it("throws on non-ok response", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 404 } as Response);
-    await expect(listThreadMembers("t-1")).rejects.toThrow("listThreadMembers failed (404)");
-  });
-});
-
-describe("addThreadMember", () => {
-  beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
-  });
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("POSTs user_id to the thread members endpoint", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: true } as Response);
-
-    await addThreadMember("t-1", "u-99");
-
-    expect(fetch).toHaveBeenCalledWith(`${BASE}/api/v1/threads/t-1/members`, expect.objectContaining({ method: "POST", credentials: "include" }));
-    const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
-    expect(JSON.parse(init.body as string)).toEqual({ user_id: "u-99" });
-  });
-
-  it("throws on non-ok response", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 400,
-      text: async () => "bad request",
-    } as Response);
-
-    await expect(addThreadMember("t-1", "u-bad")).rejects.toThrow("addThreadMember failed (400)");
-  });
-});
-
-describe("removeThreadMember", () => {
-  beforeEach(() => {
-    vi.stubGlobal("fetch", vi.fn());
-  });
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it("sends DELETE to the thread member endpoint", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: true } as Response);
-
-    await removeThreadMember("t-1", "u-1");
-
-    expect(fetch).toHaveBeenCalledWith(`${BASE}/api/v1/threads/t-1/members/u-1`, expect.objectContaining({ method: "DELETE", credentials: "include" }));
-  });
-
-  it("URL-encodes both thread and user IDs", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: true } as Response);
-
-    await removeThreadMember("t/a", "u/b");
-
-    const calledUrl = vi.mocked(fetch).mock.calls[0][0] as string;
-    expect(calledUrl).toBe(`${BASE}/api/v1/threads/t%2Fa/members/u%2Fb`);
-  });
-
-  it("throws on non-ok response", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 404,
-      text: async () => "not found",
-    } as Response);
-
-    await expect(removeThreadMember("t-1", "u-x")).rejects.toThrow("removeThreadMember failed (404)");
   });
 });

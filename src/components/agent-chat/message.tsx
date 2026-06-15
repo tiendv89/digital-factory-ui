@@ -97,7 +97,7 @@ const markdownComponents: Components = {
  * User messages are plain text (not markdown), so we split by the @handle pattern
  * and render each segment directly.
  */
-function UserMessageContent({ content }: { content: string }) {
+export function UserMessageContent({ content }: { content: string }) {
   const parts = content.split(/(@[a-zA-Z0-9_-]+)/g);
   if (parts.length === 1) {
     return <span className="whitespace-pre-wrap">{content}</span>;
@@ -118,7 +118,7 @@ function UserMessageContent({ content }: { content: string }) {
   );
 }
 
-function MessageContent({ content }: { content: string }) {
+export function MessageContent({ content }: { content: string }) {
   return (
     <div data-message-content className="max-w-none text-sm text-text-primary">
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkMentions]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>

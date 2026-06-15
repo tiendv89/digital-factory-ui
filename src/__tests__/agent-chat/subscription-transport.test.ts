@@ -119,15 +119,15 @@ describe("sendThreadMessage", () => {
     vi.unstubAllGlobals();
   });
 
-  it("POSTs content to the thread messages endpoint and returns message_id", async () => {
+  it("POSTs content to the thread messages endpoint and returns message_id + agent_triggered", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ message_id: "new-msg-1" }),
+      json: async () => ({ message_id: "new-msg-1", agent_triggered: true }),
     } as Response);
 
     const result = await sendThreadMessage("thread-42", "Hello world");
 
-    expect(result).toEqual({ message_id: "new-msg-1" });
+    expect(result).toEqual({ message_id: "new-msg-1", agent_triggered: true });
     expect(fetch).toHaveBeenCalledWith(
       `${BASE}/api/v1/threads/thread-42/messages`,
       expect.objectContaining({

@@ -285,10 +285,13 @@ type PromptInputProps = {
   onModelChange: (id: string) => void;
   /** Thread members for the @mention typeahead. Pass [] or omit to disable. */
   members?: ThreadMember[];
+  /** Channel mode: keep the composer enabled even while the agent streams. */
+  nonBlocking?: boolean;
 };
 
-export function PromptInput({ value, onChange, onSubmit, status, history, models, selectedModel, onModelChange, members = [] }: PromptInputProps) {
-  const isDisabled = status === "connecting" || status === "streaming";
+export function PromptInput({ value, onChange, onSubmit, status, history, models, selectedModel, onModelChange, members = [], nonBlocking = false }: PromptInputProps) {
+  // In channel mode the composer stays usable while the agent streams.
+  const isDisabled = !nonBlocking && (status === "connecting" || status === "streaming");
   const [mentionState, setMentionState] = useState<{ query: string; atIndex: number } | null>(null);
 
   const handleCaretChange = useCallback(
