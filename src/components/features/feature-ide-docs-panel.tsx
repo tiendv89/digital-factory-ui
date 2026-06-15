@@ -17,6 +17,8 @@ type FeatureIDEDocsPanelProps = {
   onTabChange: (tab: DocTab) => void;
 };
 
+// DocTabButton renders a VS Code-style editor tab: the active tab lifts to the
+// editor background with a blue top accent; inactive tabs sit on the tab strip.
 function DocTabButton({ label, icon, trailing, active, onClick, dataAttr }: { label: string; icon?: ReactNode; trailing?: ReactNode; active: boolean; onClick: () => void; dataAttr: string }) {
   const attrs: Record<string, string> = { [dataAttr]: "" };
   return (
@@ -27,10 +29,11 @@ function DocTabButton({ label, icon, trailing, active, onClick, dataAttr }: { la
       onClick={onClick}
       {...attrs}
       className={
-        "inline-flex h-8 min-w-0 items-center gap-1.5 px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary " +
-        (active ? "border-b-2 border-primary text-text-primary" : "text-text-secondary hover:text-text-primary")
+        "group relative inline-flex h-9 min-w-0 items-center gap-2 border-r border-border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-primary " +
+        (active ? "bg-bg text-text-primary" : "bg-surface text-text-secondary hover:bg-surface-subtle hover:text-text-primary")
       }
     >
+      {active && <span aria-hidden="true" className="absolute inset-x-0 top-0 h-0.5 bg-primary" />}
       {icon}
       <span className="truncate">{label}</span>
       {trailing}
@@ -97,9 +100,9 @@ export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: Feature
 
   return (
     <div data-feature-ide-docs-panel className="flex h-full flex-col overflow-hidden bg-bg">
-      {/* Tab bar + PR indicator */}
-      <div className="flex shrink-0 items-center justify-between border-b border-border bg-surface px-2">
-        <div role="tablist" aria-label="Feature documents" className="flex items-center gap-0">
+      {/* Editor tab strip + PR indicator */}
+      <div className="flex shrink-0 items-stretch justify-between border-b border-border bg-surface">
+        <div role="tablist" aria-label="Feature documents" className="flex items-stretch">
           <DocTabButton
             label="Product Spec"
             icon={<FileText className="h-3.5 w-3.5" aria-hidden="true" />}
@@ -125,7 +128,7 @@ export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: Feature
             dataAttr="data-docs-tab-handoff"
           />
         </div>
-        <div className="pr-2">
+        <div className="flex items-center pr-3">
           <PrStatusIndicator workspaceId={feature.workspace_id} featureId={feature.feature_id} />
         </div>
       </div>
