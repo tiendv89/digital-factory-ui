@@ -1,6 +1,6 @@
 "use client";
 
-import { GitBranch, Hash, LayoutGrid, Settings, Zap } from "lucide-react";
+import { GitBranch, Hash, LayoutGrid, MessageCircle, Settings, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -22,6 +22,7 @@ const MAIN_ITEMS: NavItem[] = [
   { label: "Board", href: "/board", icon: LayoutGrid },
   { label: "Feature IDE", href: "/feature", icon: Zap },
   { label: "Task Review", href: "/tasks", icon: GitBranch },
+  { label: "Team Chat", href: "/team-threads", icon: MessageCircle },
   { label: "Channels", href: "/channels", icon: Hash },
 ];
 

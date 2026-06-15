@@ -607,3 +607,44 @@ export async function removeThreadMember(threadId: string, userId: string): Prom
     throw new Error(`removeThreadMember failed (${res.status}): ${text}`);
   }
 }
+
+// ─── Workspace Threads API (T9/T10) ───────────────────────────────────────
+
+export type WorkspaceThreadSummary = {
+  id: string;
+  title: string | null;
+  workspace_id: string;
+  created_at: number;
+  member_count?: number;
+};
+
+/**
+ * List workspace-level threads (kind='thread', feature_id='') for the caller.
+ * Returns own ∪ member-of threads; non-members are excluded by the backend.
+ */
+export async function listWorkspaceThreads(workspaceId: string): Promise<WorkspaceThreadSummary[]> {
+  const qs = new URLSearchParams({ workspace_id: workspaceId }).toString();
+  const res = await fetch(`${getApiBase()}/api/v1/threads?${qs}`, { credentials: "include" });
+  if (!res.ok) throw new Error(`listWorkspaceThreads failed (${res.status})`);
+  const body = (await res.json()) as { threads: WorkspaceThreadSummary[] };
+  return body.threads ?? [];
+}
+
+/**
+ * Create a new workspace-level team thread (kind='thread', feature_id='').
+ * Creator is auto-joined; optional initial members may be provided.
+ */
+export async function createWorkspaceThread(workspaceId: string, title?: string, members?: string[]): Promise<WorkspaceThreadSummary> {
+  const res = await fetch(`${getApiBase()}/api/v1/threads`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspace_id: workspaceId, ...(title ? { title } : {}), ...(members?.length ? { members } : {}) }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`createWorkspaceThread failed (${res.status}): ${text}`);
+  }
+  const body = (await res.json()) as { thread: WorkspaceThreadSummary };
+  return body.thread;
+}
