@@ -501,3 +501,109 @@ export async function markThreadRead(threadId: string): Promise<void> {
     // Best-effort — don't break the UX if this fails
   }
 }
+
+// ─── Channels API (T4/T8) ─────────────────────────────────────────────────
+
+export type ChannelSummary = {
+  id: string;
+  name: string;
+  description?: string | null;
+  workspace_id: string;
+  created_at: number;
+  member_count?: number;
+};
+
+/** List all public channels for a workspace. */
+export async function listChannels(workspaceId: string): Promise<ChannelSummary[]> {
+  const qs = new URLSearchParams({ workspace_id: workspaceId }).toString();
+  const res = await fetch(`${getApiBase()}/api/v1/channels?${qs}`, { credentials: "include" });
+  if (!res.ok) throw new Error(`listChannels failed (${res.status})`);
+  const body = (await res.json()) as { channels: ChannelSummary[] };
+  return body.channels ?? [];
+}
+
+/** Create a new channel (open to any workspace member). */
+export async function createChannel(workspaceId: string, name: string, description?: string): Promise<ChannelSummary> {
+  const res = await fetch(`${getApiBase()}/api/v1/channels`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspace_id: workspaceId, name, ...(description ? { description } : {}) }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`createChannel failed (${res.status}): ${text}`);
+  }
+  const body = (await res.json()) as { channel: ChannelSummary };
+  return body.channel;
+}
+
+/** Hard-delete a channel. Admin-only on the backend; returns 403 for non-admins. */
+export async function deleteChannel(channelId: string): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/v1/channels/${encodeURIComponent(channelId)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`deleteChannel failed (${res.status}): ${text}`);
+  }
+}
+
+/** Join a channel (adds calling user as a member). */
+export async function joinChannel(channelId: string): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/v1/channels/${encodeURIComponent(channelId)}/join`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`joinChannel failed (${res.status}): ${text}`);
+  }
+}
+
+// ─── Thread membership API (T4/T8) ────────────────────────────────────────
+
+export type ChannelMember = {
+  user_id: string;
+  display_name: string | null;
+  avatar_url?: string | null;
+  role_label?: string | null;
+  added_at?: string;
+};
+
+/** List members of a thread/channel session. */
+export async function listThreadMembers(threadId: string): Promise<ChannelMember[]> {
+  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/members`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`listThreadMembers failed (${res.status})`);
+  const body = (await res.json()) as { members: ChannelMember[] };
+  return body.members ?? [];
+}
+
+/** Add a member to a thread/channel session. */
+export async function addThreadMember(threadId: string, userId: string): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/members`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ user_id: userId }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`addThreadMember failed (${res.status}): ${text}`);
+  }
+}
+
+/** Remove a member from a thread/channel session. */
+export async function removeThreadMember(threadId: string, userId: string): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/members/${encodeURIComponent(userId)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`removeThreadMember failed (${res.status}): ${text}`);
+  }
+}

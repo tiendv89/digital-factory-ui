@@ -3,6 +3,7 @@ import axios from "axios";
 import { getBffBaseUrl, userServiceApi } from "@/constants/axios";
 
 import type {
+  CallerWorkspaceRoleResponse,
   ChangeOrgMemberRoleRequest,
   CreateOrgRequest,
   MeData,
@@ -18,6 +19,8 @@ import type {
   TransferOrgOwnershipRequest,
   UpdateMeRequest,
   UpdateOrgRequest,
+  WorkspaceMember,
+  WorkspaceMembersResponse,
 } from "./types";
 
 export function getMeData(response: MeResponse | MeData): MeData {
@@ -172,5 +175,31 @@ export async function deleteOrg(orgId: string): Promise<void> {
     await userServiceApi.delete(`/api/orgs/${orgId}`);
   } catch (err) {
     handleApiError(err, "Failed to delete org");
+  }
+}
+
+// ─── Workspace member/role reads (T5/T8) ─────────────────────────────────────
+
+function unwrapWorkspaceMembers(json: WorkspaceMembersResponse | { data: WorkspaceMembersResponse }): WorkspaceMember[] {
+  const body = "data" in json ? json.data : json;
+  return body.members;
+}
+
+export async function listWorkspaceMembers(workspaceId: string): Promise<WorkspaceMember[]> {
+  try {
+    const { data } = await userServiceApi.get<WorkspaceMembersResponse | { data: WorkspaceMembersResponse }>(`/api/workspaces/${workspaceId}/members`);
+    return unwrapWorkspaceMembers(data);
+  } catch (err) {
+    handleApiError(err, "Failed to list workspace members");
+  }
+}
+
+export async function getCallerWorkspaceRole(workspaceId: string): Promise<"member" | "admin"> {
+  try {
+    const { data } = await userServiceApi.get<CallerWorkspaceRoleResponse | { data: CallerWorkspaceRoleResponse }>(`/api/workspaces/${workspaceId}/me/role`);
+    const body = "data" in data ? data.data : data;
+    return body.role;
+  } catch (err) {
+    handleApiError(err, "Failed to get caller workspace role");
   }
 }

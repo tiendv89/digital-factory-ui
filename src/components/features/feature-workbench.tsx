@@ -2,7 +2,7 @@
 
 import { Modal } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, Code2, Files, FileText, Filter, Lock, Plus, Rocket, SquarePen, X } from "lucide-react";
+import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, Code2, Files, FileText, Filter, Lock, Plus, Rocket, SquarePen, Users, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -10,6 +10,7 @@ import { AgentChatPanel } from "@/components/agent-chat";
 import { BoardAvatar } from "@/components/board/board-avatar";
 import { FEATURE_LIFECYCLE_META, lifecycleMeta } from "@/components/board/board-meta";
 import { LifecycleGlyph, StatusGlyph } from "@/components/board/status-glyph";
+import { ThreadMembersPanel } from "@/components/channels/thread-members-panel";
 import { type DocTab, FeatureIDEDocsPanel } from "@/components/features/feature-ide-docs-panel";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
 import { workspaceKeys } from "@/constants/query-keys";
@@ -173,40 +174,60 @@ function SessionChat({
 }) {
   // Bumped to ask the embedded panel to start a fresh conversation.
   const [newChatSignal, setNewChatSignal] = useState(0);
+  const [membersOpen, setMembersOpen] = useState(false);
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-4" style={{ backgroundColor: "#252526" }}>
-        <Lock className="h-3 w-3 shrink-0 text-text-muted" />
-        <span className="flex-1 truncate text-xs font-semibold text-text-primary">{name}</span>
-        <button
-          type="button"
-          onClick={() => setNewChatSignal((n) => n + 1)}
-          aria-label="New chat"
-          title="New chat"
-          className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/40 hover:text-text-primary"
-        >
-          <SquarePen className="h-3 w-3" aria-hidden="true" />
-          New chat
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close session"
-          className="cursor-pointer flex h-6 w-6 items-center justify-center rounded text-text-muted hover:bg-white/10 hover:text-text-primary"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </header>
-      <div className="min-h-0 flex-1">
-        <AgentChatPanel
-          workspaceId={workspaceId}
-          featureId={featureId}
-          requestSessionId={sessionId}
-          newChatSignal={newChatSignal}
-          onArtifactSaved={onArtifactSaved}
-          onStageTransition={onStageTransition}
-        />
+    <div className="flex h-full overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-4" style={{ backgroundColor: "#252526" }}>
+          <Lock className="h-3 w-3 shrink-0 text-text-muted" />
+          <span className="flex-1 truncate text-xs font-semibold text-text-primary">{name}</span>
+          {sessionId && (
+            <button
+              type="button"
+              onClick={() => setMembersOpen((v) => !v)}
+              aria-label="Toggle members"
+              title="Members"
+              className="cursor-pointer flex h-6 w-6 items-center justify-center rounded text-text-muted hover:bg-white/10 hover:text-text-primary"
+            >
+              <Users className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setNewChatSignal((n) => n + 1)}
+            aria-label="New chat"
+            title="New chat"
+            className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/40 hover:text-text-primary"
+          >
+            <SquarePen className="h-3 w-3" aria-hidden="true" />
+            New chat
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close session"
+            className="cursor-pointer flex h-6 w-6 items-center justify-center rounded text-text-muted hover:bg-white/10 hover:text-text-primary"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </header>
+        <div className="min-h-0 flex-1">
+          <AgentChatPanel
+            workspaceId={workspaceId}
+            featureId={featureId}
+            requestSessionId={sessionId}
+            newChatSignal={newChatSignal}
+            onArtifactSaved={onArtifactSaved}
+            onStageTransition={onStageTransition}
+            useSubscriptionTransport
+          />
+        </div>
       </div>
+      {membersOpen && sessionId && (
+        <aside className="w-56 shrink-0 border-l border-border">
+          <ThreadMembersPanel threadId={sessionId} workspaceId={workspaceId} />
+        </aside>
+      )}
     </div>
   );
 }
