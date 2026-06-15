@@ -2,7 +2,7 @@
 
 import { Modal } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, Code2, Files, FileText, Filter, Lock, Plus, Rocket, SquarePen, X } from "lucide-react";
+import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, Code2, Files, FileText, Filter, Hash, Lock, Plus, Rocket, SquarePen, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -10,13 +10,14 @@ import { AgentChatPanel } from "@/components/agent-chat";
 import { BoardAvatar } from "@/components/board/board-avatar";
 import { FEATURE_LIFECYCLE_META, lifecycleMeta } from "@/components/board/board-meta";
 import { LifecycleGlyph, StatusGlyph } from "@/components/board/status-glyph";
+import { CreateChannelModal } from "@/components/channels/create-channel-modal";
 import { type DocTab, FeatureIDEDocsPanel } from "@/components/features/feature-ide-docs-panel";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
 import { workspaceKeys } from "@/constants/query-keys";
 import { useActivity } from "@/hooks/board/use-activity";
 import { useFeatureDetail } from "@/hooks/board/use-feature-detail";
-import type { ChatSessionSummary } from "@/services/hermes-agent/chat";
-import { listChatSessions } from "@/services/hermes-agent/chat";
+import type { ChannelSummary, ChatSessionSummary } from "@/services/hermes-agent/chat";
+import { createChannel, getUnreadMentions, joinChannel, listChannels, listChatSessions, markThreadRead } from "@/services/hermes-agent/chat";
 import { useBoardStore } from "@/stores/board";
 import { FEATURE_MODE_STATUSES } from "@/utils/board/status";
 import { formatTimestamp } from "@/utils/time";
@@ -110,7 +111,7 @@ const ARTIFACTS: { label: string; tab: DocTab; icon: React.ComponentType<{ class
   { label: "Handoffs", tab: "handoff", icon: Rocket },
 ];
 
-type ActiveSession = { id: string; name: string };
+type ActiveSession = { id: string; name: string; kind?: "session" | "channel" };
 
 // ── Section label ─────────────────────────────────────────────────────────────
 
@@ -128,29 +129,44 @@ function SectionLabel({
   icon?: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="flex items-center gap-1 px-3 pb-1 pt-4">
+    <div className="group/section mx-1.5 flex items-center gap-1.5 rounded-md px-1.5 pb-1 pt-5">
       {onToggle && (
-        <button type="button" onClick={onToggle} className="cursor-pointer flex h-[14px] w-[14px] shrink-0 items-center justify-center text-text-muted transition-colors hover:text-text-secondary">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded text-text-muted transition-colors hover:bg-white/10 hover:text-text-secondary"
+        >
           {collapsed ? <ChevronRight className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
         </button>
       )}
-      {Icon && <Icon className="h-3 w-3 shrink-0 text-text-muted" />}
+      {Icon && <Icon className="h-3.5 w-3.5 shrink-0 text-text-muted" />}
       <button
         type="button"
         onClick={onToggle}
-        className="cursor-pointer flex-1 text-left text-[10px] font-semibold uppercase tracking-[0.08em] text-text-muted transition-colors hover:text-text-secondary disabled:pointer-events-none"
+        className="flex-1 cursor-pointer text-left text-[10px] font-bold uppercase tracking-[0.12em] text-text-muted transition-colors hover:text-text-secondary disabled:pointer-events-none"
         disabled={!onToggle}
       >
         {children}
       </button>
       {onAdd && (
-        <button type="button" onClick={onAdd} title="New" className="cursor-pointer flex h-[18px] w-[18px] items-center justify-center rounded text-text-muted transition-colors hover:bg-white/10">
-          <Plus className="h-3 w-3" />
+        <button
+          type="button"
+          onClick={onAdd}
+          title="New"
+          className="flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded text-text-muted opacity-60 transition-all hover:bg-white/10 hover:text-text-primary hover:opacity-100 group-hover/section:opacity-100"
+        >
+          <Plus className="h-3.5 w-3.5" />
         </button>
       )}
     </div>
   );
 }
+
+// Shared base classes for sidebar item rows — inset rounded "pill" with a clear
+// hover/active treatment.
+const ROW_BASE = "group mx-1.5 flex w-[calc(100%-0.75rem)] cursor-pointer items-center gap-2 rounded-md px-2 py-[7px] text-left text-[13px] transition-colors";
+const ROW_IDLE = "text-text-secondary hover:bg-white/[0.06] hover:text-text-primary";
+const ROW_ACTIVE = "bg-primary/15 text-text-primary";
 
 // ── Session chat header wrapper around the real AgentChatPanel ──────────────────
 
@@ -159,6 +175,9 @@ function SessionChat({
   featureId,
   sessionId,
   name,
+  isChannel = false,
+  newChatSignal,
+  onNewChat,
   onClose,
   onArtifactSaved,
   onStageTransition,
@@ -167,45 +186,65 @@ function SessionChat({
   featureId: string;
   sessionId: string | null;
   name: string;
+  /** A feature channel (multi-member, subscription-only) vs a single agent session. */
+  isChannel?: boolean;
+  /** Bumped by the parent to ask the embedded panel to start a fresh conversation. */
+  newChatSignal: number;
+  /** Start a fresh agent chat — shared by the header button and the Sessions "+". */
+  onNewChat: () => void;
   onClose: () => void;
   onArtifactSaved: (a: "product_spec" | "technical_design") => void;
   onStageTransition?: () => void;
 }) {
-  // Bumped to ask the embedded panel to start a fresh conversation.
-  const [newChatSignal, setNewChatSignal] = useState(0);
+  // Channels: auto-join on open so the user receives messages, and clear the
+  // unread-mention badge. Best-effort — failures don't break the chat.
+  useEffect(() => {
+    if (!isChannel || !sessionId) return;
+    void joinChannel(sessionId).catch(() => {});
+    void markThreadRead(sessionId);
+  }, [isChannel, sessionId]);
+
+  const HeaderIcon = isChannel ? Hash : Lock;
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-4" style={{ backgroundColor: "#252526" }}>
-        <Lock className="h-3 w-3 shrink-0 text-text-muted" />
-        <span className="flex-1 truncate text-xs font-semibold text-text-primary">{name}</span>
-        <button
-          type="button"
-          onClick={() => setNewChatSignal((n) => n + 1)}
-          aria-label="New chat"
-          title="New chat"
-          className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/40 hover:text-text-primary"
-        >
-          <SquarePen className="h-3 w-3" aria-hidden="true" />
-          New chat
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Close session"
-          className="cursor-pointer flex h-6 w-6 items-center justify-center rounded text-text-muted hover:bg-white/10 hover:text-text-primary"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </header>
-      <div className="min-h-0 flex-1">
-        <AgentChatPanel
-          workspaceId={workspaceId}
-          featureId={featureId}
-          requestSessionId={sessionId}
-          newChatSignal={newChatSignal}
-          onArtifactSaved={onArtifactSaved}
-          onStageTransition={onStageTransition}
-        />
+    <div className="flex h-full overflow-hidden">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex h-9 shrink-0 items-center gap-2 border-b border-border px-4" style={{ backgroundColor: "#252526" }}>
+          <HeaderIcon className="h-3 w-3 shrink-0 text-text-muted" />
+          <span className="flex-1 truncate text-xs font-semibold text-text-primary">{name}</span>
+          {!isChannel && (
+            <button
+              type="button"
+              onClick={onNewChat}
+              aria-label="New chat"
+              title="New chat"
+              className="flex shrink-0 cursor-pointer items-center gap-1 rounded border border-border px-2 py-1 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/40 hover:text-text-primary"
+            >
+              <SquarePen className="h-3 w-3" aria-hidden="true" />
+              New chat
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close session"
+            className="cursor-pointer flex h-6 w-6 items-center justify-center rounded text-text-muted hover:bg-white/10 hover:text-text-primary"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </header>
+        <div className="min-h-0 flex-1">
+          <AgentChatPanel
+            workspaceId={workspaceId}
+            // Channels are not feature-authoring surfaces — no approval/artifact affordances.
+            featureId={isChannel ? "" : featureId}
+            requestSessionId={sessionId}
+            newChatSignal={newChatSignal}
+            onArtifactSaved={onArtifactSaved}
+            onStageTransition={onStageTransition}
+            useSubscriptionTransport
+            nonBlocking={isChannel}
+          />
+        </div>
       </div>
     </div>
   );
@@ -223,6 +262,9 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
   const { collapsedWorkbenchSections, toggleWorkbenchSection } = useBoardStore();
   const [activeTab, setActiveTab] = useState<DocTab>("product_spec");
   const [activeChannel, setActiveChannel] = useState<ActiveSession | null>({ id: "", name: "Agent chat" });
+  // Bumped to ask the open agent chat to start a fresh conversation — driven by
+  // both the SessionChat header "New chat" button and the Sessions "+".
+  const [newChatSignal, setNewChatSignal] = useState(0);
   const [dockCollapsed, setDockCollapsed] = useState(false);
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [selectorSearch, setSelectorSearch] = useState("");
@@ -230,9 +272,13 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
   const [previewFeatureId, setPreviewFeatureId] = useState<string>(featureId);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
+  const [channels, setChannels] = useState<ChannelSummary[]>([]);
+  const [unread, setUnread] = useState<Record<string, number>>({});
+  const [createChannelOpen, setCreateChannelOpen] = useState(false);
 
   const artifactsCollapsed = collapsedWorkbenchSections.includes("artifacts");
   const tasksCollapsed = collapsedWorkbenchSections.includes("tasks");
+  const channelsCollapsed = collapsedWorkbenchSections.includes("channels");
   const sessionsCollapsed = collapsedWorkbenchSections.includes("sessions");
 
   useEffect(() => {
@@ -248,6 +294,41 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
       cancelled = true;
     };
   }, [workspaceId, featureId]);
+
+  // Open a fresh agent chat — shared by the Sessions "+" and the chat header's
+  // "New chat" button so they behave identically (no premature session row;
+  // the session is created on the first message).
+  const startNewSession = useCallback(() => {
+    setActiveChannel({ id: "", name: "Agent chat", kind: "session" });
+    setNewChatSignal((n) => n + 1);
+  }, []);
+
+  // Feature-scoped channels (Slack-like) shown in the CHANNELS sidebar section.
+  const fetchChannels = useCallback(async () => {
+    try {
+      setChannels(await listChannels(workspaceId, featureId));
+    } catch {
+      setChannels([]);
+    }
+  }, [workspaceId, featureId]);
+
+  useEffect(() => {
+    void fetchChannels();
+  }, [fetchChannels]);
+
+  // Per-channel unread-mention badges. Refetched when the open channel changes
+  // (opening a channel marks it read), so the badge clears.
+  useEffect(() => {
+    let cancelled = false;
+    getUnreadMentions(workspaceId)
+      .then((u) => {
+        if (!cancelled) setUnread(u.perSession ?? {});
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId, activeChannel]);
 
   const handleArtifactSaved = useCallback(
     (a: "product_spec" | "technical_design") => {
@@ -552,18 +633,15 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
               Artifacts
             </SectionLabel>
             {!artifactsCollapsed &&
-              ARTIFACTS.map((a) => (
-                <button
-                  key={a.label}
-                  type="button"
-                  onClick={() => setActiveTab(a.tab)}
-                  className="cursor-pointer flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] transition-colors hover:bg-white/5"
-                  style={{ color: activeTab === a.tab ? "#d4d4d4" : "#cccccc" }}
-                >
-                  <a.icon className="h-3.5 w-3.5 shrink-0 text-text-muted" />
-                  {a.label}
-                </button>
-              ))}
+              ARTIFACTS.map((a) => {
+                const active = activeTab === a.tab;
+                return (
+                  <button key={a.label} type="button" onClick={() => setActiveTab(a.tab)} className={`${ROW_BASE} ${active ? ROW_ACTIVE : ROW_IDLE}`}>
+                    <a.icon className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-text-muted group-hover:text-text-secondary"}`} />
+                    <span className="truncate">{a.label}</span>
+                  </button>
+                );
+              })}
 
             {/* Tasks */}
             <SectionLabel collapsed={tasksCollapsed} onToggle={() => toggleWorkbenchSection("tasks")} icon={CheckSquare}>
@@ -571,48 +649,68 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
             </SectionLabel>
             {!tasksCollapsed &&
               (tasks.length === 0 ? (
-                <p className="px-3 py-1.5 text-[11px] text-text-muted">No tasks.</p>
+                <p className="mx-1.5 px-2 py-1.5 text-[11px] italic text-text-muted">No tasks.</p>
               ) : (
                 tasks.map((task) => (
-                  <button
-                    key={task.id}
-                    type="button"
-                    onClick={() => handleOpenTaskTab(task.id, task.task_name, task.title || task.task_name)}
-                    className="cursor-pointer flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-white/5"
-                  >
-                    <StatusGlyph status={task.status} size={13} />
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-text-secondary">{task.title || task.task_name}</span>
-                    <span className="shrink-0 text-[10px] text-text-muted">{task.task_name}</span>
+                  <button key={task.id} type="button" onClick={() => handleOpenTaskTab(task.id, task.task_name, task.title || task.task_name)} className={`${ROW_BASE} ${ROW_IDLE}`}>
+                    <StatusGlyph status={task.status} size={14} />
+                    <span className="min-w-0 flex-1 truncate">{task.title || task.task_name}</span>
+                    <span className="shrink-0 font-mono text-[10px] text-text-muted">{task.task_name}</span>
                   </button>
                 ))
               ))}
 
+            {/* Channels */}
+            <SectionLabel collapsed={channelsCollapsed} onToggle={() => toggleWorkbenchSection("channels")} onAdd={() => setCreateChannelOpen(true)} icon={Hash}>
+              Channels
+            </SectionLabel>
+            {!channelsCollapsed &&
+              (channels.length === 0 ? (
+                <p className="mx-1.5 px-2 py-1.5 text-[11px] italic text-text-muted">No channels.</p>
+              ) : (
+                channels.map((c) => {
+                  const active = activeChannel?.kind === "channel" && activeChannel.id === c.id;
+                  const count = unread[c.id] ?? 0;
+                  const unreadIdle = !active && count > 0;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setActiveChannel(active ? null : { id: c.id, name: c.name, kind: "channel" })}
+                      className={`${ROW_BASE} ${active ? ROW_ACTIVE : ROW_IDLE} ${unreadIdle ? "text-text-primary" : ""}`}
+                    >
+                      <Hash className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-text-muted group-hover:text-text-secondary"}`} />
+                      <span className={`min-w-0 flex-1 truncate ${unreadIdle ? "font-semibold" : ""}`}>{c.name}</span>
+                      {count > 0 && (
+                        <span className="flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">
+                          {count > 99 ? "99+" : count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              ))}
+
             {/* Sessions */}
-            <SectionLabel collapsed={sessionsCollapsed} onToggle={() => toggleWorkbenchSection("sessions")} onAdd={() => setActiveChannel({ id: "", name: "Agent chat" })} icon={Bot}>
+            <SectionLabel collapsed={sessionsCollapsed} onToggle={() => toggleWorkbenchSection("sessions")} onAdd={startNewSession} icon={Bot}>
               Sessions
             </SectionLabel>
             {!sessionsCollapsed &&
               (sessions.length === 0 ? (
-                <p className="px-3 py-1.5 text-[11px] text-text-muted">No sessions yet.</p>
+                <p className="mx-1.5 px-2 py-1.5 text-[11px] italic text-text-muted">No sessions yet.</p>
               ) : (
                 sessions.map((s) => {
-                  const active = activeChannel?.id === s.id;
+                  const active = activeChannel?.kind !== "channel" && activeChannel?.id === s.id;
                   const title = s.title || `Session ${s.id.slice(-6)}`;
                   return (
                     <button
                       key={s.id}
                       type="button"
-                      onClick={() => setActiveChannel(active ? null : { id: s.id, name: title })}
-                      className="cursor-pointer flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-white/5"
-                      style={{
-                        backgroundColor: active ? "#2d2d2d" : "transparent",
-                        borderLeft: active ? "2px solid #007acc" : "2px solid transparent",
-                      }}
+                      onClick={() => setActiveChannel(active ? null : { id: s.id, name: title, kind: "session" })}
+                      className={`${ROW_BASE} ${active ? ROW_ACTIVE : ROW_IDLE}`}
                     >
-                      <Lock className="h-2.75 w-2.75 shrink-0" style={{ color: active ? "#4fc3f7" : "#6e6e6e" }} />
-                      <span className="min-w-0 flex-1 truncate text-[12px]" style={{ color: active ? "#d4d4d4" : "#858585" }}>
-                        {title}
-                      </span>
+                      <Lock className={`h-3 w-3 shrink-0 ${active ? "text-primary" : "text-text-muted group-hover:text-text-secondary"}`} />
+                      <span className="min-w-0 flex-1 truncate">{title}</span>
                     </button>
                   );
                 })
@@ -630,6 +728,9 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
               featureId={featureId}
               sessionId={activeChannel.id || null}
               name={activeChannel.name}
+              isChannel={activeChannel.kind === "channel"}
+              newChatSignal={newChatSignal}
+              onNewChat={startNewSession}
               onClose={() => setActiveChannel(null)}
               onArtifactSaved={handleArtifactSaved}
               onStageTransition={handleStageTransition}
@@ -680,6 +781,17 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
           </div>
         </div>
       )}
+
+      <CreateChannelModal
+        open={createChannelOpen}
+        onClose={() => setCreateChannelOpen(false)}
+        onCreate={async (name, description) => {
+          const channelId = await createChannel(workspaceId, featureId, name, description);
+          setCreateChannelOpen(false);
+          await fetchChannels();
+          setActiveChannel({ id: channelId, name, kind: "channel" });
+        }}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
-import type { HermesMessage, ToolCallEntry } from "@/components/agent-chat/types";
+import type { HermesMessage, MessageAuthor, ThreadMember, ToolCallEntry } from "@/components/agent-chat/types";
 import { getBffBaseUrl } from "@/constants/axios";
 
 export type ChatSessionSummary = {
@@ -58,6 +58,12 @@ type RawSessionMessage = {
   tool_name?: string;
   tool_call_id?: string;
   tool_calls?: unknown;
+  author?: {
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+    roleLabel?: string | null;
+  } | null;
 };
 
 /**
@@ -65,7 +71,8 @@ type RawSessionMessage = {
  *
  * The gateway returns user/assistant/tool rows; we render user and assistant
  * messages and attach any tool calls recorded on assistant turns (already
- * completed, so their status is "done").
+ * completed, so their status is "done"). The `author` field is populated when
+ * the server returns it (post-T1 migration); legacy rows return `author: null`.
  */
 export async function getSessionMessages(_workspaceId: string, _featureId: string, sessionId: string): Promise<HermesMessage[]> {
   const res = await fetch(`${getApiBase()}/api/v1/sessions/${sessionId}/messages`, { credentials: "include" });
@@ -79,6 +86,14 @@ export async function getSessionMessages(_workspaceId: string, _featureId: strin
         role: m.role as HermesMessage["role"],
         content: m.content ?? "",
       };
+      if (m.author) {
+        message.author = {
+          id: m.author.id,
+          name: m.author.name,
+          avatarUrl: m.author.avatarUrl ?? null,
+          roleLabel: m.author.roleLabel ?? null,
+        };
+      }
       const toolCalls = parseToolCalls(m.tool_calls);
       if (toolCalls.length > 0) message.toolCalls = toolCalls;
       return message;
@@ -242,4 +257,334 @@ function parseHermesEvents(eventType: string | undefined, raw: Record<string, un
   }
 
   return events;
+}
+
+// ─── Persistent subscription transport (T6) ────────────────────────────────
+
+export type ThreadEvent =
+  | { type: "message.created"; message: HermesMessage }
+  | { type: "delta"; messageId: string; text: string }
+  | { type: "tool_start"; messageId: string; callId: string; name: string }
+  | { type: "tool_result"; messageId: string; callId: string; name: string; output: unknown }
+  | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" }
+  | { type: "agent.working"; sessionId: string }
+  | { type: "typing"; userId: string }
+  | { type: "member.changed" }
+  | { type: "channel.deleted" }
+  | { type: "error"; message: string }
+  | { type: "done" };
+
+type RawThreadMessage = {
+  id: string;
+  role: string;
+  content: string;
+  created_at?: number;
+  author_id?: string | null;
+  tool_calls?: unknown;
+  author?: {
+    id: string;
+    name: string;
+    avatarUrl?: string | null;
+    roleLabel?: string | null;
+  } | null;
+};
+
+function rawMessageToHermesMessage(m: RawThreadMessage): HermesMessage {
+  const author: MessageAuthor | undefined = m.author
+    ? {
+        id: m.author.id,
+        name: m.author.name,
+        avatarUrl: m.author.avatarUrl ?? null,
+        roleLabel: m.author.roleLabel ?? null,
+      }
+    : undefined;
+  const msg: HermesMessage = {
+    id: m.id,
+    role: m.role as HermesMessage["role"],
+    content: m.content ?? "",
+    author,
+    authorId: m.author_id ?? author?.id,
+    createdAt: m.created_at,
+  };
+  const toolCalls = parseToolCalls(m.tool_calls);
+  if (toolCalls.length > 0) msg.toolCalls = toolCalls;
+  return msg;
+}
+
+/**
+ * Fetch the history for a thread, optionally replaying from a cursor.
+ * Used on (re)connect with `?since=` to avoid missing events that arrived
+ * while the subscription was down.
+ */
+export async function getThreadMessages(threadId: string, since?: string): Promise<HermesMessage[]> {
+  const qs = since ? `?since=${encodeURIComponent(since)}` : "";
+  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/messages${qs}`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`getThreadMessages failed (${res.status})`);
+  const body = (await res.json()) as { messages: RawThreadMessage[] };
+  return (body.messages ?? []).filter((m) => m.role === "user" || m.role === "assistant").map(rawMessageToHermesMessage);
+}
+
+/**
+ * Send a human message to the thread. Returns quickly (202); the actual
+ * message and any triggered agent response arrive on the subscription stream.
+ */
+export async function sendThreadMessage(threadId: string, content: string): Promise<{ message_id: string; agent_triggered: boolean }> {
+  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/messages`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`sendThreadMessage failed (${res.status}): ${text}`);
+  }
+  // `agent_triggered` tells us whether an agent turn will run (explicit @agent
+  // mention, or a bare message in a feature thread). In a channel a bare message
+  // never triggers the agent, so the composer must not enter a blocking state.
+  const body = (await res.json()) as { message_id: string; agent_triggered?: boolean };
+  return { message_id: body.message_id, agent_triggered: body.agent_triggered ?? false };
+}
+
+/**
+ * Open a persistent SSE subscription to `GET .../threads/{id}/stream`.
+ * All thread events — human messages, agent deltas, tool progress, activity
+ * indicators — are delivered here to every viewer.
+ *
+ * Pass `since` on reconnect to replay missed events via `?since=<cursor>`.
+ * Returns an AbortController; call `.abort()` to close the subscription.
+ */
+export function subscribeToThread(threadId: string, since: string | null, onEvent: (event: ThreadEvent) => void, onDone: () => void, onError: (err: Error) => void): AbortController {
+  const ctrl = new AbortController();
+  const sinceQs = since ? `?since=${encodeURIComponent(since)}` : "";
+  let errorReported = false;
+
+  fetchEventSource(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/stream${sinceQs}`, {
+    method: "GET",
+    credentials: "include",
+    signal: ctrl.signal,
+    openWhenHidden: true,
+    onmessage(ev) {
+      if (ev.data === "[DONE]") {
+        onEvent({ type: "done" });
+        onDone();
+        return;
+      }
+      try {
+        const raw = JSON.parse(ev.data) as Record<string, unknown>;
+        for (const event of parseThreadEvents(ev.event, raw)) {
+          onEvent(event);
+        }
+      } catch {
+        // skip unparseable frames
+      }
+    },
+    onerror(err) {
+      errorReported = true;
+      onError(err instanceof Error ? err : new Error(String(err)));
+      throw err; // prevent fetchEventSource auto-retry
+    },
+    onclose() {
+      onDone();
+    },
+  }).catch((err) => {
+    if (!errorReported && (err as Error)?.name !== "AbortError") {
+      onError(err instanceof Error ? err : new Error(String(err)));
+    }
+  });
+
+  return ctrl;
+}
+
+function parseThreadEvents(eventType: string | undefined, raw: Record<string, unknown>): ThreadEvent[] {
+  // New thread-level event types from hermes-agent T3
+  if (eventType === "message.created") {
+    const msg = raw.message as RawThreadMessage | undefined;
+    if (!msg) return [];
+    return [{ type: "message.created", message: rawMessageToHermesMessage(msg) }];
+  }
+
+  if (eventType === "agent.working") {
+    return [{ type: "agent.working", sessionId: String(raw.session_id ?? "") }];
+  }
+
+  // The thread agent stream emits its own frames (NOT OpenAI chat chunks):
+  //   agent.delta → { content }      agent.done → { finish_reason }
+  // so they must be parsed here rather than falling through to parseHermesEvents.
+  if (eventType === "agent.delta") {
+    const content = typeof raw.content === "string" ? raw.content : "";
+    return content ? [{ type: "delta", messageId: String(raw.message_id ?? ""), text: content }] : [];
+  }
+
+  if (eventType === "agent.done") {
+    return [{ type: "done" }];
+  }
+
+  if (eventType === "agent.error") {
+    return [{ type: "error", message: String(raw.error ?? raw.message ?? "Agent error") }];
+  }
+
+  if (eventType === "typing") {
+    return [{ type: "typing", userId: String(raw.user_id ?? "") }];
+  }
+
+  if (eventType === "member.changed") {
+    return [{ type: "member.changed" }];
+  }
+
+  if (eventType === "channel.deleted") {
+    return [{ type: "channel.deleted" }];
+  }
+
+  // Reuse existing hermes event parsing for agent output frames
+  const legacyEvents = parseHermesEvents(eventType, raw);
+  return legacyEvents.flatMap((e): ThreadEvent[] => {
+    if (e.type === "delta") {
+      return [{ type: "delta", messageId: String(raw.message_id ?? ""), text: e.text }];
+    }
+    if (e.type === "tool_start") {
+      return [{ type: "tool_start", messageId: String(raw.message_id ?? ""), callId: e.callId, name: e.name }];
+    }
+    if (e.type === "tool_result") {
+      return [{ type: "tool_result", messageId: String(raw.message_id ?? ""), callId: e.callId, name: e.name, output: e.output }];
+    }
+    if (e.type === "artifact_saved") {
+      return [{ type: "artifact_saved", artifact: e.artifact }];
+    }
+    if (e.type === "error") {
+      return [{ type: "error", message: e.message }];
+    }
+    // "usage" and any unknown legacy event types are not applicable in
+    // the thread event model — skip silently rather than emitting a spurious done.
+    return [];
+  });
+}
+
+// ─── Thread members + unread mentions (T7) ────────────────────────────────
+
+type RawThreadMember = {
+  id: string;
+  name: string;
+  handle?: string | null;
+  avatar_url?: string | null;
+  avatarUrl?: string | null;
+  role_label?: string | null;
+  roleLabel?: string | null;
+};
+
+/**
+ * Fetch the member list for a thread.  The `@agent` sentinel is always
+ * prepended so it appears first in the typeahead.
+ */
+export async function getThreadMembers(threadId: string): Promise<ThreadMember[]> {
+  const res = await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/members`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error(`getThreadMembers failed (${res.status})`);
+  const body = (await res.json()) as { members: RawThreadMember[] };
+  const humans: ThreadMember[] = (body.members ?? []).map((m) => ({
+    id: m.id,
+    name: m.name,
+    handle: m.handle ?? m.name.toLowerCase().replace(/\s+/g, ""),
+    avatarUrl: m.avatar_url ?? m.avatarUrl ?? null,
+    roleLabel: m.role_label ?? m.roleLabel ?? null,
+    kind: "user" as const,
+  }));
+  return [{ id: "agent", name: "Hermes Agent", handle: "agent", kind: "agent" as const }, ...humans];
+}
+
+export type UnreadMentionCounts = {
+  /** Workspace-level aggregate of unread mentions. */
+  total: number;
+  /** Per-thread/channel unread counts keyed by session id. */
+  perSession: Record<string, number>;
+};
+
+/** Fetch per-thread and aggregate unread mention counts for the given workspace. */
+export async function getUnreadMentions(workspaceId: string): Promise<UnreadMentionCounts> {
+  const qs = new URLSearchParams({ workspace_id: workspaceId }).toString();
+  const res = await fetch(`${getApiBase()}/api/v1/unread?${qs}`, { credentials: "include" });
+  if (!res.ok) throw new Error(`getUnreadMentions failed (${res.status})`);
+  return (await res.json()) as UnreadMentionCounts;
+}
+
+/**
+ * Mark all unread mentions in a thread as read (called when the thread is opened).
+ * Ignores 404/non-OK gracefully — the server may not have the endpoint yet.
+ */
+export async function markThreadRead(threadId: string): Promise<void> {
+  try {
+    await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/read`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch {
+    // Best-effort — don't break the UX if this fails
+  }
+}
+
+// ─── Channels API (T4/T8) ─────────────────────────────────────────────────
+
+export type ChannelSummary = {
+  id: string;
+  name: string;
+  description?: string | null;
+  /** Channels are feature-scoped: the feature this channel belongs to. */
+  feature_id?: string;
+  creator_user_id?: string;
+  started_at?: number;
+  last_active_at?: number;
+};
+
+/** List channels for a workspace, optionally scoped to a feature (channels are feature-scoped). */
+export async function listChannels(workspaceId: string, featureId?: string): Promise<ChannelSummary[]> {
+  const params: Record<string, string> = { workspace_id: workspaceId };
+  if (featureId !== undefined) params.feature_id = featureId;
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${getApiBase()}/api/v1/channels?${qs}`, { credentials: "include" });
+  if (!res.ok) throw new Error(`listChannels failed (${res.status})`);
+  const body = (await res.json()) as { channels: ChannelSummary[] };
+  return body.channels ?? [];
+}
+
+/** Create a feature-scoped channel (open to any workspace member). Returns the new channel id. */
+export async function createChannel(workspaceId: string, featureId: string, name: string, description?: string): Promise<string> {
+  const res = await fetch(`${getApiBase()}/api/v1/channels`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspace_id: workspaceId, feature_id: featureId, name, ...(description ? { description } : {}) }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`createChannel failed (${res.status}): ${text}`);
+  }
+  const body = (await res.json()) as { channel_id: string };
+  return body.channel_id;
+}
+
+/** Hard-delete a channel. Admin-only on the backend; returns 403 for non-admins. */
+export async function deleteChannel(channelId: string): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/v1/channels/${encodeURIComponent(channelId)}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`deleteChannel failed (${res.status}): ${text}`);
+  }
+}
+
+/** Join a channel (adds calling user as a member). */
+export async function joinChannel(channelId: string): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/v1/channels/${encodeURIComponent(channelId)}/join`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`joinChannel failed (${res.status}): ${text}`);
+  }
 }

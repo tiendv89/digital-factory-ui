@@ -8,6 +8,8 @@ type SessionHistoryListProps = {
   sessions: ChatSessionSummary[];
   loading: boolean;
   onSelect: (id: string) => void;
+  /** Per-session unread mention counts, keyed by session id. */
+  unreadCounts?: Record<string, number>;
 };
 
 function formatRelativeDate(ts: number): string {
@@ -33,7 +35,7 @@ function SkeletonRow() {
   );
 }
 
-export function SessionHistoryList({ sessions, loading, onSelect }: SessionHistoryListProps) {
+export function SessionHistoryList({ sessions, loading, onSelect, unreadCounts = {} }: SessionHistoryListProps) {
   if (loading) {
     return (
       <div data-session-history-list className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2">
@@ -60,29 +62,41 @@ export function SessionHistoryList({ sessions, loading, onSelect }: SessionHisto
 
   return (
     <div data-session-history-list className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2">
-      {sessions.map((s) => (
-        <button
-          key={s.id}
-          data-session-row={s.id}
-          type="button"
-          onClick={() => onSelect(s.id)}
-          className="group flex w-full items-start gap-3 rounded-lg border border-border/60 bg-surface-secondary/40 px-3 py-2.5 text-left transition-all duration-150 hover:border-primary/40 hover:bg-surface-secondary hover:shadow-sm"
-        >
-          <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-muted transition-colors group-hover:border-primary/40 group-hover:text-primary">
-            <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
-              <span className="truncate text-[13px] font-semibold text-text-primary">{s.title || "Untitled session"}</span>
-              <span className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-text-muted">
-                <Clock className="h-2.5 w-2.5" aria-hidden="true" />
-                {formatRelativeDate(s.last_active_at)}
-              </span>
+      {sessions.map((s) => {
+        const unread = unreadCounts[s.id] ?? 0;
+        return (
+          <button
+            key={s.id}
+            data-session-row={s.id}
+            type="button"
+            onClick={() => onSelect(s.id)}
+            className="group flex w-full items-start gap-3 rounded-lg border border-border/60 bg-surface-secondary/40 px-3 py-2.5 text-left transition-all duration-150 hover:border-primary/40 hover:bg-surface-secondary hover:shadow-sm"
+          >
+            <div className="relative mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-muted transition-colors group-hover:border-primary/40 group-hover:text-primary">
+              <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />
+              {unread > 0 && (
+                <span
+                  data-unread-badge
+                  aria-label={`${unread} unread mention${unread === 1 ? "" : "s"}`}
+                  className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-white"
+                >
+                  {unread > 99 ? "99+" : unread}
+                </span>
+              )}
             </div>
-            {s.last_message_excerpt && <span className="mt-0.5 line-clamp-2 text-xs leading-snug text-text-secondary">{s.last_message_excerpt}</span>}
-          </div>
-        </button>
-      ))}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate text-[13px] font-semibold text-text-primary">{s.title || "Untitled session"}</span>
+                <span className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-text-muted">
+                  <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                  {formatRelativeDate(s.last_active_at)}
+                </span>
+              </div>
+              {s.last_message_excerpt && <span className="mt-0.5 line-clamp-2 text-xs leading-snug text-text-secondary">{s.last_message_excerpt}</span>}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }

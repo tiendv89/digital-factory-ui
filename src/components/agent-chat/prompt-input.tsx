@@ -2,11 +2,12 @@
 
 import { ListBox, Select } from "@heroui/react";
 import { Check, ChevronDown, Send, Zap } from "lucide-react";
-import { type ChangeEvent, type FormEvent, type KeyboardEvent, useEffect, useRef } from "react";
+import { type ChangeEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import type { ModelOption } from "@/services/hermes-agent/chat";
 
-import type { ChatStatus } from "./types";
+import { detectMention, insertMention, MentionPicker } from "./mention-picker";
+import type { ChatStatus, ThreadMember } from "./types";
 
 type PromptInputTextareaProps = {
   value: string;
@@ -16,9 +17,11 @@ type PromptInputTextareaProps = {
   placeholder?: string;
   /** Previously sent prompts, newest first, for Up/Down recall. */
   history?: string[];
+  /** Called when the textarea caret position changes so the parent can detect @-mention state. */
+  onCaretChange?: (pos: number) => void;
 };
 
-function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder = "Message the agent…", history = [] }: PromptInputTextareaProps) {
+function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder = "Message the agent…", history = [], onCaretChange }: PromptInputTextareaProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   // -1 means "not navigating history"; otherwise an index into `history`.
   const historyIndexRef = useRef(-1);
@@ -52,6 +55,9 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
     // Manual edits exit history navigation.
     historyIndexRef.current = -1;
     onChange(e.target.value);
+    // onCaretChange is not called here — handleValueChange already runs detectMention on the new
+    // value. Calling onCaretChange would pass a stale `value` closure, overwriting the correct
+    // mention state with null on the first `@` keystroke.
     resize();
   }
 
@@ -105,6 +111,7 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
       value={value}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
+      onClick={() => onCaretChange?.(ref.current?.selectionStart ?? value.length)}
       disabled={disabled}
       placeholder={placeholder}
       rows={1}
@@ -276,22 +283,75 @@ type PromptInputProps = {
   models: ModelOption[];
   selectedModel: string;
   onModelChange: (id: string) => void;
+  /** Thread members for the @mention typeahead. Pass [] or omit to disable. */
+  members?: ThreadMember[];
+  /** Channel mode: keep the composer enabled even while the agent streams. */
+  nonBlocking?: boolean;
 };
 
-export function PromptInput({ value, onChange, onSubmit, status, history, models, selectedModel, onModelChange }: PromptInputProps) {
-  const isDisabled = status === "connecting" || status === "streaming";
+export function PromptInput({ value, onChange, onSubmit, status, history, models, selectedModel, onModelChange, members = [], nonBlocking = false }: PromptInputProps) {
+  // In channel mode the composer stays usable while the agent streams.
+  const isDisabled = !nonBlocking && (status === "connecting" || status === "streaming");
+  const [mentionState, setMentionState] = useState<{ query: string; atIndex: number } | null>(null);
+
+  const handleCaretChange = useCallback(
+    (pos: number) => {
+      const detected = detectMention(value, pos);
+      setMentionState(detected);
+    },
+    [value],
+  );
+
+  const handleValueChange = useCallback(
+    (newValue: string) => {
+      onChange(newValue);
+      // Re-check after value change (caret is at end of inserted text on a normal keystroke)
+      // We derive the caret position from the new value length for the "just typed" case.
+      const detected = detectMention(newValue, newValue.length);
+      setMentionState(detected);
+    },
+    [onChange],
+  );
+
+  const handleMentionSelect = useCallback(
+    (member: ThreadMember) => {
+      if (!mentionState) return;
+      const newValue = insertMention(value, mentionState.atIndex, mentionState.query, member.handle);
+      onChange(newValue);
+      setMentionState(null);
+    },
+    [value, mentionState, onChange],
+  );
+
+  const handleMentionClose = useCallback(() => {
+    setMentionState(null);
+  }, []);
 
   function handleFormSubmit(e: FormEvent) {
     e.preventDefault();
     if (!isDisabled && value.trim()) {
+      setMentionState(null);
       onSubmit();
     }
   }
 
+  const mentionOpen = mentionState !== null && members.length > 0;
+
   return (
     <form data-prompt-input onSubmit={handleFormSubmit} className="shrink-0 bg-surface p-3">
+      {mentionOpen && <MentionPicker query={mentionState.query} members={members} onSelect={handleMentionSelect} onClose={handleMentionClose} />}
       <div className="flex flex-col overflow-hidden rounded-md border border-primary bg-bg">
-        <PromptInputTextarea value={value} onChange={onChange} onSubmit={onSubmit} disabled={isDisabled} history={history} />
+        <PromptInputTextarea
+          value={value}
+          onChange={handleValueChange}
+          onSubmit={() => {
+            setMentionState(null);
+            onSubmit();
+          }}
+          disabled={isDisabled}
+          history={history}
+          onCaretChange={handleCaretChange}
+        />
         <PromptInputToolbar>
           <ModelPicker models={models} selectedModel={selectedModel} onModelChange={onModelChange} disabled={isDisabled} />
           <PromptInputSubmit disabled={isDisabled || !value.trim()} onClick={onSubmit} />
