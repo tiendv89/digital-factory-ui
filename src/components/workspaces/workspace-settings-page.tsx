@@ -12,8 +12,6 @@ import { useDeleteWorkspace } from "@/hooks/workspaces/use-delete-workspace";
 import { useOrgWorkspaceSelection } from "@/hooks/workspaces/use-org-workspace-selection";
 import type { OrgMember } from "@/services/user-service";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 type TabId = "general" | "members" | "billing" | "danger-zone";
 
 const WS_TABS: { id: TabId; label: string; icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }> }[] = [
@@ -22,8 +20,6 @@ const WS_TABS: { id: TabId; label: string; icon: React.ComponentType<{ className
   { id: "billing", label: "Billing", icon: CreditCard },
   { id: "danger-zone", label: "Danger zone", icon: AlertTriangle },
 ];
-
-// ─── Role badge ───────────────────────────────────────────────────────────────
 
 const ROLE_STYLE: Record<string, { label: string; className: string }> = {
   admin: { label: "Admin", className: "bg-blue-500/20 text-blue-400" },
@@ -35,8 +31,6 @@ function RoleBadge({ role }: { role: string }) {
   const def = ROLE_STYLE[role] ?? ROLE_STYLE.member;
   return <span className={`inline-flex shrink-0 items-center rounded-md px-2.5 py-0.5 text-xs font-medium ${def.className}`}>{def.label}</span>;
 }
-
-// ─── Icon color localStorage helper ──────────────────────────────────────────
 
 function useLocalIconColor(workspaceId: string, fallback: string) {
   const key = `ws-icon-color:${workspaceId}`;
@@ -50,8 +44,6 @@ function useLocalIconColor(workspaceId: string, fallback: string) {
   };
   return [color, pick] as const;
 }
-
-// ─── General tab ─────────────────────────────────────────────────────────────
 
 function GeneralTab({ workspaceId, name, slug }: { workspaceId: string; name: string; slug: string }) {
   const fallback = deriveIconColor(workspaceId);
@@ -127,8 +119,6 @@ function GeneralTab({ workspaceId, name, slug }: { workspaceId: string; name: st
     </div>
   );
 }
-
-// ─── Members tab ─────────────────────────────────────────────────────────────
 
 function MemberMenu({ member, orgId }: { member: OrgMember; orgId: string }) {
   const removeMember = useRemoveOrgMember(orgId);
@@ -278,8 +268,6 @@ function MembersTab({ orgId }: { orgId: string }) {
   );
 }
 
-// ─── Danger zone tab ─────────────────────────────────────────────────────────
-
 function DangerZoneTab({ workspaceId, workspaceName, slug, onDeleted }: { workspaceId: string; workspaceName: string; slug: string; onDeleted?: () => void }) {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -361,8 +349,6 @@ function DangerZoneTab({ workspaceId, workspaceName, slug, onDeleted }: { worksp
   );
 }
 
-// ─── WorkspaceSettingsPage ────────────────────────────────────────────────────
-
 function WorkspaceSettingsPage({ workspaceId: propWorkspaceId, orgId: propOrgId, onWorkspaceDeleted }: { workspaceId?: string; orgId?: string; onWorkspaceDeleted?: () => void } = {}) {
   const [activeTab, setActiveTab] = useState<TabId>("general");
   const { selectedWorkspaceId, summaries } = useWorkspaceContext();
@@ -430,8 +416,6 @@ function WorkspaceSettingsPage({ workspaceId: propWorkspaceId, orgId: propOrgId,
     </div>
   );
 }
-
-// ─── WorkspaceSettingsModal ───────────────────────────────────────────────────
 
 export function WorkspaceSettingsModal({ workspaceId, orgId, onClose }: { workspaceId: string; orgId: string; onClose: () => void }) {
   return (

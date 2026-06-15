@@ -1,9 +1,6 @@
 import type { ParsedFeature, ParsedTask } from "@/services/yaml-parser";
 import { FEATURE_MODE_STATUSES } from "@/utils/board/status";
 
-// Status + lifecycle metadata — exact values from the Figma design brief
-// (~/Downloads/design-brief/src/app/components/data.ts).
-
 type BriefStatus = "todo" | "ready" | "in_progress" | "in_review" | "reviewing" | "review_passed" | "change_requested" | "review_incomplete" | "blocked" | "done" | "cancelled";
 
 const STATUS_META: Record<BriefStatus, { label: string; color: string; bg: string; glyph: string }> = {
@@ -39,14 +36,12 @@ export function lifecycleMeta(status: string) {
   return FEATURE_LIFECYCLE_META[status] ?? FEATURE_LIFECYCLE_META.in_design;
 }
 
-// Feature-mode kanban columns — feature lifecycle statuses, in canonical order.
 export const FEATURE_COLUMNS: { id: string; label: string; color: string }[] = FEATURE_MODE_STATUSES.map((id) => ({
   id,
   label: lifecycleMeta(id).label.toUpperCase(),
   color: lifecycleMeta(id).color,
 }));
 
-// Feature accent palette (brief uses per-feature colors). Derived deterministically.
 const FEATURE_COLORS = ["oklch(0.62 0.19 280)", "oklch(0.70 0.16 30)", "oklch(0.74 0.14 90)", "oklch(0.72 0.13 230)", "oklch(0.70 0.13 150)", "oklch(0.74 0.15 250)"];
 
 function featureColor(seed: string): string {
@@ -56,8 +51,6 @@ function featureColor(seed: string): string {
   }
   return FEATURE_COLORS[hash % FEATURE_COLORS.length];
 }
-
-// ── Adapter: app data → brief board shape ───────────────────────────────────
 
 export type BoardAssignee = {
   name: string;

@@ -15,7 +15,7 @@ import {
   streamChatTurn,
   subscribeToThread,
 } from "@/services/hermes-agent/chat";
-import { fetchMe, getMeData, listWorkspaceMembers } from "@/services/user-service";
+import { fetchMe, fetchOrgMembers, getMeData, listWorkspaceMembers } from "@/services/user-service";
 
 import { type ChannelAuthor, ChannelMessageList } from "./channel-message-list";
 import { Conversation } from "./conversation";
@@ -90,28 +90,17 @@ export function AgentChatPanel({
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
   const [unreadCounts, setUnreadCounts] = useState<UnreadMentionCounts>({ total: 0, perSession: {} });
-  // user_id → display identity, for the channel (Discord-style) author headers.
-  // name may be null when the workspace directory has no display name for a user.
-  const [workspaceMembers, setWorkspaceMembers] = useState<Record<string, { name: string | null; handle: string; avatarUrl: string | null }>>({});
+  const [workspaceMembers, setWorkspaceMembers] = useState<Record<string, { name: string | null; handle: string; email: string | null; role: string | null; avatarUrl: string | null }>>({});
   const meRef = useRef<{ id: string; name: string; avatarUrl: string | null } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const msgIdCounter = useRef(0);
 
-  // Streaming deltas arrive token-by-token; applying each one immediately would
-  // re-render the whole thread and re-parse the growing markdown on every token,
-  // which visibly stutters. Instead we buffer incoming text and flush it once
-  // per animation frame, so renders are capped at the display refresh rate.
   const deltaBufferRef = useRef<Map<string, string>>(new Map());
   const flushRafRef = useRef<number | null>(null);
 
-  // Track the last seen message id for ?since= replay on reconnect.
   const lastMessageIdRef = useRef<string | null>(null);
-  // Track the active subscription session id (for cleanup on session change).
   const subscriptionSessionRef = useRef<string | null>(null);
-  // Track the streaming assistant message id for delta accumulation.
   const streamingAssistantIdRef = useRef<string | null>(null);
-  // Stable ref to openSubscription so the onDone reconnect callback can call
-  // the latest version without a stale closure.
   const openSubscriptionRef = useRef<(sessionId: string, since?: string) => void>(() => {});
 
   const nextId = () => {
@@ -131,7 +120,6 @@ export function AgentChatPanel({
       const list = await listChatSessions(workspaceId, featureId);
       setSessions(list);
     } catch {
-      // graceful empty state on 404 or other errors
       setSessions([]);
     } finally {
       setSessionsLoading(false);
@@ -143,9 +131,7 @@ export function AgentChatPanel({
     try {
       const data = await getUnreadMentions(workspaceId);
       setUnreadCounts(data);
-    } catch {
-      // Silently ignore — server may not have the endpoint yet
-    }
+    } catch {}
   }, [workspaceId]);
 
   useEffect(() => {
@@ -158,26 +144,44 @@ export function AgentChatPanel({
     return () => clearInterval(id);
   }, [refreshUnreadCounts]);
 
-  // Channel (Discord-style) view needs display names: resolve workspace members
-  // and the caller's own identity so author_id → name/avatar.
   useEffect(() => {
     if (!nonBlocking || !workspaceId) return;
     let cancelled = false;
-    void listWorkspaceMembers(workspaceId)
-      .then((list) => {
-        if (cancelled) return;
-        const map: Record<string, { name: string | null; handle: string; avatarUrl: string | null }> = {};
-        for (const m of list) map[m.user_id] = { name: displayNameOf(m.display_name, m.email), handle: deriveHandle(m.display_name, m.email), avatarUrl: m.avatar_url };
-        setWorkspaceMembers(map);
-      })
-      .catch(() => {});
-    void fetchMe()
-      .then((res) => {
-        if (cancelled) return;
-        const me = getMeData(res).user;
-        meRef.current = { id: me.id, name: displayNameOf(me.display_name, me.email) ?? "You", avatarUrl: me.avatar_url };
-      })
-      .catch(() => {});
+    void (async () => {
+      const avatars: Record<string, string | null> = {};
+      try {
+        for (const m of await listWorkspaceMembers(workspaceId)) avatars[m.user_id] = m.avatar_url;
+      } catch {
+        /* ignore */
+      }
+
+      let orgId: string | undefined;
+      try {
+        const me = getMeData(await fetchMe());
+        meRef.current = { id: me.user.id, name: displayNameOf(me.user.display_name, me.user.email) ?? "You", avatarUrl: me.user.avatar_url };
+        orgId = Object.keys(me.org_workspace_ids ?? {}).find((oid) => (me.org_workspace_ids?.[oid] ?? []).includes(workspaceId));
+      } catch {
+        /* ignore */
+      }
+
+      const map: Record<string, { name: string | null; handle: string; email: string | null; role: string | null; avatarUrl: string | null }> = {};
+      if (orgId) {
+        try {
+          for (const m of await fetchOrgMembers(orgId)) {
+            map[m.user_id] = {
+              name: displayNameOf(m.display_name, m.email),
+              handle: deriveHandle(m.display_name, m.email),
+              email: m.email ?? null,
+              role: m.role ?? null,
+              avatarUrl: avatars[m.user_id] ?? null,
+            };
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      if (!cancelled) setWorkspaceMembers(map);
+    })();
     return () => {
       cancelled = true;
     };
@@ -185,22 +189,22 @@ export function AgentChatPanel({
 
   const resolveChannelAuthor = useCallback(
     (msg: HermesMessage): ChannelAuthor => {
-      if (msg.role === "assistant") return { name: "Agent", isAgent: true };
+      if (msg.role === "assistant") return { id: "agent", name: "Agent", handle: "agent", isAgent: true };
       const id = msg.authorId ?? msg.author?.id;
-      // Prefer the server-resolved author (hermes resolves names via user-service).
-      if (msg.author?.name) return { name: msg.author.name, avatarUrl: msg.author.avatarUrl, isAgent: false };
-      // Then the caller's own identity (/me), then the workspace directory.
-      if (id && meRef.current && id === meRef.current.id) {
-        return { name: meRef.current.name, avatarUrl: meRef.current.avatarUrl, isAgent: false };
-      }
       const member = id ? workspaceMembers[id] : undefined;
-      if (member?.name) return { name: member.name, avatarUrl: member.avatarUrl, isAgent: false };
-      return { name: "Member", avatarUrl: msg.author?.avatarUrl ?? member?.avatarUrl, isAgent: false };
+      const handle = member?.handle ?? null;
+      const email = member?.email ?? null;
+      const roleLabel = member?.role ?? msg.author?.roleLabel ?? null;
+      if (msg.author?.name) return { id, name: msg.author.name, handle, email, avatarUrl: msg.author.avatarUrl, roleLabel, isAgent: false };
+      if (id && meRef.current && id === meRef.current.id) {
+        return { id, name: meRef.current.name, handle, email, avatarUrl: meRef.current.avatarUrl, roleLabel, isAgent: false };
+      }
+      if (member?.name) return { id, name: member.name, handle, email, avatarUrl: member.avatarUrl, roleLabel, isAgent: false };
+      return { id, name: "Member", handle, email, avatarUrl: msg.author?.avatarUrl ?? member?.avatarUrl, roleLabel, isAgent: false };
     },
     [workspaceMembers],
   );
 
-  // Load the model catalog once and default the selection to the server default.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -209,9 +213,7 @@ export function AgentChatPanel({
         if (cancelled) return;
         setModels(list);
         setSelectedModel((cur) => cur || def || list[0]?.id || "");
-      } catch {
-        // graceful: leave the picker empty; the server falls back to its default.
-      }
+      } catch {}
     })();
     return () => {
       cancelled = true;
@@ -224,8 +226,6 @@ export function AgentChatPanel({
     setInputValue("");
     setPanelMode({ mode: "active", sessionId, sessionTitle });
   }, []);
-
-  // ─── Persistent subscription transport ──────────────────────────────────────
 
   const flushDeltasForMessage = useCallback((messageId: string) => {
     flushRafRef.current = null;
@@ -254,9 +254,6 @@ export function AgentChatPanel({
     [flushDeltasForMessage],
   );
 
-  // The thread stream delivers agent output as agent.working/agent.delta frames
-  // with no assistant `message.created`, so we materialize a placeholder
-  // assistant message on first sign of agent activity and stream deltas into it.
   const ensureStreamingAssistant = useCallback(() => {
     if (streamingAssistantIdRef.current) return streamingAssistantIdRef.current;
     msgIdCounter.current += 1;
@@ -272,16 +269,13 @@ export function AgentChatPanel({
         const msg = event.message;
         lastMessageIdRef.current = msg.id;
         setMessages((prev) => {
-          // Avoid duplicating a message optimistically added by handleSubmit
           if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
         });
-        // If this is an assistant message arriving via stream, track it for deltas
         if (msg.role === "assistant") {
           streamingAssistantIdRef.current = msg.id;
           setStatus("streaming");
         }
-        // Refresh unread counts in the background since a new message arrived
         void refreshUnreadCounts();
       } else if (event.type === "delta") {
         const targetId = event.messageId || streamingAssistantIdRef.current || ensureStreamingAssistant();
@@ -339,9 +333,7 @@ export function AgentChatPanel({
         since ?? null,
         handleThreadEvent,
         () => {
-          // Stream closed cleanly — mark idle if no pending deltas
           setStatus((prev) => (prev === "streaming" ? "idle" : prev));
-          // Reconnect with replay if the close wasn't intentional
           if (subscriptionSessionRef.current && !ctrl.signal.aborted) {
             const cursor = lastMessageIdRef.current ?? undefined;
             openSubscriptionRef.current(subscriptionSessionRef.current, cursor);
@@ -357,13 +349,9 @@ export function AgentChatPanel({
     },
     [handleThreadEvent],
   );
-  // Keep the ref in sync with the latest openSubscription so the onDone reconnect
-  // callback can always call the current version without a stale closure.
   useEffect(() => {
     openSubscriptionRef.current = openSubscription;
   }, [openSubscription]);
-
-  // ─── Session select / history load ──────────────────────────────────────────
 
   const handleSessionSelect = useCallback(
     async (id: string) => {
@@ -376,7 +364,6 @@ export function AgentChatPanel({
       setPanelMode({ mode: "active", sessionId: id, sessionTitle: session?.title ?? "" });
       setStatus("connecting");
 
-      // Mark thread as read; clear its local unread count immediately.
       void markThreadRead(id).then(() => {
         setUnreadCounts((prev) => ({
           total: Math.max(0, prev.total - (prev.perSession[id] ?? 0)),
@@ -392,7 +379,6 @@ export function AgentChatPanel({
           history = await getSessionMessages(workspaceId, featureId, id);
         }
         setMessages(history);
-        // Track last message id for reconnect replay
         const last = history[history.length - 1];
         if (last) lastMessageIdRef.current = last.id;
         setStatus("idle");
@@ -417,7 +403,6 @@ export function AgentChatPanel({
     void handleSessionSelect(requestSessionId);
   }, [requestSessionId, handleSessionSelect]);
 
-  // Abort the subscription when the component unmounts or the session changes.
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
@@ -461,11 +446,8 @@ export function AgentChatPanel({
     setPickerOpen(false);
   }, []);
 
-  // ─── Submit ──────────────────────────────────────────────────────────────────
-
   const handleSubmit = useCallback(async () => {
     if (!inputValue.trim()) return;
-    // In channel (non-blocking) mode, allow sending while the agent streams.
     if (!nonBlocking && (status === "connecting" || status === "streaming")) {
       return;
     }
@@ -498,8 +480,6 @@ export function AgentChatPanel({
       id: nextId(),
       role: "user",
       content: inputValue.trim(),
-      // Stamp own identity so the channel view labels/groups this message
-      // correctly before the server echo (which carries author_id) arrives.
       authorId: meRef.current?.id,
       createdAt: Date.now() / 1000,
     };
@@ -508,21 +488,10 @@ export function AgentChatPanel({
     setInputValue("");
 
     if (useSubscriptionTransport) {
-      // Send via POST; response (and any agent reply) arrive on the subscription.
-      // Optimistically reflect "connecting" but DON'T block on a streaming agent
-      // turn yet — only do that if the server says the agent was triggered.
       setStatus("connecting");
       try {
         const { message_id, agent_triggered } = await sendThreadMessage(sessionId, userMsg.content);
-        // Update the optimistic message's local counter ID to the server-assigned UUID
-        // so the deduplication check in handleThreadEvent (m.id === msg.id) matches
-        // and skips the duplicate when the message.created SSE event arrives.
         setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)));
-        // Only enter the blocking "streaming" state when an agent turn will run
-        // (explicit @agent mention, or a feature thread). In a channel a bare
-        // message never triggers the agent, so keep the composer free — otherwise
-        // the input stays disabled forever waiting for a reply that never comes.
-        // When triggered, the subscription event handler drives status to idle on done.
         setStatus(agent_triggered ? "streaming" : "idle");
       } catch {
         setStatus("error");
@@ -530,7 +499,6 @@ export function AgentChatPanel({
       return;
     }
 
-    // ── Legacy per-turn streaming (backward-compat) ──────────────────────────
     setStatus("streaming");
 
     const assistantId = nextId();
@@ -621,9 +589,6 @@ export function AgentChatPanel({
 
   const isActive = panelMode.mode === "active";
 
-  // @mention candidates: the agent plus every workspace member (so anyone in
-  // the workspace can be tagged, not just current channel members). Handles
-  // match hermes `handle_for` so the tokens resolve server-side.
   const mentionMembers = useMemo<ThreadMember[]>(() => {
     const humans: ThreadMember[] = Object.entries(workspaceMembers)
       .map(([id, m]) => ({ id, name: m.name ?? m.handle, handle: m.handle, avatarUrl: m.avatarUrl, kind: "user" as const }))

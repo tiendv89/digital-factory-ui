@@ -22,7 +22,6 @@ export function useDocumentContent(url: string | undefined | null, existingConte
   const requestId = useRef(0);
 
   const fetchContent = useCallback(async () => {
-    // Don't fetch if content already available from backend
     if (existingContent) {
       setContent(existingContent);
       setLoading(false);
@@ -43,7 +42,6 @@ export function useDocumentContent(url: string | undefined | null, existingConte
     try {
       const { data } = await axios.post<{ content: string }>("/api/content/fetch", { url });
 
-      // Guard against stale responses
       if (id !== requestId.current) return;
 
       setContent(data.content);

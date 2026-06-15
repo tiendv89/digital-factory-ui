@@ -53,7 +53,6 @@ export async function fetchMe(): Promise<MeResponse> {
 }
 
 export async function logout(): Promise<void> {
-  // Logout is owned by the BFF at the bare origin (not under a service prefix).
   await axios.post(`${getBffBaseUrl()}/auth/logout`, null, { withCredentials: true }).catch(() => undefined);
 }
 
@@ -65,11 +64,6 @@ export async function updateMe(body: UpdateMeRequest): Promise<MeResponse> {
     handleApiError(err, "Failed to update /api/me");
   }
 }
-
-// Workspace-level member/invitation management has been removed; members and
-// invitations are managed at the org level (see the fetchOrg* functions below).
-
-// ─── Org-admin client methods ─────────────────────────────────────────────────
 
 function unwrapOrg(json: OrgResponse | Org): Org {
   return "data" in json ? json.data : json;
@@ -177,8 +171,6 @@ export async function deleteOrg(orgId: string): Promise<void> {
     handleApiError(err, "Failed to delete org");
   }
 }
-
-// ─── Workspace member/role reads (T5/T8) ─────────────────────────────────────
 
 function unwrapWorkspaceMembers(json: WorkspaceMembersResponse | { data: WorkspaceMembersResponse }): WorkspaceMember[] {
   const body = "data" in json ? json.data : json;

@@ -36,9 +36,9 @@
   --color-border-control: #454545;     /* button / input borders */
 
   /* ── Text ──────────────────────────────────────────────────────── */
-  --color-text-primary: #d4d4d4;
-  --color-text-secondary: #858585;
-  --color-text-muted: #6e6e6e;
+  --color-text-primary: #e8e8e8;
+  --color-text-secondary: #b4b4b4;
+  --color-text-muted: #8c8c8c;
 
   /* ── Accent / primary ──────────────────────────────────────────── */
   --color-primary: #007acc;            /* VS Code accent blue */

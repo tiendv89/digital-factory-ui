@@ -7,8 +7,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useSession } from "@/components/auth";
 
-// ── Item types ────────────────────────────────────────────────────────────────
-
 type NavItem = {
   kind: "nav";
   id: string;
@@ -29,8 +27,6 @@ type ActionItem = {
 };
 
 type PaletteItem = NavItem | ActionItem;
-
-// ── Static item registries ─────────────────────────────────────────────────────
 
 const NAV_ITEMS: NavItem[] = [
   { kind: "nav", id: "nav-board", label: "Board", hint: "Go to Board", icon: LayoutGrid, href: "/board" },
@@ -88,15 +84,11 @@ const AGENT_ITEMS: ActionItem[] = [
   },
 ];
 
-// ── Filter helper ─────────────────────────────────────────────────────────────
-
 function filterItems<T extends { label: string; hint: string }>(items: T[], query: string): T[] {
   if (!query.trim()) return items;
   const q = query.toLowerCase();
   return items.filter((item) => item.label.toLowerCase().includes(q) || item.hint.toLowerCase().includes(q));
 }
-
-// ── CommandPalette component ──────────────────────────────────────────────────
 
 type CommandPaletteProps = {
   open: boolean;
@@ -112,7 +104,6 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const isAdmin = session.status === "authenticated" && session.data.data.memberships.some((m) => m.role === "admin");
 
-  // Build visible items based on query + permissions
   const visibleNavItems = useMemo(() => filterItems(NAV_ITEMS, query), [query]);
   const visibleActionItems = useMemo(
     () =>
@@ -126,17 +117,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
 
   const allItems: PaletteItem[] = useMemo(() => [...visibleNavItems, ...visibleActionItems, ...visibleAgentItems], [visibleNavItems, visibleActionItems, visibleAgentItems]);
 
-  // Reset state on open
   useEffect(() => {
     if (open) {
       setQuery("");
       setActiveIndex(0);
-      // Defer focus so the dialog has rendered
       requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [open]);
 
-  // Clamp active index when items change
   useEffect(() => {
     if (activeIndex >= allItems.length) {
       setActiveIndex(Math.max(0, allItems.length - 1));
@@ -149,7 +137,6 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         router.push(item.href);
         onClose();
       }
-      // Action/agent items are placeholders — close but take no backend action
       if (item.kind === "action") {
         onClose();
       }
@@ -157,7 +144,6 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     [router, onClose],
   );
 
-  // Keyboard navigation within palette
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === "Escape") {

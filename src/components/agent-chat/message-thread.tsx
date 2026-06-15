@@ -25,7 +25,6 @@ export function MessageThread({ messages, status, onStageTransition }: MessageTh
   const { scrollRef, isAtBottomRef } = useConversationScroll();
   const contentRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll as content grows during streaming, only when already at bottom
   useEffect(() => {
     const content = contentRef.current;
     if (!content) return;
@@ -76,8 +75,6 @@ type ToolCallRowProps = {
   onStageTransition?: () => void;
 };
 
-// Friendly, past-tense labels in the spirit of Claude's transcript ("Ran code",
-// "Read file"). Unknown tools fall back to a humanized version of their name.
 const TOOL_LABELS: Record<string, string> = {
   execute_code: "Ran code",
   workflow_request_approval: "Requested approval",

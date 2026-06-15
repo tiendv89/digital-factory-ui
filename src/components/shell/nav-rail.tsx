@@ -92,9 +92,7 @@ function useWorkspaceUnreadCount(): number {
     try {
       const data = await getUnreadMentions(workspaceId);
       setCount(data.total);
-    } catch {
-      // Silently ignore — server may not have this endpoint yet
-    }
+    } catch {}
   }, [workspaceId]);
 
   useEffect(() => {

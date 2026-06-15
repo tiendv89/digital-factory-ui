@@ -12,8 +12,6 @@ export function FeatureSessionPage({ featureId }: FeatureSessionPageProps) {
   const { markFeatureTabActive, openFeatureTabs, activeWorkspace: ctxWorkspace } = useWorkspaceContext();
   const setLastVisitedFeatureId = useLocalWorkspaceStore((s) => s.setLastVisitedFeatureId);
 
-  // Prefer a workspace from an open tab; fall back to the already-selected workspace so
-  // direct navigation (e.g. first-time load from the nav icon) doesn't get stuck loading.
   const workspaceId = openFeatureTabs.find((t) => t.featureId === featureId)?.workspaceId ?? ctxWorkspace?.id ?? "";
   const { activeWorkspace, loadingWorkspace, workspaceError, isReady } = useWorkspaceRoute(workspaceId);
 

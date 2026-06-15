@@ -27,7 +27,6 @@ type CreateWorkspaceModalProps = {
 export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModalProps) {
   const [mode, setMode] = useState<"create" | "import">("create");
 
-  // create state
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
@@ -36,7 +35,6 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
   const { addWorkspace, importWorkspace, importingWorkspace, importError, clearImportError } = useWorkspaceContext();
   const { activeMembership } = useOrgWorkspaceSelection();
 
-  // import state
   const [repoUrl, setRepoUrl] = useState("");
   const [defaultBranch, setDefaultBranch] = useState("");
   const [importName, setImportName] = useState("");
@@ -92,9 +90,7 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
         });
         onSuccess?.();
         onClose();
-      } catch {
-        // error is set in context, keep modal open
-      }
+      } catch {}
     },
     [repoUrl, defaultBranch, importName, importWorkspace, onSuccess, onClose],
   );

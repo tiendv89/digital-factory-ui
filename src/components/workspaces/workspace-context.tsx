@@ -142,7 +142,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  // Bootstrap: fetch workspace list from API, then auto-select
   useEffect(() => {
     let cancelled = false;
 
@@ -181,7 +180,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     useBoardStore.getState().clearBoardPrefs();
   }, []);
 
-  // Adds a workspace returned from the API to the local list, sets it active.
   const addWorkspace = useCallback(
     (detail: WorkspaceDetail) => {
       const summary: WorkspaceSummary = {
@@ -212,9 +210,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     [loadWorkspace, setStoredSelectedId, resetTabs],
   );
 
-  // Removes a deleted workspace from the local list. When the removed workspace
-  // was the active one, falls back to the next remaining workspace, or clears
-  // the selection and returns to the board (empty state) when none remain.
   const removeWorkspace = useCallback(
     (workspaceId: string) => {
       const remaining = summaries.filter((s) => s.id !== workspaceId);
@@ -262,9 +257,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       const detail = await apiSyncWorkspace(selectedWorkspaceId);
       setActiveWorkspace(detail);
-      // Update board detail cache immediately with fresh sync data
       queryClient.setQueryData(workspaceKeys.detail(selectedWorkspaceId), detail);
-      // Invalidate sidebar tasks so they refetch in the background
       queryClient.invalidateQueries({
         queryKey: ["workspace", selectedWorkspaceId, "sidebar-tasks"],
       });
@@ -299,7 +292,6 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       });
   }, [selectedWorkspaceId]);
 
-  // 30s focus-aware background polling
   useEffect(() => {
     if (!selectedWorkspaceId) return;
 
@@ -365,13 +357,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const closeTaskTab = useCallback(
     (sessionId: string) => {
-      // Look up the tab being closed to check for parent feature tab context
       const tab = openTaskTabsRef.current.find((t) => t.sessionId === sessionId);
       setOpenTaskTabs((prev) => removeTaskTab(prev, sessionId));
       if (activeTaskTabId === sessionId) {
         setActiveTaskTabId(null);
         if (tab?.parentFeatureTabSessionId) {
-          // Reactivate the parent feature tab instead of going to board
           const parentTab = openFeatureTabsRef.current.find((ft) => ft.sessionId === tab.parentFeatureTabSessionId);
           if (parentTab) {
             setActiveFeatureTabId(parentTab.sessionId);

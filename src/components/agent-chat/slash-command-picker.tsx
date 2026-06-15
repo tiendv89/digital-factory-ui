@@ -30,7 +30,6 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
   const [commands, setCommands] = useState<SlashCommand[]>([]);
   const listRef = useRef<HTMLUListElement>(null);
 
-  // Fetch live tools list from hermes
   useEffect(() => {
     let cancelled = false;
     listTools()
@@ -38,9 +37,7 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
         if (cancelled) return;
         setCommands(tools.map((t) => ({ name: toolNameToSlash(t.name), hint: t.description })).sort((a, b) => a.name.localeCompare(b.name)));
       })
-      .catch(() => {
-        // On error keep empty — picker simply shows nothing
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -48,18 +45,15 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
 
   const filtered = filterCommands(commands, query);
 
-  // Reset active index when query changes
   useEffect(() => {
     setActiveIndex(0);
   }, [query]);
 
-  // Keep the highlighted command scrolled into view as the user arrows through.
   useEffect(() => {
     const active = listRef.current?.querySelector('[data-active="true"]');
     active?.scrollIntoView({ block: "nearest" });
   }, [activeIndex, filtered.length]);
 
-  // Keyboard handler attached to document — picks up events while picker is open
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "ArrowDown") {
@@ -69,7 +63,6 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
         e.preventDefault();
         setActiveIndex((i) => (i - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1));
       } else if (e.key === "Enter" || e.key === "Tab") {
-        // Tab autocompletes the highlighted command into the input, just like Enter.
         e.preventDefault();
         if (filtered[activeIndex]) {
           onSelect(filtered[activeIndex].name);
@@ -102,7 +95,6 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
             data-slash-command-item
             data-active={idx === activeIndex}
             onMouseDown={(e) => {
-              // Prevent textarea blur before we can call onSelect
               e.preventDefault();
               onSelect(cmd.name);
             }}

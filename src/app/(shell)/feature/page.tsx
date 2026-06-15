@@ -17,10 +17,8 @@ export default function FeaturePage() {
     if (target) {
       router.replace(`/feature/${target}`);
     } else if (activeWorkspace) {
-      // Workspace loaded but has no features — go to board
       router.replace("/board");
     }
-    // If workspace is still loading, wait for the next effect run
   }, [lastVisitedFeatureId, activeWorkspace, router]);
 
   return null;

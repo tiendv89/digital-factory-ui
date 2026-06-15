@@ -19,7 +19,6 @@ function remarkMentions() {
       const newChildren: unknown[] = [];
       for (const child of node.children) {
         const c = child as { type: string; children?: unknown[]; value?: string };
-        // Skip code blocks to avoid mangling code samples
         if (c.type === "code" || c.type === "inlineCode") {
           newChildren.push(c);
           continue;
@@ -55,9 +54,6 @@ function remarkMentions() {
   };
 }
 
-// Explicit element styles so the transcript stays readable regardless of
-// whether the Tailwind typography (`prose`) plugin is active. Tuned for a
-// dark surface: clear heading hierarchy, comfortable spacing, legible code.
 const markdownComponents: Components = {
   h1: ({ children }) => <h1 className="mt-4 mb-2 text-base font-semibold text-text-primary first:mt-0">{children}</h1>,
   h2: ({ children }) => <h2 className="mt-4 mb-2 text-sm font-semibold text-text-primary first:mt-0">{children}</h2>,
@@ -163,31 +159,18 @@ function AuthorLabel({ author, isAgent }: { author?: MessageAuthor; isAgent?: bo
   );
 }
 
-// Memoized so that while one message streams, the already-rendered messages
-// (whose object reference is unchanged) skip re-rendering — and crucially skip
-// re-parsing their markdown — on every animation-frame flush.
 export const Message = memo(function Message({ message }: { message: HermesMessage }) {
   const isUser = message.role === "user";
   const isAgent = message.role === "assistant";
   const hasAuthor = !!message.author;
 
-  // Skip the bubble entirely for empty content (e.g. an assistant turn that
-  // only produced tool calls) — an empty bubble is just visual noise.
   if (!message.content.trim()) {
     return null;
   }
 
-  // User turns keep a bubble; the agent's replies render flat (no background)
-  // so the transcript reads like a document, matching the Claude UI.
   if (isUser) {
     return (
       <div data-message data-role="user" className="flex w-full flex-col items-end gap-1">
-        {hasAuthor && (
-          <div className="flex items-center gap-1.5">
-            <AuthorLabel author={message.author} />
-            <AuthorAvatar author={message.author} />
-          </div>
-        )}
         <div className="max-w-[85%] rounded-lg bg-primary px-3 py-2 text-sm text-white">
           <UserMessageContent content={message.content} />
         </div>

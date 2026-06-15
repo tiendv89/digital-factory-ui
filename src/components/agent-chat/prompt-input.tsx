@@ -23,11 +23,8 @@ type PromptInputTextareaProps = {
 
 function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder = "Message the agent…", history = [], onCaretChange }: PromptInputTextareaProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  // -1 means "not navigating history"; otherwise an index into `history`.
   const historyIndexRef = useRef(-1);
-  // The in-progress text saved when history navigation begins, restored on the way back down.
   const draftRef = useRef("");
-  // Set after a programmatic value change so we can place the caret once the new value lands.
   const pendingCaretRef = useRef<number | null>(null);
 
   const resize = () => {
@@ -36,7 +33,6 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
     ref.current.style.height = `${ref.current.scrollHeight}px`;
   };
 
-  // Apply the caret position requested by a history recall, and resize for multi-line prompts.
   useEffect(() => {
     if (pendingCaretRef.current != null && ref.current) {
       const pos = pendingCaretRef.current;
@@ -44,7 +40,6 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
       pendingCaretRef.current = null;
       resize();
     }
-    // The input was cleared externally (e.g. after submit) — leave history navigation.
     if (value === "") {
       historyIndexRef.current = -1;
       draftRef.current = "";
@@ -52,12 +47,8 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
   }, [value]);
 
   function handleChange(e: ChangeEvent<HTMLTextAreaElement>) {
-    // Manual edits exit history navigation.
     historyIndexRef.current = -1;
     onChange(e.target.value);
-    // onCaretChange is not called here — handleValueChange already runs detectMention on the new
-    // value. Calling onCaretChange would pass a stale `value` closure, overwriting the correct
-    // mention state with null on the first `@` keystroke.
     resize();
   }
 
@@ -76,12 +67,8 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
       return;
     }
 
-    // While composing a slash command the arrows belong to the command picker, not history.
     if (value.startsWith("/")) return;
 
-    // CLI-style history recall: Up walks back through sent prompts when the caret is on the
-    // first line, Down walks forward when it's on the last line. Otherwise the arrows move
-    // the caret within a multi-line prompt as usual.
     const el = ref.current;
     const caret = el?.selectionStart ?? value.length;
     if (e.key === "ArrowUp" && history.length > 0 && !value.slice(0, caret).includes("\n")) {
@@ -149,15 +136,11 @@ type ModelPickerProps = {
   disabled?: boolean;
 };
 
-// Per-provider brand icon (served from /public). Falls back to the Zap glyph
-// for any provider without an asset.
 const PROVIDER_ICON: Record<string, string> = {
   anthropic: "/images/model-provider/anthropic.svg",
   deepseek: "/images/model-provider/deepseek.svg",
 };
 
-// Section order + heading for the picker. Providers not listed here are appended
-// after, each under its own (raw) heading.
 const PROVIDER_SECTIONS: { provider: string; label: string }[] = [
   { provider: "anthropic", label: "Anthropic" },
   { provider: "deepseek", label: "DeepSeek" },
@@ -183,8 +166,6 @@ function ProviderIcon({ provider, size }: { provider: string; size: number }) {
 function ModelPicker({ models, selectedModel, onModelChange, disabled }: ModelPickerProps) {
   const current = models.find((m) => m.id === selectedModel);
 
-  // Build the provider groups present in the catalog: known order first, then
-  // any extra providers in encounter order.
   const knownOrder = PROVIDER_SECTIONS.map((s) => s.provider);
   const groups = [
     ...PROVIDER_SECTIONS.filter((s) => models.some((m) => m.provider === s.provider)),
@@ -195,8 +176,6 @@ function ModelPicker({ models, selectedModel, onModelChange, disabled }: ModelPi
 
   const headerKey = (provider: string) => `__hdr_${provider}`;
 
-  // Flat children array (headers + items); react-aria's collection builder wants
-  // a flat list of ListBox.Item nodes, not fragments.
   const rows: React.ReactNode[] = [];
   for (const group of groups) {
     rows.push(
@@ -290,7 +269,6 @@ type PromptInputProps = {
 };
 
 export function PromptInput({ value, onChange, onSubmit, status, history, models, selectedModel, onModelChange, members = [], nonBlocking = false }: PromptInputProps) {
-  // In channel mode the composer stays usable while the agent streams.
   const isDisabled = !nonBlocking && (status === "connecting" || status === "streaming");
   const [mentionState, setMentionState] = useState<{ query: string; atIndex: number } | null>(null);
 
@@ -305,8 +283,6 @@ export function PromptInput({ value, onChange, onSubmit, status, history, models
   const handleValueChange = useCallback(
     (newValue: string) => {
       onChange(newValue);
-      // Re-check after value change (caret is at end of inserted text on a normal keystroke)
-      // We derive the caret position from the new value length for the "just typed" case.
       const detected = detectMention(newValue, newValue.length);
       setMentionState(detected);
     },

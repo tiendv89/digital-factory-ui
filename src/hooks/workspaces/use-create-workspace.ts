@@ -10,7 +10,6 @@ export function useCreateWorkspace() {
   return useMutation<WorkspaceDetail, Error, CreateWorkspaceRequest>({
     mutationFn: (body) => createWorkspace(body),
     onSuccess: () => {
-      // Invalidate /api/me so org_workspace_ids refreshes after creation.
       void queryClient.invalidateQueries({ queryKey: ["session"] });
     },
   });

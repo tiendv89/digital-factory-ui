@@ -12,7 +12,6 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   const closePalette = useCallback(() => setPaletteOpen(false), []);
 
-  // Global ⌘K / Ctrl+K shortcut
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {

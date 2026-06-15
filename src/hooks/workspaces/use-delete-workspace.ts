@@ -9,7 +9,6 @@ export function useDeleteWorkspace() {
   return useMutation<void, Error, string>({
     mutationFn: (workspaceId) => deleteWorkspace(workspaceId),
     onSuccess: () => {
-      // Invalidate /api/me so org_workspace_ids refreshes after deletion.
       void queryClient.invalidateQueries({ queryKey: ["session"] });
     },
   });

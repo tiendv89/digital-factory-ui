@@ -34,19 +34,16 @@ export function useOrgWorkspaceSelection(): OrgWorkspaceSelection {
 
   const orgWorkspaceIds = useMemo<Record<string, string[]>>(() => sessionData?.org_workspace_ids ?? {}, [sessionData]);
 
-  // One-time migration: lift legacy URL params into the store then strip them.
   useEffect(() => {
     const urlOrg = searchParams.get("org");
     const urlWs = searchParams.get("ws");
     if (!urlOrg && !urlWs) return;
     setSelectedWorkspace(urlWs ?? "", urlOrg ?? undefined);
-    // Replace URL without the params.
     const params = new URLSearchParams(searchParams.toString());
     params.delete("org");
     params.delete("ws");
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const activeMembership = useMemo<MeMembership | null>(() => {

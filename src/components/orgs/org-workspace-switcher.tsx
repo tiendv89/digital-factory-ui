@@ -12,8 +12,6 @@ import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
 import { WorkspaceSettingsModal } from "@/components/workspaces/workspace-settings-page";
 import { useOrgWorkspaceSelection } from "@/hooks/workspaces/use-org-workspace-selection";
 
-// ─── Colored initial square ───────────────────────────────────────────────────
-
 function IconSquare({ name, seed, size = 18 }: { name: string | null | undefined; seed: string; size?: number }) {
   const initial = (name?.trim()[0] ?? "?").toUpperCase();
   const radius = size <= 18 ? 6 : size <= 28 ? 8 : 10;
@@ -34,8 +32,6 @@ function IconSquare({ name, seed, size = 18 }: { name: string | null | undefined
   );
 }
 
-// ─── OrgWorkspaceSwitcher ─────────────────────────────────────────────────────
-
 export function OrgWorkspaceSwitcher() {
   const { memberships, activeMembership, isLoading, isEmpty, switchOrg, switchWorkspace, activeWorkspaceId } = useOrgWorkspaceSelection();
   const { summaries, selectWorkspace } = useWorkspaceContext();
@@ -48,8 +44,6 @@ export function OrgWorkspaceSwitcher() {
   const [settingsTarget, setSettingsTarget] = useState<{ id: string; name: string } | null>(null);
 
   const activeOrgId = activeMembership?.organization_id ?? "";
-  // Filter by organization_id when summaries carry it (post-backend-update).
-  // Fall back to all summaries if the field is not yet populated (old backend response).
   const summariesHaveOrgId = summaries.some((s) => !!s.organization_id);
   const accessibleSummaries = activeOrgId && summariesHaveOrgId ? summaries.filter((s) => s.organization_id === activeOrgId) : summaries;
   const activeWorkspace = accessibleSummaries.find((w) => w.id === activeWorkspaceId) ?? accessibleSummaries[0] ?? null;

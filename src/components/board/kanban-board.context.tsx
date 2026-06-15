@@ -40,19 +40,16 @@ export type BoardContextValue = {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
 
-  // Task Mode search/filter
   taskSearchQuery: string;
   setTaskSearchQuery: (query: string) => void;
   taskActiveFilters: ActiveFilters;
   setTaskActiveFilters: (filters: ActiveFilters) => void;
 
-  // Feature Mode search/filter
   featureSearchQuery: string;
   setFeatureSearchQuery: (query: string) => void;
   featureActiveFilters: FeatureActiveFilters;
   setFeatureActiveFilters: (filters: FeatureActiveFilters) => void;
 
-  // Aliases kept for existing Task Mode consumers
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   activeFilters: ActiveFilters;
@@ -61,7 +58,6 @@ export type BoardContextValue = {
   expandedFeatureIds: Set<string>;
   toggleFeature: (featureId: string) => void;
 
-  // Backend search results (null = use workspace detail)
   backendTaskResults: ParsedFeature[] | null;
   backendFeatureResults: ParsedFeature[] | null;
   taskSearching: boolean;
@@ -69,7 +65,6 @@ export type BoardContextValue = {
   taskSearchError: BoardLoadError | null;
   featureSearchError: BoardLoadError | null;
 
-  // Pagination state per mode
   taskPage: number;
   setTaskPage: (page: number) => void;
   featurePage: number;
@@ -77,7 +72,6 @@ export type BoardContextValue = {
   taskPagination: PaginationMeta | null;
   featurePagination: PaginationMeta | null;
 
-  // Page size (limit) state per mode
   taskLimit: number;
   setTaskLimit: (limit: number) => void;
   featureLimit: number;
@@ -125,13 +119,10 @@ export function BoardProvider({ workspaceDetail, children, initialMode }: BoardP
   const [taskLimit, setTaskLimit] = useState(BOARD_DEFAULT_LIMIT);
   const [featureLimit, setFeatureLimit] = useState(BOARD_DEFAULT_LIMIT);
 
-  // Task Mode always uses the feature-task API. Build params from current
-  // search/filter/pagination state. Sort is fixed at task_id_asc per spec.
   const debouncedTaskSearchQuery = useDebounce(taskSearchQuery, 300);
   const debouncedFeatureSearchQuery = useDebounce(featureSearchQuery, 300);
   const trimmedTaskQuery = debouncedTaskSearchQuery.trim();
 
-  // Reset page to 1 when search query, filters, or limit change
   const prevTaskQueryRef = useRef(trimmedTaskQuery);
   const prevTaskStatusRef = useRef(taskActiveFilters.statuses.join(","));
   const prevTaskLimitRef = useRef(taskLimit);
@@ -184,9 +175,6 @@ export function BoardProvider({ workspaceDetail, children, initialMode }: BoardP
 
   const trimmedFeatureQuery = debouncedFeatureSearchQuery.trim();
 
-  // Feature-mode backend search activates when search text is present OR the
-  // status filter is a non-default subset.  All-feature-statuses-selected
-  // means no effective filter — fall back to the workspace root payload.
   const featureStatusFilterActive = featureActiveFilters.statuses.length > 0 && !isAllFeatureStatusFilterSelected(featureActiveFilters.statuses);
   const featureSearchActive = boardMode === "feature" && (trimmedFeatureQuery.length > 0 || featureStatusFilterActive);
 
@@ -268,9 +256,7 @@ export function BoardProvider({ workspaceDetail, children, initialMode }: BoardP
   );
 
   const syncBoard = useCallback(() => {
-    syncCurrentWorkspace().catch(() => {
-      // error captured in syncError
-    });
+    syncCurrentWorkspace().catch(() => {});
   }, [syncCurrentWorkspace]);
 
   const openTaskTab = useCallback(
@@ -329,7 +315,6 @@ export function BoardProvider({ workspaceDetail, children, initialMode }: BoardP
     [wsOpenFeatureTab],
   );
 
-  // Map workspace sync error to BoardLoadError shape
   const syncError = useMemo<BoardLoadError | null>(
     () =>
       wsyncError
@@ -370,7 +355,6 @@ export function BoardProvider({ workspaceDetail, children, initialMode }: BoardP
       featureActiveFilters,
       setFeatureActiveFilters: handleSetFeatureActiveFilters,
 
-      // Aliases for existing Task Mode consumers
       searchQuery: taskSearchQuery,
       setSearchQuery: setTaskSearchQuery,
       activeFilters: taskActiveFilters,

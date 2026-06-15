@@ -17,8 +17,6 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   leftIcon?: React.ReactNode;
 }
 
-// Exact Figma control styling: 8px radius, 13px medium text, #2d2d2d / #454545
-// secondary surface, #007acc primary.
 const VARIANT: Record<ButtonVariant, string> = {
   primary: "bg-primary text-white border border-transparent hover:bg-primary-hover",
   secondary: "bg-surface-secondary text-text-primary border border-border-control hover:bg-nav-item-hover",

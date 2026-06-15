@@ -10,7 +10,6 @@ export function useCreateOrg() {
   return useMutation<Org, Error, CreateOrgRequest>({
     mutationFn: (body) => createOrg(body),
     onSuccess: () => {
-      // Invalidate /api/me so memberships refresh with the new org.
       void queryClient.invalidateQueries({ queryKey: ["session"] });
     },
   });

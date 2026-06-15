@@ -27,8 +27,6 @@ function extractMilestone(name: string): string | null {
   return m ? `M${m[1]}` : null;
 }
 
-// ── Feature Selector Preview ────────────────────────────────────────────────
-
 function FeaturePreviewPanel({ workspaceId, featureId }: { workspaceId: string; featureId: string }) {
   const { feature, loading } = useFeatureDetail(workspaceId, featureId);
   if (loading) {
@@ -113,8 +111,6 @@ const ARTIFACTS: { label: string; tab: DocTab; icon: React.ComponentType<{ class
 
 type ActiveSession = { id: string; name: string; kind?: "session" | "channel" };
 
-// ── Section label ─────────────────────────────────────────────────────────────
-
 function SectionLabel({
   children,
   collapsed,
@@ -162,13 +158,9 @@ function SectionLabel({
   );
 }
 
-// Shared base classes for sidebar item rows — inset rounded "pill" with a clear
-// hover/active treatment.
 const ROW_BASE = "group mx-1.5 flex w-[calc(100%-0.75rem)] cursor-pointer items-center gap-2 rounded-md px-2 py-[7px] text-left text-[13px] transition-colors";
 const ROW_IDLE = "text-text-secondary hover:bg-white/[0.06] hover:text-text-primary";
 const ROW_ACTIVE = "bg-primary/15 text-text-primary";
-
-// ── Session chat header wrapper around the real AgentChatPanel ──────────────────
 
 function SessionChat({
   workspaceId,
@@ -196,8 +188,6 @@ function SessionChat({
   onArtifactSaved: (a: "product_spec" | "technical_design") => void;
   onStageTransition?: () => void;
 }) {
-  // Channels: auto-join on open so the user receives messages, and clear the
-  // unread-mention badge. Best-effort — failures don't break the chat.
   useEffect(() => {
     if (!isChannel || !sessionId) return;
     void joinChannel(sessionId).catch(() => {});
@@ -235,7 +225,6 @@ function SessionChat({
         <div className="min-h-0 flex-1">
           <AgentChatPanel
             workspaceId={workspaceId}
-            // Channels are not feature-authoring surfaces — no approval/artifact affordances.
             featureId={isChannel ? "" : featureId}
             requestSessionId={sessionId}
             newChatSignal={newChatSignal}
@@ -250,8 +239,6 @@ function SessionChat({
   );
 }
 
-// ── Main workbench ──────────────────────────────────────────────────────────────
-
 export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: string; featureId: string }) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -262,8 +249,6 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
   const { collapsedWorkbenchSections, toggleWorkbenchSection } = useBoardStore();
   const [activeTab, setActiveTab] = useState<DocTab>("product_spec");
   const [activeChannel, setActiveChannel] = useState<ActiveSession | null>({ id: "", name: "Agent chat" });
-  // Bumped to ask the open agent chat to start a fresh conversation — driven by
-  // both the SessionChat header "New chat" button and the Sessions "+".
   const [newChatSignal, setNewChatSignal] = useState(0);
   const [dockCollapsed, setDockCollapsed] = useState(false);
   const [selectorOpen, setSelectorOpen] = useState(false);
@@ -295,15 +280,11 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
     };
   }, [workspaceId, featureId]);
 
-  // Open a fresh agent chat — shared by the Sessions "+" and the chat header's
-  // "New chat" button so they behave identically (no premature session row;
-  // the session is created on the first message).
   const startNewSession = useCallback(() => {
     setActiveChannel({ id: "", name: "Agent chat", kind: "session" });
     setNewChatSignal((n) => n + 1);
   }, []);
 
-  // Feature-scoped channels (Slack-like) shown in the CHANNELS sidebar section.
   const fetchChannels = useCallback(async () => {
     try {
       setChannels(await listChannels(workspaceId, featureId));
@@ -316,8 +297,6 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
     void fetchChannels();
   }, [fetchChannels]);
 
-  // Per-channel unread-mention badges. Refetched when the open channel changes
-  // (opening a channel marks it read), so the badge clears.
   useEffect(() => {
     let cancelled = false;
     getUnreadMentions(workspaceId)
@@ -527,12 +506,10 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
                                   );
                                 };
 
-                                // When a status filter is active, render flat list (no group header needed)
                                 if (selectorStatus) {
                                   return visible.map(renderFeatureRow);
                                 }
 
-                                // Group by status in canonical order
                                 const byStatus = new Map<string, typeof visible>();
                                 for (const f of visible) {
                                   const bucket = byStatus.get(f.status) ?? [];

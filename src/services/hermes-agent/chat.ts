@@ -35,9 +35,6 @@ export type HermesEvent =
   | { type: "error"; message: string }
   | { type: "done" };
 
-// The app talks to hermes-agent's workflow_gateway (routes under /api/v1)
-// through the BFF, which injects the trusted caller identity (X-User-Id) behind
-// the shared service token. The browser never sends user_id itself.
 function getApiBase(): string {
   return `${getBffBaseUrl()}/bff/hermes-agent`;
 }
@@ -166,9 +163,7 @@ export function streamChatTurn(params: StreamChatTurnParams, onEvent: (event: He
         for (const hermesEvent of parseHermesEvents(ev.event, raw)) {
           onEvent(hermesEvent);
         }
-      } catch {
-        // skip unparseable frames
-      }
+      } catch {}
     },
     onerror(err) {
       onError(err instanceof Error ? err : new Error(String(err)));
@@ -206,7 +201,6 @@ type OpenAIChunk = {
  *     delta.content (text), finish_reason (stop/error), and usage.
  */
 function parseHermesEvents(eventType: string | undefined, raw: Record<string, unknown>): HermesEvent[] {
-  // Tool lifecycle (custom hermes event channel).
   if (eventType === "hermes.tool.progress") {
     const status = String(raw.status ?? "");
     const name = String(raw.tool ?? "");
@@ -220,7 +214,6 @@ function parseHermesEvents(eventType: string | undefined, raw: Record<string, un
     return [];
   }
 
-  // Workflow-gateway artifact extension.
   if (eventType === "hermes.artifact.saved") {
     return [
       {
@@ -230,7 +223,6 @@ function parseHermesEvents(eventType: string | undefined, raw: Record<string, un
     ];
   }
 
-  // Default channel: an OpenAI chat.completion.chunk.
   const chunk = raw as OpenAIChunk;
   const choice = chunk.choices?.[0];
   const events: HermesEvent[] = [];
@@ -258,8 +250,6 @@ function parseHermesEvents(eventType: string | undefined, raw: Record<string, un
 
   return events;
 }
-
-// ─── Persistent subscription transport (T6) ────────────────────────────────
 
 export type ThreadEvent =
   | { type: "message.created"; message: HermesMessage }
@@ -341,9 +331,6 @@ export async function sendThreadMessage(threadId: string, content: string): Prom
     const text = await res.text().catch(() => "");
     throw new Error(`sendThreadMessage failed (${res.status}): ${text}`);
   }
-  // `agent_triggered` tells us whether an agent turn will run (explicit @agent
-  // mention, or a bare message in a feature thread). In a channel a bare message
-  // never triggers the agent, so the composer must not enter a blocking state.
   const body = (await res.json()) as { message_id: string; agent_triggered?: boolean };
   return { message_id: body.message_id, agent_triggered: body.agent_triggered ?? false };
 }
@@ -377,9 +364,7 @@ export function subscribeToThread(threadId: string, since: string | null, onEven
         for (const event of parseThreadEvents(ev.event, raw)) {
           onEvent(event);
         }
-      } catch {
-        // skip unparseable frames
-      }
+      } catch {}
     },
     onerror(err) {
       errorReported = true;
@@ -399,7 +384,6 @@ export function subscribeToThread(threadId: string, since: string | null, onEven
 }
 
 function parseThreadEvents(eventType: string | undefined, raw: Record<string, unknown>): ThreadEvent[] {
-  // New thread-level event types from hermes-agent T3
   if (eventType === "message.created") {
     const msg = raw.message as RawThreadMessage | undefined;
     if (!msg) return [];
@@ -410,9 +394,6 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
     return [{ type: "agent.working", sessionId: String(raw.session_id ?? "") }];
   }
 
-  // The thread agent stream emits its own frames (NOT OpenAI chat chunks):
-  //   agent.delta → { content }      agent.done → { finish_reason }
-  // so they must be parsed here rather than falling through to parseHermesEvents.
   if (eventType === "agent.delta") {
     const content = typeof raw.content === "string" ? raw.content : "";
     return content ? [{ type: "delta", messageId: String(raw.message_id ?? ""), text: content }] : [];
@@ -438,7 +419,6 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
     return [{ type: "channel.deleted" }];
   }
 
-  // Reuse existing hermes event parsing for agent output frames
   const legacyEvents = parseHermesEvents(eventType, raw);
   return legacyEvents.flatMap((e): ThreadEvent[] => {
     if (e.type === "delta") {
@@ -456,13 +436,9 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
     if (e.type === "error") {
       return [{ type: "error", message: e.message }];
     }
-    // "usage" and any unknown legacy event types are not applicable in
-    // the thread event model — skip silently rather than emitting a spurious done.
     return [];
   });
 }
-
-// ─── Thread members + unread mentions (T7) ────────────────────────────────
 
 type RawThreadMember = {
   id: string;
@@ -520,12 +496,8 @@ export async function markThreadRead(threadId: string): Promise<void> {
       method: "POST",
       credentials: "include",
     });
-  } catch {
-    // Best-effort — don't break the UX if this fails
-  }
+  } catch {}
 }
-
-// ─── Channels API (T4/T8) ─────────────────────────────────────────────────
 
 export type ChannelSummary = {
   id: string;

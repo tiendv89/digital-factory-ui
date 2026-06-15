@@ -5,7 +5,6 @@ import { Zap } from "lucide-react";
 import { getBffBaseUrl } from "@/constants/axios";
 
 function getProviderUrl(provider: "google" | "github"): string {
-  // OAuth login is owned by the BFF at the bare origin.
   return `${getBffBaseUrl()}/auth/${provider}/start`;
 }
 

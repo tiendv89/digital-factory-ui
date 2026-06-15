@@ -13,8 +13,6 @@ type SessionHistoryListProps = {
 };
 
 function formatRelativeDate(ts: number): string {
-  // The backend sends Unix timestamps in seconds; normalize to milliseconds.
-  // (Values below ~1e12 ms predate 2001, so they must be second-based.)
   const ms = ts < 1e12 ? ts * 1000 : ts;
   const diff = Date.now() - ms;
   if (diff < 60_000) return "just now";

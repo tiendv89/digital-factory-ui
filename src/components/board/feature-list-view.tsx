@@ -13,7 +13,6 @@ import { LifecycleGlyph, StatusBadge, StatusGlyph } from "./status-glyph";
 const GRID = "2fr 1fr 120px 80px";
 const DONE_LIKE = new Set(["done", "cancelled", "review_passed"]);
 
-// Display order for feature lifecycle groups — active → terminal
 const STATUS_ORDER = ["blocked", "in_handoff", "in_implementation", "ready_for_implementation", "in_tdd", "in_design", "done", "cancelled"];
 
 function statusSortIndex(status: string) {

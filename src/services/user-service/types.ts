@@ -34,8 +34,6 @@ export interface RoleChangeRequest {
   role: "member" | "admin";
 }
 
-// ─── Org-admin types ──────────────────────────────────────────────────────────
-
 export type OrgRole = "member" | "admin";
 
 export interface Org {
@@ -94,8 +92,6 @@ export interface ChangeOrgMemberRoleRequest {
 export interface TransferOrgOwnershipRequest {
   new_owner_user_id: string;
 }
-
-// ─── Workspace member/role types (T5/T8) ─────────────────────────────────────
 
 export type WorkspaceRole = "member" | "admin";
 

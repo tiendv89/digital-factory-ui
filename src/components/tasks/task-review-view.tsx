@@ -5,8 +5,6 @@ import { useState } from "react";
 
 import type { TaskSummary } from "@/services/workflow-backend/types";
 
-// ── Types ────────────────────────────────────────────────────────────────────
-
 type DiffLine = { kind: "add" | "remove" | "context"; num: number; text: string };
 type PrStatus = "open" | "in_review" | "review_passed" | "changes_requested" | "merged";
 
@@ -18,8 +16,6 @@ interface RepoPill {
   additions: number;
   deletions: number;
 }
-
-// ── Constants ────────────────────────────────────────────────────────────────
 
 const DIFF_COLORS = {
   add: { bg: "rgba(69,177,100,0.12)", text: "#5cb572", gutter: "rgba(69,177,100,0.25)" },
@@ -53,8 +49,6 @@ const PLACEHOLDER_DIFF: DiffLine[] = [
   { kind: "add", num: 14, text: "  res.status(201).json({ session });" },
   { kind: "add", num: 15, text: "});" },
 ];
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
 
 function initials(name: string) {
   return name
@@ -90,8 +84,6 @@ function buildRepoPills(task: TaskSummary): RepoPill[] {
   }
   return pills;
 }
-
-// ── Sub-components ───────────────────────────────────────────────────────────
 
 function AgentAvatar({ name, size = 20 }: { name: string; size?: number }) {
   const px = size;
@@ -211,8 +203,6 @@ function DiffRow({ line }: { line: DiffLine }) {
     </div>
   );
 }
-
-// ── Main component ───────────────────────────────────────────────────────────
 
 interface TaskReviewViewProps {
   task: TaskSummary;

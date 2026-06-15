@@ -1,7 +1,10 @@
 "use client";
 
+import { Popover } from "@heroui/react";
 import { Bot } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
+
+import { deriveIconColor } from "@/components/settings/icon-colors";
 
 import { ConversationContent, useConversationScroll } from "./conversation";
 import { Loader } from "./loader";
@@ -9,7 +12,15 @@ import { MessageContent, UserMessageContent } from "./message";
 import type { ChatStatus, HermesMessage } from "./types";
 
 /** Resolved display identity for a channel message author. */
-export type ChannelAuthor = { name: string; avatarUrl?: string | null; isAgent: boolean };
+export type ChannelAuthor = {
+  id?: string;
+  name: string;
+  handle?: string | null;
+  email?: string | null;
+  avatarUrl?: string | null;
+  roleLabel?: string | null;
+  isAgent: boolean;
+};
 
 type ChannelMessageListProps = {
   messages: HermesMessage[];
@@ -24,21 +35,81 @@ function initials(name: string): string {
   return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
-function Avatar({ author }: { author: ChannelAuthor }) {
+function Avatar({ author, size = 36 }: { author: ChannelAuthor; size?: number }) {
+  const cls = "shrink-0 rounded-full";
   if (author.isAgent) {
     return (
-      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/15" aria-label="Hermes agent">
-        <Bot className="h-4.5 w-4.5 text-primary" aria-hidden="true" />
+      <div className={`${cls} flex items-center justify-center bg-primary/15`} style={{ width: size, height: size }} aria-label="Hermes agent">
+        <Bot className="text-primary" style={{ width: size * 0.5, height: size * 0.5 }} aria-hidden="true" />
       </div>
     );
   }
   if (author.avatarUrl) {
-    return <img src={author.avatarUrl} alt={author.name} className="h-9 w-9 shrink-0 rounded-full object-cover" />;
+    return <img src={author.avatarUrl} alt={author.name} className={`${cls} object-cover`} style={{ width: size, height: size }} />;
   }
   return (
-    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-secondary text-[11px] font-semibold text-text-secondary" aria-label={author.name}>
+    <div
+      className={`${cls} flex items-center justify-center font-semibold text-white`}
+      style={{ width: size, height: size, fontSize: size * 0.32, background: deriveIconColor(author.id ?? author.name) }}
+      aria-label={author.name}
+    >
       {initials(author.name)}
     </div>
+  );
+}
+
+/** Discord-style profile card shown when a member's avatar/name is clicked. */
+function ProfileCard({ author }: { author: ChannelAuthor }) {
+  const banner = author.isAgent ? "var(--color-primary, #007acc)" : deriveIconColor(author.id ?? author.name);
+  return (
+    <div className="w-72 overflow-hidden rounded-xl border" style={{ backgroundColor: "#2d2d2d", borderColor: "#454545", boxShadow: "0 12px 32px rgba(0,0,0,0.5)" }}>
+      <div className="h-[60px]" style={{ background: banner }} />
+      <div className="px-4 pb-4">
+        <div className="-mt-9 mb-2 w-fit rounded-full p-1" style={{ backgroundColor: "#2d2d2d" }}>
+          <Avatar author={author} size={64} />
+        </div>
+        <div className="text-[15px] font-bold text-text-primary">{author.name}</div>
+        {author.handle && <div className="text-[12px] text-text-muted">@{author.handle}</div>}
+        {author.isAgent && <div className="text-[12px] text-text-muted">AI assistant</div>}
+
+        {(author.email || author.roleLabel) && (
+          <div className="mt-3 flex flex-col gap-3 rounded-lg bg-black/20 p-3">
+            {author.email && (
+              <div>
+                <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-text-muted">Email</div>
+                <div className="truncate text-[12px] text-text-secondary">{author.email}</div>
+              </div>
+            )}
+            {author.roleLabel && (
+              <div>
+                <div className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted">Role</div>
+                <span className="inline-flex items-center rounded bg-white/8 px-2 py-0.5 text-[11px] font-medium capitalize text-text-secondary">{author.roleLabel}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** Wraps avatar/name as a clickable trigger that opens the profile card.
+ * No-op (renders children plainly) for the agent or unresolved authors. */
+function ProfileTrigger({ author, className, children }: { author: ChannelAuthor; className?: string; children: ReactNode }) {
+  if (author.isAgent || !author.id) return <>{children}</>;
+  return (
+    <Popover>
+      <Popover.Trigger>
+        <button type="button" className={`cursor-pointer rounded text-left transition-opacity hover:opacity-80 focus:outline-none ${className ?? ""}`}>
+          {children}
+        </button>
+      </Popover.Trigger>
+      <Popover.Content placement="top start" className="border-0 bg-transparent p-0 shadow-none">
+        <Popover.Dialog className="outline-none">
+          <ProfileCard author={author} />
+        </Popover.Dialog>
+      </Popover.Content>
+    </Popover>
   );
 }
 
@@ -52,7 +123,7 @@ function formatTime(epochSeconds?: number): string {
  * Discord-style channel transcript: consecutive messages from the same author
  * are grouped under a single avatar + name header; subsequent lines indent to
  * align with the first. Agent replies render as markdown; human messages as
- * plain text with @mention chips.
+ * plain text with @mention chips. Clicking an avatar/name opens a profile card.
  */
 export function ChannelMessageList({ messages, status, resolveAuthor }: ChannelMessageListProps) {
   const isStreaming = status === "streaming";
@@ -72,9 +143,6 @@ export function ChannelMessageList({ messages, status, resolveAuthor }: ChannelM
   }, [isAtBottomRef, scrollRef]);
 
   const visible = messages.filter((m) => m.content.trim().length > 0);
-  // Only show the "agent is typing" indicator while the agent is actually
-  // streaming — not on initial load/connect (a channel is async; connecting
-  // doesn't mean the agent is replying).
   const showTyping = isStreaming;
 
   if (visible.length === 0 && !isStreaming && status !== "connecting") {
@@ -96,11 +164,17 @@ export function ChannelMessageList({ messages, status, resolveAuthor }: ChannelM
 
         return (
           <div key={msg.id} data-channel-message className={grouped ? "flex gap-3 pl-12" : "flex gap-3 pt-3"}>
-            {!grouped && <Avatar author={author} />}
+            {!grouped && (
+              <ProfileTrigger author={author}>
+                <Avatar author={author} />
+              </ProfileTrigger>
+            )}
             <div className="min-w-0 flex-1">
               {!grouped && (
                 <div className="mb-0.5 flex items-baseline gap-2">
-                  <span className={`text-[13px] font-semibold ${author.isAgent ? "text-primary" : "text-text-primary"}`}>{author.name}</span>
+                  <ProfileTrigger author={author}>
+                    <span className={`text-[13px] font-semibold ${author.isAgent ? "text-primary" : "text-text-primary"}`}>{author.name}</span>
+                  </ProfileTrigger>
                   {msg.createdAt ? <span className="text-[11px] text-text-muted">{formatTime(msg.createdAt)}</span> : null}
                 </div>
               )}

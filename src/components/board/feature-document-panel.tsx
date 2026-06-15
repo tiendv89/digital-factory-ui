@@ -110,7 +110,6 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
     void queryClient.invalidateQueries({ queryKey: contentQueryKey });
   }, [queryClient, contentQueryKey]);
 
-  // Unsaved-changes guard: warn on browser/tab close
   useEffect(() => {
     if (!isDirty) return;
     const handler = (e: BeforeUnloadEvent) => {
@@ -121,8 +120,6 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
   }, [isDirty]);
 
   const docTitle = DOC_TITLES[documentType];
-  // Handoff is read-only for now — the hermes save path only knows product_spec
-  // and technical_design, so we don't surface an Edit button for it.
   const canEdit = documentType !== "handoff";
   const githubUrl = docContent?.url ?? doc?.url;
 

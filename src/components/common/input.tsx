@@ -4,7 +4,6 @@ import React from "react";
 
 import { cn } from "./cn";
 
-// Figma input: #2d2d2d bg, #454545 border, 8px radius, 13px text, #007acc focus.
 const FIELD_BASE =
   "w-full rounded-[8px] border border-border-control bg-surface-secondary px-3 text-sm text-text-primary " +
   "placeholder:text-text-muted transition-colors " +
