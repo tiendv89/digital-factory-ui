@@ -13,6 +13,8 @@ import type {
   ImportWorkspaceRequest,
   PagedFeatures,
   PagedTasks,
+  TaskDiff,
+  TaskReviewThread,
   TaskSummary,
   WorkspaceDetail,
   WorkspaceSummary,
@@ -114,6 +116,16 @@ export async function listActivity(workspaceId: string, params?: { audience?: st
   if (params?.limit !== undefined) sp.set("limit", String(params.limit));
   const qs = sp.toString() ? `?${sp.toString()}` : "";
   return request<ActivityEvent[]>(`/api/workspaces/${workspaceId}/activity${qs}`);
+}
+
+export async function getTaskDiff(workspaceId: string, taskId: string, repo?: string): Promise<TaskDiff> {
+  const qs = repo ? `?repo=${encodeURIComponent(repo)}` : "";
+  return request<TaskDiff>(`/api/workspaces/${workspaceId}/tasks/${taskId}/diff${qs}`);
+}
+
+export async function getTaskReviewThread(workspaceId: string, taskId: string, repo?: string): Promise<TaskReviewThread> {
+  const qs = repo ? `?repo=${encodeURIComponent(repo)}` : "";
+  return request<TaskReviewThread>(`/api/workspaces/${workspaceId}/tasks/${taskId}/review-thread${qs}`);
 }
 
 function unwrapItems<T>(result: T[] | { items: T[] }): T[] {
