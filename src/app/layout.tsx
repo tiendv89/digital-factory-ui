@@ -2,9 +2,14 @@ import "./globals.css";
 
 import type { Metadata } from "next";
 import { Cousine, Inter } from "next/font/google";
-import Script from "next/script";
 
+import { loadRuntimeConfig } from "@/constants/runtime-config";
 import { AppProviders } from "@/providers/app-providers";
+import { RuntimeConfigProvider } from "@/providers/runtime-config-provider";
+
+// Render at request time so loadRuntimeConfig() reads the container's live
+// process.env (otherwise the values would be frozen at build time).
+export const dynamic = "force-dynamic";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,14 +34,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Loaded on the server from process.env at request time, then passed to the
+  // client as a normal prop — no window globals, no injected <script>.
+  const runtimeConfig = loadRuntimeConfig();
+
   return (
     <html lang="en" className={`${inter.variable} ${cousine.variable} dark h-full`}>
       <body className="h-full min-h-screen bg-bg text-text-primary antialiased">
-        <AppProviders>{children}</AppProviders>
+        <RuntimeConfigProvider config={runtimeConfig}>
+          <AppProviders>{children}</AppProviders>
+        </RuntimeConfigProvider>
       </body>
-      {/* Runtime config (window.__ENV__). Loaded before app code so the BFF URL
-          can be set per-container without rebuilding. See docker-entrypoint.sh. */}
-      <Script src="/env.js" strategy="beforeInteractive" />
     </html>
   );
 }

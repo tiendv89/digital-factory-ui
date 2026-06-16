@@ -1,39 +1,38 @@
 import axios from "axios";
 
-declare global {
-  interface Window {
-    __ENV__?: { BFF_URL?: string };
-  }
-}
-
 /**
- * Resolve the BFF origin at runtime, preferring values injected into the page
- * by the container entrypoint (window.__ENV__) so a single build/image can be
- * configured per deployment. Falls back to the build-time NEXT_PUBLIC_BFF_URL
- * (used by `next dev` / local builds) and finally a local-dev default.
+ * BFF origin. Initialised from the build-time NEXT_PUBLIC_BFF_URL (used by
+ * `next dev` / local builds), then overridden at runtime by the server-loaded
+ * config — RuntimeConfigProvider calls setBffBaseUrl() with the value the server
+ * read from process.env at request time. This is what lets one image serve every
+ * deployment without baking the URL in. Consumers just import the clients and
+ * call them normally; the baseURL is resolved per-request via an interceptor.
  */
-function resolveBffBaseUrl(): string {
-  if (typeof window !== "undefined" && window.__ENV__?.BFF_URL) {
-    return window.__ENV__.BFF_URL;
-  }
-  return process.env.NEXT_PUBLIC_BFF_URL ?? "http://localhost:8090";
-}
+let bffBaseUrl = process.env.NEXT_PUBLIC_BFF_URL ?? "http://localhost:8090";
 
-const BFF_BASE_URL = resolveBffBaseUrl();
+/** Set by RuntimeConfigProvider on first render with the server-resolved value. */
+export function setBffBaseUrl(url: string | undefined): void {
+  if (url) bffBaseUrl = url;
+}
 
 /** getBffBaseUrl returns the bare BFF origin, used for /auth/* (login, logout). */
 export function getBffBaseUrl(): string {
-  return BFF_BASE_URL;
+  return bffBaseUrl;
 }
 
-export const workflowApi = axios.create({
-  baseURL: `${BFF_BASE_URL}/bff/workflow-backend`,
-  withCredentials: true,
-  headers: { "Content-Type": "application/json" },
-});
+/** Create a BFF client whose baseURL is resolved fresh on every request. */
+function createBffClient(pathPrefix: string) {
+  const client = axios.create({
+    withCredentials: true,
+    headers: { "Content-Type": "application/json" },
+  });
+  client.interceptors.request.use((config) => {
+    config.baseURL = `${bffBaseUrl}${pathPrefix}`;
+    return config;
+  });
+  return client;
+}
 
-export const userServiceApi = axios.create({
-  baseURL: `${BFF_BASE_URL}/bff/user-service`,
-  withCredentials: true,
-  headers: { "Content-Type": "application/json" },
-});
+export const workflowApi = createBffClient("/bff/workflow-backend");
+
+export const userServiceApi = createBffClient("/bff/user-service");

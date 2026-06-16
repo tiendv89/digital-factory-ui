@@ -1,0 +1,33 @@
+# Build artifacts & dependencies — reinstalled/rebuilt inside the image.
+node_modules
+.next
+out
+dist
+
+# VCS & local tooling
+.git
+.gitignore
+.github
+.idea
+.vscode
+.claude
+
+# TypeScript incremental build caches (hundreds of KB each, never needed)
+*.tsbuildinfo
+
+# Local env files — config is injected at runtime via docker-entrypoint.sh
+.env
+.env.*
+!.env.template
+
+# Tests & coverage
+coverage
+**/*.test.ts
+**/*.test.tsx
+vitest.config.ts
+
+# Docs & misc
+README.md
+*.md
+Dockerfile
+.dockerignore
