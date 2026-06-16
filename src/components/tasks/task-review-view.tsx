@@ -16,7 +16,7 @@ type DiffLine = {
 };
 type PrStatus = "open" | "in_review" | "review_passed" | "changes_requested" | "merged";
 
-interface RepoPill {
+export interface RepoPill {
   repo: string;
   branch: string;
   pr?: number;
@@ -28,7 +28,7 @@ interface RepoPill {
 
 type ThreadEntryKind = ReviewThreadItemKind | "log_verdict" | "log_blocked";
 
-interface ThreadEntry {
+export interface ThreadEntry {
   id: string;
   source: "github" | "log";
   kind: ThreadEntryKind;
@@ -681,12 +681,12 @@ export function TaskReviewView({ task }: TaskReviewViewProps) {
   );
 }
 
-interface DiffPanelProps {
+export interface DiffPanelProps {
   hasPr: boolean;
   diffResult: ReturnType<typeof useTaskDiff>;
 }
 
-function DiffPanel({ hasPr, diffResult }: DiffPanelProps) {
+export function DiffPanel({ hasPr, diffResult }: DiffPanelProps) {
   if (!hasPr) {
     return (
       <div className="flex flex-1 items-center justify-center" style={{ backgroundColor: "#1e1e1e" }}>
@@ -778,11 +778,11 @@ function DiffPanel({ hasPr, diffResult }: DiffPanelProps) {
   );
 }
 
-interface SpecPanelProps {
+export interface SpecPanelProps {
   task: TaskSummary;
 }
 
-function SpecPanel({ task }: SpecPanelProps) {
+export function SpecPanel({ task }: SpecPanelProps) {
   const taskId = task.task_id?.toUpperCase() ?? task.task_name?.toUpperCase() ?? task.id.slice(0, 8).toUpperCase();
   return (
     <div className="flex-1 overflow-y-auto p-5" style={{ backgroundColor: "#1e1e1e", scrollbarWidth: "none" }}>
@@ -948,14 +948,14 @@ function SpecPanel({ task }: SpecPanelProps) {
   );
 }
 
-interface ThreadPanelProps {
+export interface ThreadPanelProps {
   hasPr: boolean;
   threadResult: ReturnType<typeof useTaskReviewThread>;
   threadEntries: ThreadEntry[];
   currentRepo: RepoPill | undefined;
 }
 
-function ThreadPanel({ hasPr, threadResult, threadEntries, currentRepo }: ThreadPanelProps) {
+export function ThreadPanel({ hasPr, threadResult, threadEntries, currentRepo }: ThreadPanelProps) {
   if (!hasPr) {
     return (
       <div className="flex flex-1 items-center justify-center">
