@@ -2,6 +2,7 @@ import "./globals.css";
 
 import type { Metadata } from "next";
 import { Cousine, Inter } from "next/font/google";
+import Script from "next/script";
 
 import { AppProviders } from "@/providers/app-providers";
 
@@ -33,6 +34,9 @@ export default function RootLayout({
       <body className="h-full min-h-screen bg-bg text-text-primary antialiased">
         <AppProviders>{children}</AppProviders>
       </body>
+      {/* Runtime config (window.__ENV__). Loaded before app code so the BFF URL
+          can be set per-container without rebuilding. See docker-entrypoint.sh. */}
+      <Script src="/env.js" strategy="beforeInteractive" />
     </html>
   );
 }

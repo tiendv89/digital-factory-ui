@@ -3,8 +3,9 @@ name: Release
 # Build and publish the workflow-frontend image to GHCR at a chosen version,
 # then create a matching git tag and GitHub release.
 #
-# NEXT_PUBLIC_* vars are baked into the Next.js client bundle at build time.
-# Pass the production API URLs as workflow inputs before releasing.
+# The image is config-agnostic: no API URLs are baked in. Configure each
+# deployment at runtime via container env vars (e.g. BFF_URL=https://bff.example.com),
+# consumed by docker-entrypoint.sh. One image serves every customer.
 #
 # Published image: ghcr.io/<owner>/workflow-frontend:<version>
 

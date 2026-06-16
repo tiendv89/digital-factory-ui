@@ -11,10 +11,10 @@ RUN apk add --no-cache git \
     && pnpm install --frozen-lockfile
 
 # ── build ────────────────────────────────────────────────────────────────────
-# Copy source, inject build-time env vars, and produce the standalone bundle.
-# NEXT_PUBLIC_* variables must be provided here so Next.js can bake them into
-# the client bundle.  Pass them with --build-arg or via an .env.production file
-# that your CI pipeline writes before invoking docker build.
+# Copy source and produce the standalone bundle. This image is config-agnostic:
+# the BFF URL is NOT baked in here. It is injected at container startup by
+# docker-entrypoint.sh (see window.__ENV__), so one image serves every
+# deployment — no per-customer build args or .env files required.
 FROM node:22-alpine AS build
 
 RUN npm install -g pnpm@10.5.2
@@ -38,8 +38,14 @@ COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
 
+# Entrypoint regenerates public/env.js from the container environment at startup.
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
+# Pass deployment config at runtime, e.g. `docker run -e BFF_URL=https://bff.example.com`.
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "server.js"]
