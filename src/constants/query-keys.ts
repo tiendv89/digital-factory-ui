@@ -43,4 +43,8 @@ export const workspaceKeys = {
   documentContent: (workspaceId: string, featureId: string, documentType: string): QueryKey => ["workspace", workspaceId, "feature", featureId, "document", documentType, "content"] as const,
 
   documentPr: (workspaceId: string, featureId: string): QueryKey => ["workspace", workspaceId, "feature", featureId, "document", "pr"] as const,
+
+  taskDiff: (workspaceId: string, taskId: string, repo?: string): QueryKey => ["workspace", workspaceId, "task", taskId, "diff", repo ?? "default"] as const,
+
+  taskReviewThread: (workspaceId: string, taskId: string, repo?: string): QueryKey => ["workspace", workspaceId, "task", taskId, "review-thread", repo ?? "default"] as const,
 };

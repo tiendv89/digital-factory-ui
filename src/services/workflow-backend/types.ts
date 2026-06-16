@@ -191,3 +191,40 @@ export type ApiError = {
   path?: string;
   cached_data?: unknown;
 };
+
+// ── Diff types (mirrors T1 backend DTO) ────────────────────────────────────
+
+export type PRFile = {
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  changes: number;
+  patch?: string;
+};
+
+export type TaskDiff = {
+  files: PRFile[];
+  total_additions: number;
+  total_deletions: number;
+  diff_text?: string;
+};
+
+// ── Review-thread types (mirrors T2 backend DTO) ───────────────────────────
+
+export type ReviewThreadItemKind = "review" | "review_comment" | "issue_comment";
+
+export type ReviewThreadItem = {
+  id: number;
+  kind: ReviewThreadItemKind;
+  author: string;
+  body: string;
+  state?: string;
+  path?: string;
+  line?: number;
+  created_at: string;
+};
+
+export type TaskReviewThread = {
+  items: ReviewThreadItem[];
+};
