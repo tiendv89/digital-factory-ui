@@ -1,6 +1,6 @@
 # digital-factory-ui
 
-Next.js frontend for the Digital Factory workflow management platform. Provides a workspace board, feature tabs, task tabs, and a backend-integrated view of the workflow-backend API.
+Next.js frontend for the Digital Factory workflow platform. Provides a workspace board (kanban + list), feature and task detail views, a task-review diff/thread view, agent chat, and channels — all backed by a single BFF (Backend-for-Frontend) that owns auth/session and proxies to the workflow-backend and user-service.
 
 ## Prerequisites
 
@@ -15,7 +15,7 @@ pnpm install
 
 # 2. Configure environment
 cp .env.template .env.local
-# Edit .env.local — set NEXT_PUBLIC_WORKFLOW_API_URL and NEXT_PUBLIC_USER_SERVICE_URL
+# Edit .env.local — set NEXT_PUBLIC_BFF_URL (e.g. http://localhost:8090)
 
 # 3. Start the dev server
 pnpm dev
@@ -25,52 +25,56 @@ The app will be available at http://localhost:3000.
 
 ## Environment variables
 
-See `.env.template` for the full list with descriptions. Key variables:
+See `.env.template` for the full list with descriptions. Key variable:
 
 | Variable | Required | Description |
 |---|---|---|
-| `NEXT_PUBLIC_WORKFLOW_API_URL` | Yes | Base URL of the workflow-backend API (no trailing slash). Replaces the old `NEXT_PUBLIC_API_BASE_URL`. |
-| `NEXT_PUBLIC_USER_SERVICE_URL` | Yes | Base URL of the user-service (no trailing slash). Used for login, `/api/me`, and logout. FE and user-service must share a parent domain for the session cookie. |
-`NEXT_PUBLIC_*` variables are baked into the client bundle at build time. Set them in your deployment environment **before** running `next build` or `docker build`.
+| `NEXT_PUBLIC_BFF_URL` | Yes | Base URL of the BFF (no trailing slash). The app talks **only** to the BFF, which owns auth/session (`/auth/*`) and reverse-proxies API calls under per-service prefixes (`/bff/workflow-backend`, `/bff/user-service`, `/bff/hermes-agent`). Defaults to `http://localhost:8090`. The legacy unprefixed `BFF_URL` is still accepted. |
 
-> **Backward compat:** `NEXT_PUBLIC_API_BASE_URL` is still accepted as a fallback for `NEXT_PUBLIC_WORKFLOW_API_URL`. Prefer the new name in all new configs.
+### Build-time vs runtime config
+
+Unlike a typical Next.js app, `NEXT_PUBLIC_*` values are **not** baked into the bundle at build time. The published image bakes nothing in: the server reads `process.env` at request time (`loadRuntimeConfig` in `src/constants/runtime-config.ts`) and passes every `NEXT_PUBLIC_*` var (prefix stripped) to the client via `RuntimeConfigProvider`. So **one image serves every deployment** — change config by passing a different env var, no rebuild required.
+
+In local dev, `next dev` reads `NEXT_PUBLIC_*` from `.env.local` as usual.
 
 ## Available scripts
 
 ```bash
-pnpm dev          # Start development server with hot reload
+pnpm dev          # Start dev server with hot reload (Turbopack)
 pnpm build        # Production build (webpack bundler)
 pnpm start        # Start production server (requires build first)
 pnpm lint         # Run ESLint
 pnpm type-check   # Generate Next.js types then run tsc --noEmit
-pnpm test         # Run unit tests (Vitest)
+pnpm test         # Run unit tests (Vitest, single run)
 pnpm test:watch   # Run tests in watch mode
 ```
 
 ## Running tests
 
 ```bash
-pnpm test                                              # Run all tests
-pnpm test src/__tests__/feature-tab-view.test.ts       # Single file
+pnpm test                                    # Run all tests
+pnpm test src/__tests__/<file>.test.tsx      # Single file
 ```
 
 ## Docker
 
+The image is config-agnostic — no build args or `.env` files are needed. Pass deployment config as runtime environment variables.
+
 ### Build
 
 ```bash
-docker build \
-  --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.example.com \
-  -t digital-factory-ui .
+docker build -t digital-factory-ui .
 ```
 
 ### Run
 
 ```bash
-docker run -p 3000:3000 digital-factory-ui
+docker run -p 3000:3000 \
+  -e NEXT_PUBLIC_BFF_URL=https://bff.example.com \
+  digital-factory-ui
 ```
 
-The container listens on port 3000. The `NEXT_PUBLIC_API_BASE_URL` value is baked into the bundle at build time, so it must be provided as a build argument — not a runtime environment variable.
+The container listens on port 3000 and runs the Next.js standalone server as a non-root user. Because config is read at request time, the same image can be deployed to any environment by changing the env vars passed at `docker run` time.
 
 ### Docker Compose example
 
@@ -79,8 +83,8 @@ services:
   ui:
     build:
       context: .
-      args:
-        NEXT_PUBLIC_API_BASE_URL: ${API_URL:-http://localhost:8081}
+    environment:
+      NEXT_PUBLIC_BFF_URL: ${BFF_URL:-http://localhost:8090}
     ports:
       - "3000:3000"
 ```
@@ -89,34 +93,47 @@ services:
 
 ```
 src/
-  app/                     Next.js App Router pages and API routes
-    api/content/fetch/     Server-side content proxy route
-    board/                 Board page
-    connect/               Workspace connect page
-    feature/[sessionId]/   Feature detail page
-    task/[sessionId]/      Task detail page
-  features/
-    board/                 Kanban board, feature list, task list
-      components/          BoardHeader, FeatureBoardView, FeatureDetailSheet,
-                           FeatureTabView, KanbanBoard, TaskBoardView, TaskCard,
-                           TaskTrackingPanel, and more
-      hooks/               Data-fetching hooks (useFeatureDetail, useBoardData, …)
-    tasks/                 Task detail tab and drawer
-    workspaces/            Workspace context, switcher, import modal, tab bar
+  app/
+    (shell)/               Authenticated app shell (nav rail, topbar)
+      board/               Board page (kanban + list)
+      feature/[featureId]/ Feature detail page
+      task/[taskId]/       Task detail page
+      tasks/               Task tabs surface
+      settings/            Settings pages
+    login/                 Login page
+    layout.tsx             Root layout (force-dynamic; loads runtime config)
+    globals.css            Global styles + design tokens
+  components/
+    agent-chat/            Agent chat transcript + composer
+    auth/                  Session context, login flow
+    board/                 BoardView, FeatureCard, FeatureListView, kanban context, …
+    channels/              Channels nav + views
+    common/                Shared presentational primitives
+    features/              Feature workbench + document panels
+    orgs/                  Organization switcher / management
+    settings/              Settings UI
+    shell/                 Nav rail, topbar, command palette, tab bar
+    tasks/                 Task review view (diff + review thread)
+    workspaces/            Workspace context, switcher, import modal
   services/
-    workflow-backend/      Typed API client for the backend
-    content-provider/      Fetches and parses workspace content (YAML, GitHub, …)
-    local-workspace-store  Browser-local workspace summary persistence
-    workspace-store        Active workspace state
-  lib/                     Shared utilities (markdown, click-intent, request-sequence, time)
-  types/                   Shared TypeScript types (workspace, …)
+    workflow-backend/      Typed API client for the workflow backend
+    user-service/          Auth / user client
+    hermes-agent/          Agent chat + tool-call client
+    yaml-parser.ts         Workspace content (YAML) parsing
+  hooks/                   Data-fetching + UI hooks (board, tasks, workspaces, …)
+  stores/                  Client state (board, workspace, org-workspace)
+  providers/               App providers + RuntimeConfigProvider
+  constants/               Axios BFF clients, runtime-config loader
+  utils/                   Shared utilities (markdown, workspaces, time, …)
+  types/                   Shared TypeScript types
+  __tests__/               Vitest unit tests
 docs/                      QA notes and test plans
 ```
 
 ## Architecture notes
 
-- All workspace data is fetched from `workflow-backend` — no direct GitHub API calls from the browser.
-- `NEXT_PUBLIC_WORKFLOW_API_URL` (or legacy `NEXT_PUBLIC_API_BASE_URL`) is read once at startup via `getApiBase()` in `src/services/workflow-backend/client.ts`; if unset the app throws immediately rather than silently failing later.
-- Authentication is handled by `user-service` (separate service). The frontend fetches `/api/me` on mount; on 401 it redirects to `/login`.
-- Session cookies are set by `user-service` and sent automatically by the browser on same-parent-domain requests. No token storage in JS.
+- The browser talks **only** to the BFF. There are no direct GitHub or backend API calls from the client.
+- API clients live in `src/constants/axios.ts`: `workflowApi`, `userServiceApi`, and the hermes-agent client. Each resolves its `baseURL` fresh on every request from the BFF origin set by `RuntimeConfigProvider` (via `setBffBaseUrl`), so config changes take effect without a rebuild.
+- Deployment config is read on the server per request (`loadRuntimeConfig`) and handed to the client through `RuntimeConfigProvider` — use `useRuntimeConfig()` / `useRuntimeEnv()` to read it. The root layout is `force-dynamic` so the read happens per request rather than being frozen at build.
+- Authentication is owned by the BFF (`/auth/*`). The frontend relies on the session cookie set by the BFF; on 401 it redirects to `/login`. No token storage in JS.
 - The app uses Next.js standalone output (`output: "standalone"`) for Docker deployments.
