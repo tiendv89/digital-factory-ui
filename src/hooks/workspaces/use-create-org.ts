@@ -1,16 +1,18 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 
+import { useSession } from "@/components/auth";
+import { refreshBffSession } from "@/constants/axios";
 import type { CreateOrgRequest, Org } from "@/services/user-service";
 import { createOrg } from "@/services/user-service";
 
 export function useCreateOrg() {
-  const queryClient = useQueryClient();
+  const { refreshSession } = useSession();
   return useMutation<Org, Error, CreateOrgRequest>({
     mutationFn: (body) => createOrg(body),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["session"] });
+      void refreshBffSession().finally(() => refreshSession());
     },
   });
 }

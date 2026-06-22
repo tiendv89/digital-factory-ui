@@ -11,6 +11,7 @@ type SessionState = { status: "loading" } | { status: "unauthenticated" } | { st
 interface SessionContextValue {
   session: SessionState;
   logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -48,13 +49,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const refreshSession = useCallback(async () => {
+    try {
+      const data = await fetchMe();
+      setSession({ status: "authenticated", data });
+    } catch {
+      setSession({ status: "unauthenticated" });
+      startTransition(() => router.replace("/login"));
+    }
+  }, [router]);
+
   const logout = useCallback(async () => {
     await logoutUser();
     setSession({ status: "unauthenticated" });
     startTransition(() => router.replace("/login"));
   }, [router]);
 
-  return <SessionContext.Provider value={{ session, logout }}>{children}</SessionContext.Provider>;
+  return <SessionContext.Provider value={{ session, logout, refreshSession }}>{children}</SessionContext.Provider>;
 }
 
 export function useSession(): SessionContextValue {

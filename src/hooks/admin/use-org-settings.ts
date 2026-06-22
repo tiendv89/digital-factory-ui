@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { useSession } from "@/components/auth";
+import { refreshBffSession } from "@/constants/axios";
 import type { ChangeOrgMemberRoleRequest, Org, OrgInvitation, OrgInviteRequest, OrgMember, TransferOrgOwnershipRequest, UpdateOrgRequest } from "@/services/user-service";
 import {
   cancelOrgInvitation,
@@ -33,10 +35,12 @@ export function useOrg(orgId: string | null) {
 
 export function useUpdateOrg(orgId: string) {
   const queryClient = useQueryClient();
+  const { refreshSession } = useSession();
   return useMutation<Org, Error, UpdateOrgRequest>({
     mutationFn: (body) => updateOrg(orgId, body),
     onSuccess: (updated) => {
       queryClient.setQueryData(orgKeys.org(orgId), updated);
+      void refreshSession();
     },
   });
 }
@@ -120,7 +124,11 @@ export function useTransferOrgOwnership(orgId: string) {
 }
 
 export function useDeleteOrg(orgId: string) {
+  const { refreshSession } = useSession();
   return useMutation<void, Error, void>({
     mutationFn: () => deleteOrg(orgId),
+    onSuccess: () => {
+      void refreshBffSession().finally(() => refreshSession());
+    },
   });
 }

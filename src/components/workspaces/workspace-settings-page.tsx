@@ -406,7 +406,6 @@ function WorkspaceSettingsPage({ workspaceId: propWorkspaceId, orgId: propOrgId,
           })}
         </nav>
       </aside>
-      add
       {/* Content */}
       <main id={`ws-settings-panel-${activeTab}`} role="tabpanel" aria-label={WS_TABS.find((t) => t.id === activeTab)?.label} className="min-w-0 flex-1 overflow-y-auto p-6">
         {activeTab === "general" && <GeneralTab workspaceId={workspaceId} name={name} slug={slug} />}

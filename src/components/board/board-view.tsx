@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, List, Plus, Search, X } from "lucide-react";
+import { LayoutGrid, List, Loader2, Plus, RefreshCcw, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { FEATURE_COLUMNS, lifecycleMeta, toFeatureRows } from "./board-meta";
@@ -26,7 +26,7 @@ const LIST_FILTERS: ListFilter[] = [
 ];
 
 export function BoardView() {
-  const { features, openFeatureTab, featureSearchQuery, setFeatureSearchQuery, viewMode, setViewMode, workspaceDetail, reload } = useBoardContext();
+  const { features, openFeatureTab, featureSearchQuery, setFeatureSearchQuery, viewMode, setViewMode, workspaceDetail, reload, syncing, syncBoard } = useBoardContext();
 
   const [showNewFeature, setShowNewFeature] = useState(false);
   const [quickFilters, setQuickFilters] = useState<Set<string>>(new Set());
@@ -156,6 +156,17 @@ export function BoardView() {
         </div>
 
         <div className="flex-1" />
+
+        {/* Sync */}
+        <button
+          type="button"
+          onClick={syncBoard}
+          disabled={syncing}
+          aria-label="Sync workspace"
+          className="flex h-[30px] items-center justify-center rounded-lg border border-border px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary disabled:opacity-50"
+        >
+          {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />}
+        </button>
 
         {/* New Feature */}
         <button

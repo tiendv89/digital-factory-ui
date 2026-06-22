@@ -22,9 +22,11 @@ function toSlug(value: string): string {
 type CreateWorkspaceModalProps = {
   onClose: () => void;
   onSuccess?: () => void;
+  /** Explicit org to create the workspace in. When omitted, falls back to the active org from the session. */
+  orgId?: string;
 };
 
-export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModalProps) {
+export function CreateWorkspaceModal({ onClose, onSuccess, orgId: propOrgId }: CreateWorkspaceModalProps) {
   const [mode, setMode] = useState<"create" | "import">("create");
 
   const [name, setName] = useState("");
@@ -60,12 +62,14 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
     [importError, clearImportError],
   );
 
+  const organizationId = propOrgId ?? activeMembership?.organization_id;
+
   const handleCreate = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       if (!name.trim() || !slug.trim()) return;
       mutate(
-        { name: name.trim(), slug: slug.trim(), organization_id: activeMembership?.organization_id },
+        { name: name.trim(), slug: slug.trim(), organization_id: organizationId },
         {
           onSuccess: (detail) => {
             addWorkspace(detail);
@@ -75,7 +79,7 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
         },
       );
     },
-    [name, slug, mutate, addWorkspace, onSuccess, onClose, activeMembership?.organization_id],
+    [name, slug, mutate, addWorkspace, onSuccess, onClose, organizationId],
   );
 
   const handleImport = useCallback(
@@ -85,6 +89,7 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
       try {
         await importWorkspace({
           repo_url: repoUrl.trim(),
+          organization_id: organizationId,
           ...(defaultBranch.trim() ? { default_branch: defaultBranch.trim() } : {}),
           ...(importName.trim() ? { name: importName.trim() } : {}),
         });
@@ -92,7 +97,7 @@ export function CreateWorkspaceModal({ onClose, onSuccess }: CreateWorkspaceModa
         onClose();
       } catch {}
     },
-    [repoUrl, defaultBranch, importName, importWorkspace, onSuccess, onClose],
+    [repoUrl, defaultBranch, importName, importWorkspace, onSuccess, onClose, organizationId],
   );
 
   const createErrorMessage = error?.message ?? null;

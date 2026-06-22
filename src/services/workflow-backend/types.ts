@@ -164,6 +164,7 @@ export type TaskDetail = TaskSummary & {
 
 export type ImportWorkspaceRequest = {
   repo_url: string;
+  organization_id?: string;
   default_branch?: string;
   name?: string;
 };

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { FeatureWorkbench } from "@/components/features/feature-workbench";
@@ -9,6 +10,7 @@ import { useLocalWorkspaceStore } from "@/stores/workspace";
 import { ErrorState, type FeatureSessionPageProps, LoadingState, useWorkspaceRoute } from "../workspaces/workspace-session-shared";
 
 export function FeatureSessionPage({ featureId }: FeatureSessionPageProps) {
+  const router = useRouter();
   const { markFeatureTabActive, openFeatureTabs, activeWorkspace: ctxWorkspace } = useWorkspaceContext();
   const setLastVisitedFeatureId = useLocalWorkspaceStore((s) => s.setLastVisitedFeatureId);
 
@@ -21,6 +23,17 @@ export function FeatureSessionPage({ featureId }: FeatureSessionPageProps) {
       setLastVisitedFeatureId(featureId);
     }
   }, [markFeatureTabActive, setLastVisitedFeatureId, featureId]);
+
+  // If the workspace is loaded but doesn't contain this feature, the user
+  // switched workspaces while on this URL — redirect to the board.
+  useEffect(() => {
+    if (!isReady || !activeWorkspace || loadingWorkspace) return;
+    const exists = activeWorkspace.features.some((f) => f.id === featureId);
+    if (!exists) {
+      setLastVisitedFeatureId(null);
+      router.replace("/board");
+    }
+  }, [isReady, activeWorkspace, loadingWorkspace, featureId, router, setLastVisitedFeatureId]);
 
   if (!featureId) {
     return <ErrorState message="Missing feature ID." />;

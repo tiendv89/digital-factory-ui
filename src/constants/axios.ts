@@ -36,3 +36,9 @@ function createBffClient(pathPrefix: string) {
 export const workflowApi = createBffClient("/bff/workflow-backend");
 
 export const userServiceApi = createBffClient("/bff/user-service");
+
+/** Re-syncs AccessibleOrgIDs in the BFF session after org create/join/leave. */
+export async function refreshBffSession(): Promise<void> {
+  const bffClient = createBffClient("");
+  await bffClient.post("/bff/session/refresh");
+}

@@ -1,11 +1,14 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Layers, Plus } from "lucide-react";
 
 import { BoardView } from "@/components/board/board-view";
 import { BoardProvider } from "@/components/board/kanban-board.context";
+import { CreateWorkspaceModal } from "@/components/workspaces/create-workspace-modal";
 import { EmptyState } from "@/components/workspaces/empty-state";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
+import { useOrgWorkspaceSelection } from "@/hooks/workspaces/use-org-workspace-selection";
+import { useState } from "react";
 
 function SkeletonBlock({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-surface-secondary ${className ?? ""}`} />;
@@ -62,8 +65,31 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
+function NoWorkspaceState({ orgId }: { orgId?: string }) {
+  const [showCreate, setShowCreate] = useState(false);
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-4" data-no-workspace-state>
+      <Layers className="h-8 w-8 text-text-muted" />
+      <div className="text-center">
+        <p className="text-sm font-medium text-text-primary">No workspaces yet</p>
+        <p className="mt-1 text-xs text-text-muted">Create a workspace to get started.</p>
+      </div>
+      <button
+        type="button"
+        onClick={() => setShowCreate(true)}
+        className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary/90"
+      >
+        <Plus className="h-3.5 w-3.5" aria-hidden />
+        New workspace
+      </button>
+      {showCreate && <CreateWorkspaceModal orgId={orgId} onClose={() => setShowCreate(false)} />}
+    </div>
+  );
+}
+
 export default function BoardPage() {
-  const { activeWorkspace, loadingWorkspace, workspaceError, summaries } = useWorkspaceContext();
+  const { activeWorkspace, loadingWorkspace, workspaceError, summaries, selectedWorkspaceId } = useWorkspaceContext();
+  const { activeMembership } = useOrgWorkspaceSelection();
 
   if (loadingWorkspace) {
     return <LoadingState />;
@@ -75,6 +101,11 @@ export default function BoardPage() {
 
   if (!activeWorkspace && summaries.length === 0) {
     return <EmptyState />;
+  }
+
+  // No workspace selected for the active org (e.g. switched to an org with no workspaces)
+  if (!activeWorkspace && !selectedWorkspaceId) {
+    return <NoWorkspaceState orgId={activeMembership?.organization_id} />;
   }
 
   if (!activeWorkspace) {

@@ -147,8 +147,11 @@ export function OrgDangerZoneTab({ orgId, orgName, currentUserId, userRole, onOr
             <Select.Popover>
               <ListBox>
                 {eligibleForTransfer.map((m) => (
-                  <ListBox.Item key={m.user_id} id={m.user_id}>
-                    {m.display_name ?? m.email}
+                  <ListBox.Item key={m.user_id} id={m.user_id} textValue={m.display_name ?? m.email}>
+                    <div className="flex flex-col">
+                      <span>{m.display_name ?? m.email}</span>
+                      {m.display_name && <span className="text-xs text-text-muted">{m.email}</span>}
+                    </div>
                   </ListBox.Item>
                 ))}
               </ListBox>

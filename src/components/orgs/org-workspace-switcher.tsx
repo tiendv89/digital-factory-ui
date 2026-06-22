@@ -14,7 +14,8 @@ import { useOrgWorkspaceSelection } from "@/hooks/workspaces/use-org-workspace-s
 
 function IconSquare({ name, seed, size = 18 }: { name: string | null | undefined; seed: string; size?: number }) {
   const initial = (name?.trim()[0] ?? "?").toUpperCase();
-  const radius = size <= 18 ? 6 : size <= 28 ? 8 : 10;
+  const radius = size <= 18 ? 6 : size <= 28 ? 8 : size <= 36 ? 10 : 12;
+  const fontSize = size <= 18 ? 9 : size <= 28 ? 11 : size <= 36 ? 14 : 17;
   return (
     <span
       aria-hidden="true"
@@ -22,7 +23,7 @@ function IconSquare({ name, seed, size = 18 }: { name: string | null | undefined
       style={{
         width: size,
         height: size,
-        fontSize: size <= 18 ? 9 : 11,
+        fontSize,
         borderRadius: radius,
         background: deriveIconColor(seed),
       }}
@@ -34,7 +35,7 @@ function IconSquare({ name, seed, size = 18 }: { name: string | null | undefined
 
 export function OrgWorkspaceSwitcher() {
   const { memberships, activeMembership, isLoading, isEmpty, switchOrg, switchWorkspace, activeWorkspaceId } = useOrgWorkspaceSelection();
-  const { summaries, selectWorkspace } = useWorkspaceContext();
+  const { summaries, selectWorkspace, clearWorkspace } = useWorkspaceContext();
 
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"main" | "switch-org">("main");
@@ -129,7 +130,7 @@ export function OrgWorkspaceSwitcher() {
               <>
                 {/* Org header */}
                 <div className="flex items-center gap-3 border-b px-3 py-3" style={{ borderColor: "#3c3c3c" }}>
-                  <IconSquare name={activeMembership?.organization_name} seed={activeMembership?.organization_id ?? "org"} size={34} />
+                  <IconSquare name={activeMembership?.organization_name} seed={activeMembership?.organization_id ?? "org"} size={44} />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[13px] font-semibold text-text-primary">{activeMembership?.organization_name}</p>
                     {activeMembership && activeMembership.member_count > 0 && (
@@ -158,10 +159,10 @@ export function OrgWorkspaceSwitcher() {
                   </p>
                   {accessibleSummaries.map((ws) => (
                     <div key={ws.id} className="group relative flex items-center transition-colors hover:bg-white/5">
-                      <button type="button" onClick={() => handleSwitchWorkspace(ws.id)} className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 text-left">
-                        <IconSquare name={ws.name} seed={ws.id} size={26} />
+                      <button type="button" onClick={() => handleSwitchWorkspace(ws.id)} className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left">
+                        <IconSquare name={ws.name} seed={ws.id} size={36} />
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[13px] font-medium text-text-primary">{ws.name}</p>
+                          <p className="truncate text-[14px] font-medium text-text-primary">{ws.name}</p>
                         </div>
                       </button>
                       <div className="flex shrink-0 items-center gap-1 pr-2.5">
@@ -193,15 +194,15 @@ export function OrgWorkspaceSwitcher() {
                       setOpen(false);
                       setShowCreateWorkspace(true);
                     }}
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-text-primary transition-colors hover:bg-white/5"
+                    className="flex w-full items-center gap-3 px-3 py-2.5 text-[13px] text-text-primary transition-colors hover:bg-white/5"
                   >
-                    <Plus className="h-3 w-3" aria-hidden="true" />
+                    <Plus className="h-4 w-4" aria-hidden="true" />
                     New workspace
                   </button>
-                  <button type="button" onClick={() => setView("switch-org")} className="flex w-full items-center gap-2.5 px-3 py-2 text-xs text-text-primary transition-colors hover:bg-white/5">
-                    <Building2 className="h-3 w-3" aria-hidden="true" />
+                  <button type="button" onClick={() => setView("switch-org")} className="flex w-full items-center gap-3 px-3 py-2.5 text-[13px] text-text-primary transition-colors hover:bg-white/5">
+                    <Building2 className="h-4 w-4" aria-hidden="true" />
                     <span className="flex-1 text-left">Switch organization</span>
-                    <ChevronRight className="h-3 w-3" aria-hidden="true" />
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
                   </button>
                 </div>
               </>
@@ -237,7 +238,11 @@ export function OrgWorkspaceSwitcher() {
                         onClick={() => {
                           switchOrg(m.organization_slug);
                           const firstWsId = summaries.find((s) => s.organization_id === m.organization_id)?.id ?? null;
-                          if (firstWsId) selectWorkspace(firstWsId);
+                          if (firstWsId) {
+                            selectWorkspace(firstWsId);
+                          } else {
+                            clearWorkspace();
+                          }
                           setView("main");
                           setOpen(false);
                         }}
@@ -280,7 +285,7 @@ export function OrgWorkspaceSwitcher() {
 
       {showOrgSettings && activeMembership && <OrgSettingsModal membership={activeMembership} onClose={() => setShowOrgSettings(false)} />}
       {showCreateOrg && <CreateOrgModal onClose={() => setShowCreateOrg(false)} onSuccess={() => setShowCreateOrg(false)} />}
-      {showCreateWorkspace && <CreateWorkspaceModal onClose={() => setShowCreateWorkspace(false)} onSuccess={() => setShowCreateWorkspace(false)} />}
+      {showCreateWorkspace && <CreateWorkspaceModal orgId={activeMembership?.organization_id} onClose={() => setShowCreateWorkspace(false)} onSuccess={() => setShowCreateWorkspace(false)} />}
       {settingsTarget && <WorkspaceSettingsModal workspaceId={settingsTarget.id} orgId={activeMembership?.organization_id ?? ""} onClose={() => setSettingsTarget(null)} />}
     </>
   );

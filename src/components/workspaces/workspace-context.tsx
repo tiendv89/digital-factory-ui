@@ -59,6 +59,7 @@ export type WorkspaceContextValue = {
   refreshingWorkspace: boolean;
 
   selectWorkspace: (workspaceId: string) => void;
+  clearWorkspace: () => void;
   addWorkspace: (detail: WorkspaceDetail) => void;
   removeWorkspace: (workspaceId: string) => void;
   importWorkspace: (body: ImportWorkspaceRequest) => Promise<void>;
@@ -205,10 +206,22 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       setStoredSelectedId(workspaceId);
       setActiveWorkspace(null);
       resetTabs();
+      useLocalWorkspaceStore.getState().setLastVisitedFeatureId(null);
       loadWorkspace(workspaceId);
     },
     [loadWorkspace, setStoredSelectedId, resetTabs],
   );
+
+  const clearWorkspace = useCallback(() => {
+    setStoredSelectedId(null);
+    setActiveWorkspace(null);
+    setWorkspaceError(null);
+    setLoadingWorkspace(false);
+    loadWorkspaceSequenceRef.current.next();
+    resetTabs();
+    useLocalWorkspaceStore.getState().setLastVisitedFeatureId(null);
+    router.push("/board");
+  }, [setStoredSelectedId, resetTabs, router]);
 
   const removeWorkspace = useCallback(
     (workspaceId: string) => {
@@ -475,6 +488,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       syncError,
       refreshingWorkspace,
       selectWorkspace,
+      clearWorkspace,
       addWorkspace,
       removeWorkspace,
       importWorkspace: importWorkspaceFn,
@@ -509,6 +523,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
       syncError,
       refreshingWorkspace,
       selectWorkspace,
+      clearWorkspace,
       addWorkspace,
       removeWorkspace,
       importWorkspaceFn,

@@ -44,7 +44,7 @@ export function useOrgWorkspaceSelection(): OrgWorkspaceSelection {
     params.delete("ws");
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname);
-  }, []);
+  }, [pathname, router, searchParams, setSelectedWorkspace]);
 
   const activeMembership = useMemo<MeMembership | null>(() => {
     if (memberships.length === 0) return null;
@@ -55,8 +55,8 @@ export function useOrgWorkspaceSelection(): OrgWorkspaceSelection {
   }, [memberships, selectedOrgSlug]);
 
   const activeWorkspaceId = useMemo<string | null>(() => {
+    if (selectedWorkspaceId) return selectedWorkspaceId;
     const orgIds = activeMembership ? (orgWorkspaceIds[activeMembership.organization_id] ?? []) : [];
-    if (selectedWorkspaceId && orgIds.includes(selectedWorkspaceId)) return selectedWorkspaceId;
     return orgIds[0] ?? null;
   }, [activeMembership, orgWorkspaceIds, selectedWorkspaceId]);
 
