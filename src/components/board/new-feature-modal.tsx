@@ -22,7 +22,6 @@ type NewFeatureModalProps = {
 
 export function NewFeatureModal({ workspaceId, onClose, onSuccess }: NewFeatureModalProps) {
   const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
   const [owner, setOwner] = useState<OrchestratorOwner>("ts");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
@@ -37,7 +36,6 @@ export function NewFeatureModal({ workspaceId, onClose, onSuccess }: NewFeatureM
       try {
         await createFeature(workspaceId, {
           name: name.trim(),
-          ...(description.trim() ? { description: description.trim() } : {}),
           owner,
         });
         onSuccess?.();
@@ -48,7 +46,7 @@ export function NewFeatureModal({ workspaceId, onClose, onSuccess }: NewFeatureM
         setSubmitting(false);
       }
     },
-    [workspaceId, name, description, owner, onSuccess, onClose],
+    [workspaceId, name, owner, onSuccess, onClose],
   );
 
   return (
@@ -84,21 +82,6 @@ export function NewFeatureModal({ workspaceId, onClose, onSuccess }: NewFeatureM
                   disabled={submitting}
                   aria-label="Feature name"
                   required
-                  className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-xs font-medium text-text-secondary">
-                  Description <span className="text-text-muted">(optional)</span>
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Brief description of the feature"
-                  disabled={submitting}
-                  aria-label="Feature description"
-                  rows={3}
                   className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                 />
               </div>

@@ -28,7 +28,7 @@ export function FeatureSessionPage({ featureId }: FeatureSessionPageProps) {
   // switched workspaces while on this URL — redirect to the board.
   useEffect(() => {
     if (!isReady || !activeWorkspace || loadingWorkspace) return;
-    const exists = activeWorkspace.features.some((f) => f.id === featureId);
+    const exists = activeWorkspace.features.some((f) => f.feature_id === featureId);
     if (!exists) {
       setLastVisitedFeatureId(null);
       router.replace("/board");
