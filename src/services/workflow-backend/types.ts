@@ -216,7 +216,7 @@ export type TaskDiff = {
 export type ReviewThreadItemKind = "review" | "review_comment" | "issue_comment";
 
 export type ReviewThreadItem = {
-  id: number;
+  id?: number;
   kind: ReviewThreadItemKind;
   author: string;
   body: string;

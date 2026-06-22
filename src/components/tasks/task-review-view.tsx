@@ -246,7 +246,7 @@ export function buildThreadEntries(thread: TaskReviewThread | null, log?: LogEnt
   if (thread?.items) {
     for (const item of thread.items) {
       entries.push({
-        id: `github-${item.kind}-${item.id}`,
+        id: `github-${item.kind}-${item.id ?? item.created_at}`,
         source: "github",
         kind: item.kind,
         author: item.author,
