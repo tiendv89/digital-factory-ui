@@ -1,18 +1,18 @@
 "use client";
 
-import { ListBox, Modal, Select } from "@heroui/react";
-import { AlertCircle, Plus, X } from "lucide-react";
+import { Modal } from "@heroui/react";
+import { AlertCircle, GitBranch, Plus, X } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import type { ApiError } from "@/services/workflow-backend";
 import { createFeature } from "@/services/workflow-backend";
 
-const FEATURE_STAGES = [
-  { value: "in_design", label: "In Design" },
-  { value: "in_tdd", label: "In TDD" },
-  { value: "ready_for_implementation", label: "Ready for Implementation" },
-  { value: "in_implementation", label: "In Implementation" },
-] as const;
+export type OrchestratorOwner = "ts" | "go";
+
+export const ORCHESTRATOR_OPTIONS: { value: OrchestratorOwner; label: string; description: string }[] = [
+  { value: "ts", label: "TypeScript / Git", description: "Task state in YAML files on git branches" },
+  { value: "go", label: "Postgres / Go", description: "Task state in the database" },
+];
 
 type NewFeatureModalProps = {
   workspaceId: string;
@@ -23,7 +23,7 @@ type NewFeatureModalProps = {
 export function NewFeatureModal({ workspaceId, onClose, onSuccess }: NewFeatureModalProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [startStage, setStartStage] = useState<string>("in_design");
+  const [owner, setOwner] = useState<OrchestratorOwner>("ts");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
 
@@ -38,7 +38,7 @@ export function NewFeatureModal({ workspaceId, onClose, onSuccess }: NewFeatureM
         await createFeature(workspaceId, {
           name: name.trim(),
           ...(description.trim() ? { description: description.trim() } : {}),
-          start_stage: startStage,
+          owner,
         });
         onSuccess?.();
         onClose();
@@ -48,7 +48,7 @@ export function NewFeatureModal({ workspaceId, onClose, onSuccess }: NewFeatureM
         setSubmitting(false);
       }
     },
-    [workspaceId, name, description, startStage, onSuccess, onClose],
+    [workspaceId, name, description, owner, onSuccess, onClose],
   );
 
   return (
@@ -104,22 +104,36 @@ export function NewFeatureModal({ workspaceId, onClose, onSuccess }: NewFeatureM
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-text-secondary">Start Stage</label>
-                <Select.Root selectedKey={startStage} onSelectionChange={(key) => setStartStage(String(key))} isDisabled={submitting} aria-label="Start stage" fullWidth>
-                  <Select.Trigger>
-                    <Select.Value />
-                    <Select.Indicator />
-                  </Select.Trigger>
-                  <Select.Popover>
-                    <ListBox>
-                      {FEATURE_STAGES.map((stage) => (
-                        <ListBox.Item key={stage.value} id={stage.value}>
-                          {stage.label}
-                        </ListBox.Item>
-                      ))}
-                    </ListBox>
-                  </Select.Popover>
-                </Select.Root>
+                <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+                  <span className="flex items-center gap-1.5">
+                    <GitBranch className="h-3.5 w-3.5" aria-hidden="true" />
+                    Orchestrator Type
+                  </span>
+                </label>
+                <div role="radiogroup" aria-label="Orchestrator type" className="flex flex-col gap-2">
+                  {ORCHESTRATOR_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-md border px-3 py-2.5 transition-colors ${
+                        owner === opt.value ? "border-primary bg-primary/5" : "border-border bg-surface hover:border-border hover:bg-surface-subtle"
+                      } ${submitting ? "pointer-events-none opacity-50" : ""}`}
+                    >
+                      <input
+                        type="radio"
+                        name="orchestrator-owner"
+                        value={opt.value}
+                        checked={owner === opt.value}
+                        onChange={() => setOwner(opt.value)}
+                        disabled={submitting}
+                        className="mt-0.5 h-3.5 w-3.5 shrink-0 accent-primary"
+                      />
+                      <div className="flex min-w-0 flex-col">
+                        <span className="text-xs font-medium text-text-primary">{opt.label}</span>
+                        <span className="text-[11px] text-text-muted">{opt.description}</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               {error && (

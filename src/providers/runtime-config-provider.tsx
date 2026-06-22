@@ -19,13 +19,7 @@ export interface RuntimeConfig {
 
 const RuntimeConfigContext = createContext<RuntimeConfig | null>(null);
 
-export function RuntimeConfigProvider({
-  config,
-  children,
-}: {
-  config: RuntimeConfig;
-  children: React.ReactNode;
-}) {
+export function RuntimeConfigProvider({ config, children }: { config: RuntimeConfig; children: React.ReactNode }) {
   // Initialise the (non-React) axios layer once, synchronously, before any child
   // renders — so API clients have the right baseURL before the first request.
   // useState's lazy initialiser is the React-blessed way to run setup-once code.

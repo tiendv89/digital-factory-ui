@@ -12,6 +12,7 @@ import { FEATURE_LIFECYCLE_META, lifecycleMeta } from "@/components/board/board-
 import { LifecycleGlyph, StatusGlyph } from "@/components/board/status-glyph";
 import { CreateChannelModal } from "@/components/channels/create-channel-modal";
 import { type DocTab, FeatureIDEDocsPanel } from "@/components/features/feature-ide-docs-panel";
+import { InitPRBanner } from "@/components/features/init-pr-banner";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
 import { workspaceKeys } from "@/constants/query-keys";
 import { useActivity } from "@/hooks/board/use-activity";
@@ -320,6 +321,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
       void queryClient.invalidateQueries({
         queryKey: workspaceKeys.documentPr(workspaceId, featureId),
       });
+      setActiveTab(a);
     },
     [queryClient, workspaceId, featureId],
   );
@@ -603,6 +605,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
               <span className="inline-flex h-4.5 items-center gap-1 rounded-full px-2 text-[10px] font-semibold" style={{ backgroundColor: lc.bg, color: lc.color }}>
                 {lc.label}
               </span>
+              <InitPRBanner initPrUrl={feature.init_pr_url} />
             </div>
 
             {/* Artifacts */}

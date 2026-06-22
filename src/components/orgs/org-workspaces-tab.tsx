@@ -1,9 +1,9 @@
 "use client";
 
+import { Popover } from "@heroui/react";
 import { Layers, Loader2, MoreHorizontal, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-import { Popover } from "@heroui/react";
 import { CreateWorkspaceModal } from "@/components/workspaces/create-workspace-modal";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
 import { useDeleteWorkspace } from "@/hooks/workspaces/use-delete-workspace";
@@ -60,18 +60,10 @@ function WorkspaceRowMenu({ workspaceId, workspaceName }: { workspaceId: string;
           style={{ color: "#555" }}
           aria-label={`${workspaceName} options`}
         >
-          {deleteMutation.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <MoreHorizontal className="h-4 w-4" aria-hidden />
-          )}
+          {deleteMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <MoreHorizontal className="h-4 w-4" aria-hidden />}
         </button>
       </Popover.Trigger>
-      <Popover.Content
-        placement="bottom end"
-        className="p-0 overflow-hidden rounded-[8px] border border-border bg-surface shadow-lg"
-        style={{ minWidth: 180 }}
-      >
+      <Popover.Content placement="bottom end" className="p-0 overflow-hidden rounded-[8px] border border-border bg-surface shadow-lg" style={{ minWidth: 180 }}>
         <Popover.Dialog className="p-0 outline-none flex flex-col py-1">
           <button
             type="button"
@@ -107,12 +99,7 @@ export function OrgWorkspacesTab({ orgId }: OrgWorkspacesTabProps) {
       ) : (
         <div className="flex flex-col gap-2" data-workspaces-list>
           {workspaces.map((ws) => (
-            <div
-              key={ws.id}
-              className="flex items-center gap-4 rounded-[13px] border px-4 py-3.5"
-              style={{ borderColor: "#3a3a3a", backgroundColor: "#232323" }}
-              data-workspace-row={ws.id}
-            >
+            <div key={ws.id} className="flex items-center gap-4 rounded-[13px] border px-4 py-3.5" style={{ borderColor: "#3a3a3a", backgroundColor: "#232323" }} data-workspace-row={ws.id}>
               <WorkspaceIcon name={ws.name} id={ws.id} />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[15px] font-semibold text-text-primary">{ws.name}</p>

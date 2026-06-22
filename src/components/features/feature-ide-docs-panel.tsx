@@ -17,6 +17,38 @@ type FeatureIDEDocsPanelProps = {
   onTabChange: (tab: DocTab) => void;
 };
 
+export type InitPRBadgeState = "none" | "in_pr" | "verified";
+
+export function getInitPRBadgeState(initPrUrl: string | undefined | null, initPrMerged: boolean): InitPRBadgeState {
+  if (!initPrUrl) return "none";
+  return initPrMerged ? "verified" : "in_pr";
+}
+
+function InitPRBadge({ initPrMerged }: { initPrMerged: boolean }) {
+  if (initPrMerged) {
+    return (
+      <span
+        data-init-pr-badge="verified"
+        className="ml-1 inline-flex items-center rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+        style={{ backgroundColor: "oklch(0.4 0.15 145 / 0.25)", color: "oklch(0.75 0.18 145)" }}
+        title="Init PR merged — document is on main"
+      >
+        verified
+      </span>
+    );
+  }
+  return (
+    <span
+      data-init-pr-badge="in-pr"
+      className="ml-1 inline-flex items-center rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide"
+      style={{ backgroundColor: "oklch(0.5 0.15 80 / 0.25)", color: "oklch(0.75 0.15 80)" }}
+      title="Document is on the init branch — not yet merged to main"
+    >
+      in PR
+    </span>
+  );
+}
+
 // DocTabButton renders a VS Code-style editor tab: the active tab lifts to the
 // editor background with a blue top accent; inactive tabs sit on the tab strip.
 function DocTabButton({ label, icon, trailing, active, onClick, dataAttr }: { label: string; icon?: ReactNode; trailing?: ReactNode; active: boolean; onClick: () => void; dataAttr: string }) {
@@ -98,6 +130,11 @@ export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: Feature
   const hasTechnicalDesign = feature.stages?.technical_design?.review_status === "approved";
   const hasHandoff = feature.stages?.handoff?.review_status === "approved";
 
+  const initPrUrl = feature.init_pr_url;
+  const initPrMerged = feature.init_pr_merged;
+  const badgeState = getInitPRBadgeState(initPrUrl, initPrMerged);
+  const initPrBadge = badgeState !== "none" ? <InitPRBadge initPrMerged={initPrMerged} /> : undefined;
+
   return (
     <div data-feature-ide-docs-panel className="flex h-full flex-col overflow-hidden bg-bg">
       {/* Editor tab strip + PR indicator */}
@@ -106,7 +143,12 @@ export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: Feature
           <DocTabButton
             label="Product Spec"
             icon={<FileText className="h-3.5 w-3.5" aria-hidden="true" />}
-            trailing={hasProductSpec ? <Check className="h-3 w-3 text-success" aria-hidden="true" /> : undefined}
+            trailing={
+              <>
+                {hasProductSpec && <Check className="h-3 w-3 text-success" aria-hidden="true" />}
+                {initPrBadge}
+              </>
+            }
             active={activeTab === "product_spec"}
             onClick={() => onTabChange("product_spec")}
             dataAttr="data-docs-tab-product-spec"
@@ -114,7 +156,12 @@ export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: Feature
           <DocTabButton
             label="Tech Design"
             icon={<Code2 className="h-3.5 w-3.5" aria-hidden="true" />}
-            trailing={hasTechnicalDesign ? <Check className="h-3 w-3 text-success" aria-hidden="true" /> : undefined}
+            trailing={
+              <>
+                {hasTechnicalDesign && <Check className="h-3 w-3 text-success" aria-hidden="true" />}
+                {initPrBadge}
+              </>
+            }
             active={activeTab === "technical_design"}
             onClick={() => onTabChange("technical_design")}
             dataAttr="data-docs-tab-tech-design"
