@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertCircle, Layers, Plus } from "lucide-react";
+import { useState } from "react";
 
 import { BoardView } from "@/components/board/board-view";
 import { BoardProvider } from "@/components/board/kanban-board.context";
@@ -8,7 +9,6 @@ import { CreateWorkspaceModal } from "@/components/workspaces/create-workspace-m
 import { EmptyState } from "@/components/workspaces/empty-state";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
 import { useOrgWorkspaceSelection } from "@/hooks/workspaces/use-org-workspace-selection";
-import { useState } from "react";
 
 function SkeletonBlock({ className }: { className?: string }) {
   return <div className={`animate-pulse rounded bg-surface-secondary ${className ?? ""}`} />;

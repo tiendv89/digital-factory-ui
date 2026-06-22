@@ -70,6 +70,9 @@ export type FeatureSummary = {
   stages?: Record<string, StageReview>;
   updated_at: string;
   task_counts: TaskCounts;
+  owner?: "ts" | "go";
+  init_pr_url?: string;
+  init_pr_merged: boolean;
 };
 
 export type PagedFeatures = {
@@ -172,7 +175,7 @@ export type ImportWorkspaceRequest = {
 export type CreateFeatureRequest = {
   name: string;
   description?: string;
-  start_stage?: string;
+  owner?: "ts" | "go";
 };
 
 export type CreateWorkspaceRequest = {

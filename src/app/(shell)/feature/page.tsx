@@ -12,7 +12,7 @@ export default function FeaturePage() {
   const lastVisitedFeatureId = useLocalWorkspaceStore((s) => s.lastVisitedFeatureId);
 
   useEffect(() => {
-    const target = lastVisitedFeatureId ?? activeWorkspace?.features[0]?.id ?? null;
+    const target = lastVisitedFeatureId ?? activeWorkspace?.features[0]?.feature_id ?? null;
 
     if (target) {
       router.replace(`/feature/${target}`);

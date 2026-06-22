@@ -33,13 +33,7 @@ export async function getDocumentContent(workspaceId: string, featureId: string,
   return res.data.data;
 }
 
-export async function saveDocument(
-  workspaceId: string,
-  featureId: string,
-  documentType: "product_spec" | "technical_design",
-  content: string,
-  baseSha: string | null,
-): Promise<SaveDocumentResult> {
+export async function saveDocument(workspaceId: string, featureId: string, documentType: "product_spec" | "technical_design", content: string, baseSha: string | null): Promise<SaveDocumentResult> {
   try {
     const res = await workflowApi.put<{
       success: boolean;
