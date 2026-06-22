@@ -95,8 +95,8 @@ export function AgentChatPanel({
   const abortRef = useRef<AbortController | null>(null);
   const msgIdCounter = useRef(0);
 
-  const deltaBufferRef = useRef<Map<string, string>>(new Map());
   const flushRafRef = useRef<number | null>(null);
+  const deltaPendingRef = useRef<{ id: string; text: string }[]>([]);
 
   const lastMessageIdRef = useRef<string | null>(null);
   const subscriptionSessionRef = useRef<string | null>(null);
@@ -227,32 +227,48 @@ export function AgentChatPanel({
     setPanelMode({ mode: "active", sessionId, sessionTitle });
   }, []);
 
-  const flushDeltasForMessage = useCallback((messageId: string) => {
+  // RAF queue: drain ONE pending word per animation frame so React renders
+  // each piece individually. React 18 batches all setState calls that land
+  // in the same synchronous tick — a queue + RAF gives us one setState (→ one
+  // render) per frame, giving smooth per-word streaming even when many SSE
+  // frames arrive in the same TCP packet.
+  const drainOneDelta = useCallback(() => {
     flushRafRef.current = null;
-    const text = deltaBufferRef.current.get(messageId);
-    if (!text) return;
-    deltaBufferRef.current.delete(messageId);
-    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content: m.content + text } : m)));
+    const item = deltaPendingRef.current.shift();
+    if (!item) return;
+    setMessages((prev) => prev.map((m) => (m.id === item.id ? { ...m, content: m.content + item.text } : m)));
+    if (deltaPendingRef.current.length > 0) {
+      flushRafRef.current = requestAnimationFrame(drainOneDelta);
+    }
   }, []);
 
-  const scheduleFlush = useCallback(
-    (messageId: string) => {
-      if (flushRafRef.current != null) return;
-      flushRafRef.current = requestAnimationFrame(() => flushDeltasForMessage(messageId));
+  const appendDelta = useCallback(
+    (messageId: string, text: string) => {
+      deltaPendingRef.current.push({ id: messageId, text });
+      if (flushRafRef.current == null) {
+        flushRafRef.current = requestAnimationFrame(drainOneDelta);
+      }
     },
-    [flushDeltasForMessage],
+    [drainOneDelta],
   );
 
-  const finalizeStreamForMessage = useCallback(
-    (messageId: string) => {
-      if (flushRafRef.current != null) {
-        cancelAnimationFrame(flushRafRef.current);
-        flushRafRef.current = null;
-      }
-      flushDeltasForMessage(messageId);
-    },
-    [flushDeltasForMessage],
-  );
+  const finalizeStreamForMessage = useCallback(() => {
+    // Flush all remaining queued words immediately when the stream ends.
+    if (flushRafRef.current != null) {
+      cancelAnimationFrame(flushRafRef.current);
+      flushRafRef.current = null;
+    }
+    const remaining = deltaPendingRef.current.splice(0);
+    if (remaining.length > 0) {
+      setMessages((prev) => {
+        let next = prev;
+        for (const item of remaining) {
+          next = next.map((m) => (m.id === item.id ? { ...m, content: m.content + item.text } : m));
+        }
+        return next;
+      });
+    }
+  }, []);
 
   const ensureStreamingAssistant = useCallback(() => {
     if (streamingAssistantIdRef.current) return streamingAssistantIdRef.current;
@@ -279,8 +295,7 @@ export function AgentChatPanel({
         void refreshUnreadCounts();
       } else if (event.type === "delta") {
         const targetId = event.messageId || streamingAssistantIdRef.current || ensureStreamingAssistant();
-        deltaBufferRef.current.set(targetId, (deltaBufferRef.current.get(targetId) ?? "") + event.text);
-        scheduleFlush(targetId);
+        appendDelta(targetId, event.text);
       } else if (event.type === "tool_start") {
         const targetId = event.messageId || streamingAssistantIdRef.current;
         if (!targetId) return;
@@ -309,19 +324,19 @@ export function AgentChatPanel({
         setStatus("streaming");
       } else if (event.type === "error") {
         const targetId = streamingAssistantIdRef.current;
-        if (targetId) finalizeStreamForMessage(targetId);
+        if (targetId) finalizeStreamForMessage();
         if (targetId) {
           setMessages((prev) => prev.map((m) => (m.id === targetId ? { ...m, content: m.content || `Error: ${event.message}` } : m)));
         }
         setStatus("error");
       } else if (event.type === "done") {
         const targetId = streamingAssistantIdRef.current;
-        if (targetId) finalizeStreamForMessage(targetId);
+        if (targetId) finalizeStreamForMessage();
         streamingAssistantIdRef.current = null;
         setStatus("idle");
       }
     },
-    [onArtifactSaved, scheduleFlush, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant],
+    [onArtifactSaved, appendDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -415,7 +430,8 @@ export function AgentChatPanel({
     subscriptionSessionRef.current = null;
     lastMessageIdRef.current = null;
     streamingAssistantIdRef.current = null;
-    deltaBufferRef.current.clear();
+    if (flushRafRef.current != null) { cancelAnimationFrame(flushRafRef.current); flushRafRef.current = null; }
+    deltaPendingRef.current = [];
     setMessages([]);
     setInputValue("");
     setPickerOpen(false);
@@ -504,31 +520,18 @@ export function AgentChatPanel({
     const assistantId = nextId();
     setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", toolCalls: [] }]);
 
-    const flushDelta = () => {
-      flushRafRef.current = null;
-      const text = deltaBufferRef.current.get(assistantId) ?? "";
-      if (!text) return;
-      deltaBufferRef.current.delete(assistantId);
-      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content + text } : m)));
-    };
-    const scheduleFlushLegacy = () => {
-      if (flushRafRef.current != null) return;
-      flushRafRef.current = requestAnimationFrame(flushDelta);
-    };
     const finalizeStream = () => {
       if (flushRafRef.current != null) {
         cancelAnimationFrame(flushRafRef.current);
         flushRafRef.current = null;
       }
-      flushDelta();
     };
 
     abortRef.current = streamChatTurn(
       { workspaceId, featureId, sessionId, message: userMsg.content, model: selectedModel },
       (event) => {
         if (event.type === "delta") {
-          deltaBufferRef.current.set(assistantId, (deltaBufferRef.current.get(assistantId) ?? "") + event.text);
-          scheduleFlushLegacy();
+          appendDelta(assistantId, event.text);
         } else if (event.type === "tool_start") {
           const toolEntry: ToolCallEntry = {
             callId: event.callId,
