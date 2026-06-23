@@ -30,7 +30,7 @@ export type HermesEvent =
   | { type: "delta"; text: string }
   | { type: "tool_start"; name: string; callId: string }
   | { type: "tool_result"; name: string; callId: string; output: unknown }
-  | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" }
+  | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" | "tasks" }
   | { type: "usage"; inputTokens: number; outputTokens: number; cachedTokens: number }
   | { type: "error"; message: string }
   | { type: "done" };
@@ -75,14 +75,27 @@ export async function getSessionMessages(_workspaceId: string, _featureId: strin
   const res = await fetch(`${getApiBase()}/api/v1/sessions/${sessionId}/messages`, { credentials: "include" });
   if (!res.ok) throw new Error(`getSessionMessages failed (${res.status})`);
   const body = (await res.json()) as { messages: RawSessionMessage[] };
-  return (body.messages ?? [])
-    .filter((m) => m.role === "user" || m.role === "assistant")
-    .map((m) => {
-      const message: HermesMessage = {
-        id: m.id,
-        role: m.role as HermesMessage["role"],
-        content: m.content ?? "",
-      };
+
+  // The backend stores a turn's assistant output as multiple rows (one per
+  // model iteration: text → tool_calls → text). The live stream renders all of
+  // it as a single coalesced bubble, so coalesce consecutive assistant rows
+  // here too — concatenate their content and merge their tool calls — to keep
+  // the reloaded transcript identical to what was streamed live.
+  const rows = (body.messages ?? []).filter((m) => m.role === "user" || m.role === "assistant");
+  const out: HermesMessage[] = [];
+  let pending: HermesMessage | null = null;
+
+  const flush = () => {
+    if (pending) {
+      out.push(pending);
+      pending = null;
+    }
+  };
+
+  for (const m of rows) {
+    if (m.role === "user") {
+      flush();
+      const message: HermesMessage = { id: m.id, role: "user", content: m.content ?? "" };
       if (m.author) {
         message.author = {
           id: m.author.id,
@@ -91,10 +104,24 @@ export async function getSessionMessages(_workspaceId: string, _featureId: strin
           roleLabel: m.author.roleLabel ?? null,
         };
       }
-      const toolCalls = parseToolCalls(m.tool_calls);
-      if (toolCalls.length > 0) message.toolCalls = toolCalls;
-      return message;
-    });
+      out.push(message);
+      continue;
+    }
+
+    // assistant — merge into the current turn's bubble.
+    const toolCalls = parseToolCalls(m.tool_calls);
+    if (!pending) {
+      pending = { id: m.id, role: "assistant", content: m.content ?? "" };
+      if (toolCalls.length > 0) pending.toolCalls = toolCalls;
+    } else {
+      pending.content += m.content ?? "";
+      if (toolCalls.length > 0) {
+        pending.toolCalls = [...(pending.toolCalls ?? []), ...toolCalls];
+      }
+    }
+  }
+  flush();
+  return out;
 }
 
 function parseToolCalls(raw: unknown): ToolCallEntry[] {
@@ -125,6 +152,33 @@ export async function createChatSession(workspaceId: string, featureId: string):
 
   const body = (await res.json()) as { session_id: string };
   return body;
+}
+
+/** Hard-delete a single session and its messages. */
+export async function deleteSession(sessionId: string): Promise<void> {
+  const res = await fetch(`${getApiBase()}/api/v1/sessions/${sessionId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`deleteSession failed (${res.status}): ${text}`);
+  }
+}
+
+/** Hard-delete all of the caller's sessions for a workspace+feature. */
+export async function deleteAllSessions(workspaceId: string, featureId: string): Promise<number> {
+  const qs = new URLSearchParams({ workspace_id: workspaceId, feature_id: featureId }).toString();
+  const res = await fetch(`${getApiBase()}/api/v1/sessions?${qs}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`deleteAllSessions failed (${res.status}): ${text}`);
+  }
+  const body = (await res.json().catch(() => ({ deleted: 0 }))) as { deleted: number };
+  return body.deleted ?? 0;
 }
 
 export type StreamChatTurnParams = {
@@ -218,7 +272,7 @@ function parseHermesEvents(eventType: string | undefined, raw: Record<string, un
     return [
       {
         type: "artifact_saved",
-        artifact: raw.artifact as "product_spec" | "technical_design",
+        artifact: raw.artifact as "product_spec" | "technical_design" | "tasks",
       },
     ];
   }
@@ -256,7 +310,7 @@ export type ThreadEvent =
   | { type: "delta"; messageId: string; text: string }
   | { type: "tool_start"; messageId: string; callId: string; name: string }
   | { type: "tool_result"; messageId: string; callId: string; name: string; output: unknown }
-  | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" }
+  | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" | "tasks" }
   | { type: "agent.working"; sessionId: string }
   | { type: "typing"; userId: string }
   | { type: "member.changed" }

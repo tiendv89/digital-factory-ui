@@ -5,6 +5,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChatSessionSummary, ModelOption, ThreadEvent, UnreadMentionCounts } from "@/services/hermes-agent/chat";
 import {
   createChatSession,
+  deleteAllSessions,
+  deleteSession,
   getSessionMessages,
   getThreadMessages,
   getUnreadMentions,
@@ -52,7 +54,7 @@ type PanelMode = { mode: "history" } | { mode: "active"; sessionId: string; sess
 type AgentChatPanelProps = {
   workspaceId: string;
   featureId: string;
-  onArtifactSaved?: (artifact: "product_spec" | "technical_design") => void;
+  onArtifactSaved?: (artifact: "product_spec" | "technical_design" | "tasks") => void;
   onStageTransition?: () => void;
   requestSessionId?: string | null;
   /** Bumping this value (from the parent header) starts a fresh conversation. */
@@ -293,6 +295,8 @@ export function AgentChatPanel({
           setStatus("streaming");
         }
         void refreshUnreadCounts();
+        // Keep the history list current (new session title / last-message excerpt).
+        void fetchSessions();
       } else if (event.type === "delta") {
         const targetId = event.messageId || streamingAssistantIdRef.current || ensureStreamingAssistant();
         appendDelta(targetId, event.text);
@@ -336,7 +340,7 @@ export function AgentChatPanel({
         setStatus("idle");
       }
     },
-    [onArtifactSaved, appendDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant],
+    [onArtifactSaved, appendDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -367,6 +371,44 @@ export function AgentChatPanel({
   useEffect(() => {
     openSubscriptionRef.current = openSubscription;
   }, [openSubscription]);
+
+  const handleDeleteSession = useCallback(
+    async (id: string) => {
+      try {
+        await deleteSession(id);
+      } catch {
+        return;
+      }
+      // If the deleted session is the one open, return to the history view.
+      if (panelMode.mode === "active" && panelMode.sessionId === id) {
+        abortRef.current?.abort();
+        abortRef.current = null;
+        subscriptionSessionRef.current = null;
+        streamingAssistantIdRef.current = null;
+        setMessages([]);
+        setPanelMode({ mode: "history" });
+        setStatus("idle");
+      }
+      void fetchSessions();
+    },
+    [panelMode, fetchSessions],
+  );
+
+  const handleDeleteAllSessions = useCallback(async () => {
+    try {
+      await deleteAllSessions(workspaceId, featureId);
+    } catch {
+      return;
+    }
+    abortRef.current?.abort();
+    abortRef.current = null;
+    subscriptionSessionRef.current = null;
+    streamingAssistantIdRef.current = null;
+    setMessages([]);
+    setPanelMode({ mode: "history" });
+    setStatus("idle");
+    void fetchSessions();
+  }, [workspaceId, featureId, fetchSessions]);
 
   const handleSessionSelect = useCallback(
     async (id: string) => {
@@ -483,6 +525,9 @@ export function AgentChatPanel({
         if (useSubscriptionTransport) {
           openSubscription(sessionId);
         }
+        // Refresh the history list so the new session appears immediately
+        // (the list is otherwise only loaded on mount).
+        void fetchSessions();
       } catch {
         setStatus("error");
         return;
@@ -620,7 +665,7 @@ export function AgentChatPanel({
           )}
         </Conversation>
       ) : (
-        <SessionHistoryList sessions={sessions} loading={sessionsLoading} onSelect={handleSessionSelect} unreadCounts={unreadCounts.perSession} />
+        <SessionHistoryList sessions={sessions} loading={sessionsLoading} onSelect={handleSessionSelect} onDelete={handleDeleteSession} onDeleteAll={handleDeleteAllSessions} unreadCounts={unreadCounts.perSession} />
       )}
 
       {/* Input */}

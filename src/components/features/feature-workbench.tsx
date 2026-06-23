@@ -107,6 +107,7 @@ function FeaturePreviewPanel({ workspaceId, featureId }: { workspaceId: string; 
 const ARTIFACTS: { label: string; tab: DocTab; icon: React.ComponentType<{ className?: string }> }[] = [
   { label: "Product Spec", tab: "product_spec", icon: FileText },
   { label: "Technical Design", tab: "technical_design", icon: Code2 },
+  { label: "Tasks", tab: "tasks", icon: CheckSquare },
   { label: "Handoffs", tab: "handoff", icon: Rocket },
 ];
 
@@ -186,7 +187,7 @@ function SessionChat({
   /** Start a fresh agent chat — shared by the header button and the Sessions "+". */
   onNewChat: () => void;
   onClose: () => void;
-  onArtifactSaved: (a: "product_spec" | "technical_design") => void;
+  onArtifactSaved: (a: "product_spec" | "technical_design" | "tasks") => void;
   onStageTransition?: () => void;
 }) {
   useEffect(() => {
@@ -311,7 +312,8 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
   }, [workspaceId, activeChannel]);
 
   const handleArtifactSaved = useCallback(
-    (a: "product_spec" | "technical_design") => {
+    (a: "product_spec" | "technical_design" | "tasks") => {
+      // Refresh the feature (tasks/stages) and the saved document's content + PR.
       void queryClient.invalidateQueries({
         queryKey: workspaceKeys.feature(workspaceId, featureId),
       });
@@ -321,6 +323,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
       void queryClient.invalidateQueries({
         queryKey: workspaceKeys.documentPr(workspaceId, featureId),
       });
+      // Switch to the saved document's tab (product_spec / technical_design / tasks).
       setActiveTab(a);
     },
     [queryClient, workspaceId, featureId],

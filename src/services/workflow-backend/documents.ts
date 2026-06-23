@@ -25,7 +25,7 @@ export type DocumentPrStatus = {
   url: string | null;
 };
 
-export async function getDocumentContent(workspaceId: string, featureId: string, documentType: "product_spec" | "technical_design" | "handoff"): Promise<DocumentContent> {
+export async function getDocumentContent(workspaceId: string, featureId: string, documentType: "product_spec" | "technical_design" | "tasks" | "handoff"): Promise<DocumentContent> {
   const res = await workflowApi.get<{
     success: boolean;
     data: DocumentContent;

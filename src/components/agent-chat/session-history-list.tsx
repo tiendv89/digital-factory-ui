@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, MessageSquareText, Sparkles } from "lucide-react";
+import { Clock, MessageSquareText, Sparkles, Trash2 } from "lucide-react";
 
 import type { ChatSessionSummary } from "@/services/hermes-agent/chat";
 
@@ -8,6 +8,10 @@ type SessionHistoryListProps = {
   sessions: ChatSessionSummary[];
   loading: boolean;
   onSelect: (id: string) => void;
+  /** Hard-delete a single session. */
+  onDelete?: (id: string) => void;
+  /** Hard-delete every session for this feature. */
+  onDeleteAll?: () => void;
   /** Per-session unread mention counts, keyed by session id. */
   unreadCounts?: Record<string, number>;
 };
@@ -33,7 +37,7 @@ function SkeletonRow() {
   );
 }
 
-export function SessionHistoryList({ sessions, loading, onSelect, unreadCounts = {} }: SessionHistoryListProps) {
+export function SessionHistoryList({ sessions, loading, onSelect, onDelete, onDeleteAll, unreadCounts = {} }: SessionHistoryListProps) {
   if (loading) {
     return (
       <div data-session-history-list className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2">
@@ -59,42 +63,77 @@ export function SessionHistoryList({ sessions, loading, onSelect, unreadCounts =
   }
 
   return (
-    <div data-session-history-list className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2">
-      {sessions.map((s) => {
-        const unread = unreadCounts[s.id] ?? 0;
-        return (
+    <div data-session-history-list className="flex flex-1 flex-col overflow-hidden">
+      {onDeleteAll && (
+        <div className="flex items-center justify-between px-3 py-2">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-text-muted">Conversations</span>
           <button
-            key={s.id}
-            data-session-row={s.id}
             type="button"
-            onClick={() => onSelect(s.id)}
-            className="group flex w-full items-start gap-3 rounded-lg border border-border/60 bg-surface-secondary/40 px-3 py-2.5 text-left transition-all duration-150 hover:border-primary/40 hover:bg-surface-secondary hover:shadow-sm"
+            data-delete-all-sessions
+            onClick={() => {
+              if (window.confirm("Delete ALL conversations for this feature? This cannot be undone.")) onDeleteAll();
+            }}
+            className="flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium text-text-muted transition-colors hover:bg-danger/10 hover:text-danger"
           >
-            <div className="relative mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-muted transition-colors group-hover:border-primary/40 group-hover:text-primary">
-              <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />
-              {unread > 0 && (
-                <span
-                  data-unread-badge
-                  aria-label={`${unread} unread mention${unread === 1 ? "" : "s"}`}
-                  className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-white"
+            <Trash2 className="h-3 w-3" aria-hidden="true" />
+            Delete all
+          </button>
+        </div>
+      )}
+      <div className="flex flex-1 flex-col gap-1.5 overflow-y-auto p-2 pt-0">
+        {sessions.map((s) => {
+          const unread = unreadCounts[s.id] ?? 0;
+          return (
+            <div
+              key={s.id}
+              className="group relative flex items-stretch rounded-lg border border-border/60 bg-surface-secondary/40 transition-all duration-150 hover:border-primary/40 hover:bg-surface-secondary hover:shadow-sm"
+            >
+              <button
+                data-session-row={s.id}
+                type="button"
+                onClick={() => onSelect(s.id)}
+                className="flex w-full items-start gap-3 px-3 py-2.5 text-left"
+              >
+                <div className="relative mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-muted transition-colors group-hover:border-primary/40 group-hover:text-primary">
+                  <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />
+                  {unread > 0 && (
+                    <span
+                      data-unread-badge
+                      aria-label={`${unread} unread mention${unread === 1 ? "" : "s"}`}
+                      className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-0.5 text-[9px] font-bold text-white"
+                    >
+                      {unread > 99 ? "99+" : unread}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-[13px] font-semibold text-text-primary">{s.title || "Untitled session"}</span>
+                    <span className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-text-muted">
+                      <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                      {formatRelativeDate(s.last_active_at)}
+                    </span>
+                  </div>
+                  {s.last_message_excerpt && <span className="mt-0.5 line-clamp-2 text-xs leading-snug text-text-secondary">{s.last_message_excerpt}</span>}
+                </div>
+              </button>
+              {onDelete && (
+                <button
+                  type="button"
+                  data-delete-session={s.id}
+                  aria-label="Delete conversation"
+                  onClick={() => {
+                    if (window.confirm("Delete this conversation? This cannot be undone.")) onDelete(s.id);
+                  }}
+                  className="absolute right-1.5 top-1.5 hidden h-6 w-6 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-danger/10 hover:text-danger group-hover:flex"
                 >
-                  {unread > 99 ? "99+" : unread}
-                </span>
+                  <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                </button>
               )}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="truncate text-[13px] font-semibold text-text-primary">{s.title || "Untitled session"}</span>
-                <span className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-text-muted">
-                  <Clock className="h-2.5 w-2.5" aria-hidden="true" />
-                  {formatRelativeDate(s.last_active_at)}
-                </span>
-              </div>
-              {s.last_message_excerpt && <span className="mt-0.5 line-clamp-2 text-xs leading-snug text-text-secondary">{s.last_message_excerpt}</span>}
-            </div>
-          </button>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

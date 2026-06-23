@@ -13,18 +13,20 @@ import { MarkdownCodeEditor } from "./markdown-code-editor";
 
 type FeatureDocumentPanelProps = {
   feature: FeatureDetail;
-  documentType: "product_spec" | "technical_design" | "handoff";
+  documentType: "product_spec" | "technical_design" | "tasks" | "handoff";
 };
 
 const DOC_TITLES: Record<FeatureDocumentPanelProps["documentType"], string> = {
   product_spec: "Product Spec",
   technical_design: "Technical Design",
+  tasks: "Tasks",
   handoff: "Handoff",
 };
 
 const DOC_FILENAMES: Record<FeatureDocumentPanelProps["documentType"], string> = {
   product_spec: "product-spec.md",
   technical_design: "technical-design.md",
+  tasks: "tasks.md",
   handoff: "handoff.md",
 };
 
@@ -44,7 +46,11 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
   } = useQuery({
     queryKey: contentQueryKey,
     queryFn: () => getDocumentContent(feature.workspace_id, feature.feature_id, documentType),
-    enabled: !!doc,
+    // Fetch when a document is indexed (`doc`) OR the feature has an open init
+    // PR — for init-PR features the doc lives on the init branch before the
+    // adapter indexes it, and the backend resolves it via the init-branch
+    // fallback. Without this the panel would show empty until first sync.
+    enabled: !!doc || !!feature.init_pr_url,
     staleTime: 30_000,
   });
 
@@ -126,7 +132,6 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
   }, [isDirty]);
 
   const docTitle = DOC_TITLES[documentType];
-  const canEdit = documentType !== "handoff";
   const githubUrl = docContent?.url ?? doc?.url;
 
   const docPath = doc?.source_path || `docs/features/${feature.feature_name}/${DOC_FILENAMES[documentType]}`;
@@ -163,18 +168,6 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
                 >
                   <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 </a>
-              )}
-              {doc && !isLoading && canEdit && (
-                <button
-                  type="button"
-                  data-doc-edit-btn={documentType}
-                  onClick={enterEdit}
-                  className="flex items-center gap-1 rounded px-2 py-1 text-xs text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
-                  title="Edit document"
-                >
-                  <Edit2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  Edit
-                </button>
               )}
             </>
           ) : (
@@ -217,7 +210,12 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
       </div>
 
       <div className="">
-        {!doc ? (
+        {/* Show the empty state only when there is genuinely nothing to show:
+            no indexed document, no fetched content, and not currently loading.
+            For init-PR features the doc isn't indexed yet (`doc` undefined) but
+            the backend resolves content from the init branch — gating on `doc`
+            alone wrongly hid that content. */}
+        {!doc && !docContent?.content && !isLoading ? (
           <div data-feature-doc-empty={documentType} className="flex min-h-[60vh] flex-col items-center justify-center gap-2">
             <p className="text-sm text-text-muted">{`No ${docTitle.toLowerCase()} available.`}</p>
           </div>

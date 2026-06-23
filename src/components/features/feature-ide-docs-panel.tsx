@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Check, Code2, ExternalLink, FileText, GitPullRequest, Rocket } from "lucide-react";
+import { Check, Code2, ExternalLink, FileText, GitPullRequest, ListChecks, Rocket } from "lucide-react";
 import { type ReactNode } from "react";
 
 import { FeatureDocumentPanel } from "@/components/board/feature-document-panel";
@@ -9,7 +9,7 @@ import { workspaceKeys } from "@/constants/query-keys";
 import { getDocumentPrStatus } from "@/services/workflow-backend/documents";
 import type { FeatureDetail } from "@/services/workflow-backend/types";
 
-export type DocTab = "product_spec" | "technical_design" | "handoff";
+export type DocTab = "product_spec" | "technical_design" | "tasks" | "handoff";
 
 type FeatureIDEDocsPanelProps = {
   feature: FeatureDetail;
@@ -128,6 +128,7 @@ function PrStatusIndicator({ workspaceId, featureId }: { workspaceId: string; fe
 export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: FeatureIDEDocsPanelProps) {
   const hasProductSpec = feature.stages?.product_spec?.review_status === "approved";
   const hasTechnicalDesign = feature.stages?.technical_design?.review_status === "approved";
+  const hasTasks = feature.stages?.tasks?.review_status === "approved";
   const hasHandoff = feature.stages?.handoff?.review_status === "approved";
 
   const initPrUrl = feature.init_pr_url;
@@ -167,6 +168,19 @@ export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: Feature
             dataAttr="data-docs-tab-tech-design"
           />
           <DocTabButton
+            label="Tasks"
+            icon={<ListChecks className="h-3.5 w-3.5" aria-hidden="true" />}
+            trailing={
+              <>
+                {hasTasks && <Check className="h-3 w-3 text-success" aria-hidden="true" />}
+                {initPrBadge}
+              </>
+            }
+            active={activeTab === "tasks"}
+            onClick={() => onTabChange("tasks")}
+            dataAttr="data-docs-tab-tasks"
+          />
+          <DocTabButton
             label="Handoff"
             icon={<Rocket className="h-3.5 w-3.5" aria-hidden="true" />}
             trailing={hasHandoff ? <Check className="h-3 w-3 text-success" aria-hidden="true" /> : undefined}
@@ -184,6 +198,7 @@ export function FeatureIDEDocsPanel({ feature, activeTab, onTabChange }: Feature
       <div className="flex-1 overflow-y-auto">
         {activeTab === "product_spec" && <FeatureDocumentPanel feature={feature} documentType="product_spec" />}
         {activeTab === "technical_design" && <FeatureDocumentPanel feature={feature} documentType="technical_design" />}
+        {activeTab === "tasks" && <FeatureDocumentPanel feature={feature} documentType="tasks" />}
         {activeTab === "handoff" && <FeatureDocumentPanel feature={feature} documentType="handoff" />}
       </div>
     </div>
