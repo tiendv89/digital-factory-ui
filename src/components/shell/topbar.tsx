@@ -1,10 +1,14 @@
 "use client";
 
-import { Search } from "lucide-react";
+import { LogOut, Search, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRef, useState } from "react";
 
+import { useSession } from "@/components/auth";
+import { Avatar, cn } from "@/components/common";
 import { OrgWorkspaceSwitcher } from "@/components/orgs/org-workspace-switcher";
+import { deriveIconColor } from "@/components/settings/icon-colors";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
 
 const ROUTE_LABELS: Record<string, string> = {
@@ -39,6 +43,76 @@ function useBreadcrumbs(pathname: string): BreadcrumbSegment[] {
 
   const label = ROUTE_LABELS[pathname] ?? "Board";
   return [{ label }];
+}
+
+function UserMenu() {
+  const { session, logout } = useSession();
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef<HTMLButtonElement>(null);
+
+  if (session.status !== "authenticated") return null;
+
+  const meData = session.data.data;
+  const user = meData.user;
+  const displayName = user.display_name ?? null;
+  const avatarUrl = user.avatar_url ?? null;
+  const name = displayName || user.email;
+  const userId = user.id ?? "user";
+
+  return (
+    <div className="relative">
+      <button
+        ref={btnRef}
+        type="button"
+        aria-label="User menu"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        data-user-menu-trigger
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-8 w-8 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      >
+        {avatarUrl ? <img src={avatarUrl} alt={name ?? "avatar"} className="h-8 w-8 rounded-full object-cover" /> : <Avatar name={name} color={deriveIconColor(userId)} size="sm" />}
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} aria-hidden />
+          <div role="menu" aria-label="User menu" data-user-menu className="absolute right-0 top-full z-50 mt-1 min-w-[180px] rounded-lg border border-border bg-surface shadow-lg">
+            <div className="border-b border-border px-3 py-2.5">
+              <p className="truncate text-xs font-medium text-text-primary">{name}</p>
+              <p className="truncate text-[11px] text-text-muted">{user.email}</p>
+            </div>
+            <Link
+              href="/settings/profile"
+              role="menuitem"
+              data-user-menu-profile
+              onClick={() => setOpen(false)}
+              className={cn(
+                "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-text-secondary transition-colors",
+                "hover:bg-nav-item-hover hover:text-text-primary focus:outline-none focus-visible:bg-nav-item-hover",
+              )}
+            >
+              <UserCircle className="h-4 w-4 shrink-0" aria-hidden />
+              Profile settings
+            </Link>
+            <button
+              type="button"
+              role="menuitem"
+              data-user-menu-logout
+              onClick={() => {
+                setOpen(false);
+                void logout();
+              }}
+              className={cn("flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger transition-colors", "hover:bg-danger-bg focus:outline-none focus-visible:bg-danger-bg")}
+            >
+              <LogOut className="h-4 w-4 shrink-0" aria-hidden />
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 type TopbarProps = {
@@ -93,6 +167,8 @@ export function Topbar({ onCommandPalette }: TopbarProps) {
           ⌘K
         </kbd>
       </button>
+
+      <UserMenu />
     </header>
   );
 }
