@@ -2,7 +2,9 @@ interface MeUser {
   id: string;
   email: string;
   display_name: string | null;
+  username: string | null;
   avatar_url: string | null;
+  linked_providers: string[];
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +30,8 @@ export interface MeResponse {
 
 export interface UpdateMeRequest {
   display_name?: string | null;
+  username?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface RoleChangeRequest {
