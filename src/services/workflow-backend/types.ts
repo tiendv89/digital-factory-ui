@@ -2,6 +2,9 @@ type SourceState = {
   stale: boolean;
   last_synced_at?: string;
   error_code?: string;
+  error_message?: string;
+  status?: "syncing" | "ok" | "error" | "stale";
+  sync_started_at?: string;
 };
 
 type TaskCounts = {

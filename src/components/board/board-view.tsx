@@ -32,6 +32,17 @@ export function BoardView() {
   const [quickFilters, setQuickFilters] = useState<Set<string>>(new Set());
   const searchRef = useRef<HTMLInputElement>(null);
 
+  // Reflect a backend-in-flight sync (webhook- or other-client-triggered), not
+  // just the local button click, and poll until it finishes so progress is
+  // visible without a manual refresh.
+  const backendSyncing = workspaceDetail.source_state?.status === "syncing";
+  const isSyncing = syncing || backendSyncing;
+  useEffect(() => {
+    if (!backendSyncing) return;
+    const id = setInterval(() => void reload(), 4000);
+    return () => clearInterval(id);
+  }, [backendSyncing, reload]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "f") {
@@ -161,11 +172,19 @@ export function BoardView() {
         <button
           type="button"
           onClick={syncBoard}
-          disabled={syncing}
+          disabled={isSyncing}
           aria-label="Sync workspace"
-          className="flex h-[30px] items-center justify-center rounded-lg border border-border px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary disabled:opacity-50"
+          title={
+            isSyncing
+              ? "Syncing…"
+              : workspaceDetail.source_state?.last_synced_at
+                ? `Last synced ${new Date(workspaceDetail.source_state.last_synced_at).toLocaleString()}`
+                : "Sync workspace"
+          }
+          className="flex h-[30px] items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary disabled:opacity-50"
         >
-          {syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />}
+          {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />}
+          {backendSyncing && <span>Syncing…</span>}
         </button>
 
         {/* New Feature */}
