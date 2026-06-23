@@ -21,7 +21,8 @@ function useBreadcrumbs(pathname: string): BreadcrumbSegment[] {
 
   if (pathname.startsWith("/feature/")) {
     const featureId = decodeURIComponent(pathname.slice("/feature/".length));
-    const feature = activeWorkspace?.features.find((f) => f.id === featureId);
+    // The URL carries the feature UUID (feature_id), not the row PK (id).
+    const feature = activeWorkspace?.features.find((f) => f.feature_id === featureId || f.id === featureId);
     const name = feature?.feature_name ?? featureId;
     return [{ label: "Features", href: "/board" }, { label: name }];
   }
@@ -30,7 +31,7 @@ function useBreadcrumbs(pathname: string): BreadcrumbSegment[] {
     const taskId = decodeURIComponent(pathname.slice("/task/".length));
     const task = activeWorkspace?.tasks.find((t) => t.id === taskId);
     const featureId = task?.feature_id;
-    const feature = featureId ? activeWorkspace?.features.find((f) => f.id === featureId) : undefined;
+    const feature = featureId ? activeWorkspace?.features.find((f) => f.feature_id === featureId || f.id === featureId) : undefined;
     const featureName = feature?.feature_name ?? task?.feature_name ?? "Feature";
     const taskName = task?.task_name ?? taskId;
     return [{ label: "Features", href: "/board" }, ...(featureId ? [{ label: featureName, href: `/feature/${encodeURIComponent(featureId)}` }] : [{ label: featureName }]), { label: taskName }];

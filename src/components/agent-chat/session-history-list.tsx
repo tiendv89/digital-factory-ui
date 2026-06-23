@@ -92,7 +92,7 @@ export function SessionHistoryList({ sessions, loading, onSelect, onDelete, onDe
                 data-session-row={s.id}
                 type="button"
                 onClick={() => onSelect(s.id)}
-                className="flex w-full items-start gap-3 px-3 py-2.5 text-left"
+                className="flex min-w-0 flex-1 items-start gap-3 px-3 py-2.5 text-left"
               >
                 <div className="relative mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-muted transition-colors group-hover:border-primary/40 group-hover:text-primary">
                   <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />
@@ -107,16 +107,15 @@ export function SessionHistoryList({ sessions, loading, onSelect, onDelete, onDe
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate text-[13px] font-semibold text-text-primary">{s.title || "Untitled session"}</span>
-                    <span className="flex shrink-0 items-center gap-1 text-[10px] font-medium text-text-muted">
-                      <Clock className="h-2.5 w-2.5" aria-hidden="true" />
-                      {formatRelativeDate(s.last_active_at)}
-                    </span>
-                  </div>
+                  <span className="block truncate text-[13px] font-semibold text-text-primary">{s.title || "Untitled session"}</span>
                   {s.last_message_excerpt && <span className="mt-0.5 line-clamp-2 text-xs leading-snug text-text-secondary">{s.last_message_excerpt}</span>}
                 </div>
               </button>
+              {/* Timestamp — vertically centered against the row. */}
+              <span className="flex shrink-0 items-center gap-1 self-center px-1 text-[10px] font-medium text-text-muted">
+                <Clock className="h-2.5 w-2.5" aria-hidden="true" />
+                {formatRelativeDate(s.last_active_at)}
+              </span>
               {onDelete && (
                 <button
                   type="button"
@@ -125,7 +124,8 @@ export function SessionHistoryList({ sessions, loading, onSelect, onDelete, onDe
                   onClick={() => {
                     if (window.confirm("Delete this conversation? This cannot be undone.")) onDelete(s.id);
                   }}
-                  className="absolute right-1.5 top-1.5 hidden h-6 w-6 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-danger/10 hover:text-danger group-hover:flex"
+                  className="flex w-9 shrink-0 items-center justify-center self-center text-text-muted opacity-50 transition-colors hover:text-danger hover:opacity-100"
+                  title="Delete conversation"
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>

@@ -18,6 +18,7 @@ import {
   subscribeToThread,
 } from "@/services/hermes-agent/chat";
 import { fetchMe, fetchOrgMembers, getMeData, listWorkspaceMembers } from "@/services/user-service";
+import { useLocalWorkspaceStore } from "@/stores/workspace";
 
 import { type ChannelAuthor, ChannelMessageList } from "./channel-message-list";
 import { Conversation } from "./conversation";
@@ -56,6 +57,8 @@ type AgentChatPanelProps = {
   featureId: string;
   onArtifactSaved?: (artifact: "product_spec" | "technical_design" | "tasks") => void;
   onStageTransition?: () => void;
+  /** Fired when the session set changes (created / deleted) so parents can refresh their own lists. */
+  onSessionsChanged?: () => void;
   requestSessionId?: string | null;
   /** Bumping this value (from the parent header) starts a fresh conversation. */
   newChatSignal?: number;
@@ -77,6 +80,7 @@ export function AgentChatPanel({
   featureId,
   onArtifactSaved,
   onStageTransition,
+  onSessionsChanged,
   requestSessionId,
   newChatSignal,
   useSubscriptionTransport = false,
@@ -214,12 +218,22 @@ export function AgentChatPanel({
         const { models: list, default: def } = await listModels();
         if (cancelled) return;
         setModels(list);
-        setSelectedModel((cur) => cur || def || list[0]?.id || "");
+        // Prefer the user's last-selected model (persisted in the zustand store),
+        // then the server default, so the picker remembers the choice across
+        // sessions/reloads.
+        const remembered = useLocalWorkspaceStore.getState().lastModel;
+        const valid = remembered && list.some((m) => m.id === remembered) ? remembered : null;
+        setSelectedModel((cur) => cur || valid || def || list[0]?.id || "");
       } catch {}
     })();
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  const handleModelChange = useCallback((modelId: string) => {
+    setSelectedModel(modelId);
+    useLocalWorkspaceStore.getState().setLastModel(modelId);
   }, []);
 
   const enterActiveMode = useCallback((sessionId: string, sessionTitle: string) => {
@@ -297,6 +311,7 @@ export function AgentChatPanel({
         void refreshUnreadCounts();
         // Keep the history list current (new session title / last-message excerpt).
         void fetchSessions();
+        onSessionsChanged?.();
       } else if (event.type === "delta") {
         const targetId = event.messageId || streamingAssistantIdRef.current || ensureStreamingAssistant();
         appendDelta(targetId, event.text);
@@ -340,7 +355,7 @@ export function AgentChatPanel({
         setStatus("idle");
       }
     },
-    [onArtifactSaved, appendDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions],
+    [onArtifactSaved, appendDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -390,8 +405,9 @@ export function AgentChatPanel({
         setStatus("idle");
       }
       void fetchSessions();
+      onSessionsChanged?.();
     },
-    [panelMode, fetchSessions],
+    [panelMode, fetchSessions, onSessionsChanged],
   );
 
   const handleDeleteAllSessions = useCallback(async () => {
@@ -408,7 +424,8 @@ export function AgentChatPanel({
     setPanelMode({ mode: "history" });
     setStatus("idle");
     void fetchSessions();
-  }, [workspaceId, featureId, fetchSessions]);
+    onSessionsChanged?.();
+  }, [workspaceId, featureId, fetchSessions, onSessionsChanged]);
 
   const handleSessionSelect = useCallback(
     async (id: string) => {
@@ -478,8 +495,11 @@ export function AgentChatPanel({
     setInputValue("");
     setPickerOpen(false);
     setStatus("idle");
-    setPanelMode({ mode: "active", sessionId: "", sessionTitle: "" });
-  }, []);
+    // Land on the history list (with the composer below) so past conversations
+    // are visible; typing the first message starts a fresh session.
+    setPanelMode({ mode: "history" });
+    void fetchSessions();
+  }, [fetchSessions]);
 
   useEffect(() => {
     if (newChatSignal === undefined || newChatSignal === 0) return;
@@ -528,6 +548,7 @@ export function AgentChatPanel({
         // Refresh the history list so the new session appears immediately
         // (the list is otherwise only loaded on mount).
         void fetchSessions();
+        onSessionsChanged?.();
       } catch {
         setStatus("error");
         return;
@@ -633,7 +654,7 @@ export function AgentChatPanel({
         setStatus("error");
       },
     );
-  }, [inputValue, status, panelMode, workspaceId, featureId, selectedModel, onArtifactSaved, enterActiveMode, useSubscriptionTransport, nonBlocking, openSubscription]);
+  }, [inputValue, status, panelMode, workspaceId, featureId, selectedModel, onArtifactSaved, enterActiveMode, useSubscriptionTransport, nonBlocking, openSubscription, fetchSessions, onSessionsChanged]);
 
   const isActive = panelMode.mode === "active";
 
@@ -680,7 +701,7 @@ export function AgentChatPanel({
           history={promptHistory}
           models={models}
           selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
+          onModelChange={handleModelChange}
           members={mentionMembers}
         />
       </div>

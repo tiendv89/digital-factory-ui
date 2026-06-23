@@ -175,6 +175,7 @@ function SessionChat({
   onClose,
   onArtifactSaved,
   onStageTransition,
+  onSessionsChanged,
 }: {
   workspaceId: string;
   featureId: string;
@@ -189,6 +190,8 @@ function SessionChat({
   onClose: () => void;
   onArtifactSaved: (a: "product_spec" | "technical_design" | "tasks") => void;
   onStageTransition?: () => void;
+  /** Reload the sidebar Sessions list when the panel creates/deletes sessions. */
+  onSessionsChanged?: () => void;
 }) {
   useEffect(() => {
     if (!isChannel || !sessionId) return;
@@ -232,6 +235,7 @@ function SessionChat({
             newChatSignal={newChatSignal}
             onArtifactSaved={onArtifactSaved}
             onStageTransition={onStageTransition}
+            onSessionsChanged={onSessionsChanged}
             useSubscriptionTransport
             nonBlocking={isChannel}
           />
@@ -268,19 +272,17 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
   const channelsCollapsed = collapsedWorkbenchSections.includes("channels");
   const sessionsCollapsed = collapsedWorkbenchSections.includes("sessions");
 
-  useEffect(() => {
-    let cancelled = false;
-    listChatSessions(workspaceId, featureId)
-      .then((list) => {
-        if (!cancelled) setSessions(list);
-      })
-      .catch(() => {
-        if (!cancelled) setSessions([]);
-      });
-    return () => {
-      cancelled = true;
-    };
+  const loadSessions = useCallback(async () => {
+    try {
+      setSessions(await listChatSessions(workspaceId, featureId));
+    } catch {
+      setSessions([]);
+    }
   }, [workspaceId, featureId]);
+
+  useEffect(() => {
+    void loadSessions();
+  }, [loadSessions]);
 
   const startNewSession = useCallback(() => {
     setActiveChannel({ id: "", name: "Agent chat", kind: "session" });
@@ -717,6 +719,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
               onClose={() => setActiveChannel(null)}
               onArtifactSaved={handleArtifactSaved}
               onStageTransition={handleStageTransition}
+              onSessionsChanged={loadSessions}
             />
           </div>
         )}
