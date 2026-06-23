@@ -27,7 +27,7 @@ const DOC_FILENAMES: Record<FeatureDocumentPanelProps["documentType"], string> =
   product_spec: "product-spec.md",
   technical_design: "technical-design.md",
   tasks: "tasks.md",
-  handoff: "handoff.md",
+  handoff: "handoffs/handoff.md",
 };
 
 type EditMode = "view" | "edit";
@@ -46,11 +46,10 @@ export function FeatureDocumentPanel({ feature, documentType }: FeatureDocumentP
   } = useQuery({
     queryKey: contentQueryKey,
     queryFn: () => getDocumentContent(feature.workspace_id, feature.feature_id, documentType),
-    // Fetch when a document is indexed (`doc`) OR the feature has an open init
-    // PR — for init-PR features the doc lives on the init branch before the
-    // adapter indexes it, and the backend resolves it via the init-branch
-    // fallback. Without this the panel would show empty until first sync.
-    enabled: !!doc || !!feature.init_pr_url,
+    // Always fetch: tasks.md and handoffs/handoff.md are never indexed in
+    // workspace_feature_documents, and a feature may have no init PR (e.g. it's
+    // already in handoff). The backend resolves the conventional path across
+    // the feature/init/base branches and returns empty when truly absent.
     staleTime: 30_000,
   });
 
