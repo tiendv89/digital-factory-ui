@@ -1,11 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-import { getWorkspaceCapabilities } from "@/services/hermes-agent/chat";
-
 import { CTACard } from "./cta-card";
-import type { CtaSuggestion, WorkspaceCapabilities } from "./types";
+import type { CtaSuggestion } from "./types";
 
 type FeatureLifecycleStatus = string;
 
@@ -100,10 +96,9 @@ function lifecycleStarterCards(status: FeatureLifecycleStatus | null | undefined
   }
 }
 
-function capabilityStarterCards(capabilities: WorkspaceCapabilities): CtaSuggestion[] {
-  const cards: CtaSuggestion[] = [];
-  if (capabilities.gitnexus) {
-    cards.push({
+function capabilityStarterCards(): CtaSuggestion[] {
+  return [
+    {
       id: "starter-gitnexus",
       title: "Search codebase",
       category: "GitNexus",
@@ -111,10 +106,8 @@ function capabilityStarterCards(capabilities: WorkspaceCapabilities): CtaSuggest
       action_text: "Search the codebase for ...",
       button_label: "Search",
       icon: "🔭",
-    });
-  }
-  if (capabilities.rag) {
-    cards.push({
+    },
+    {
       id: "starter-rag",
       title: "Query knowledge base",
       category: "RAG",
@@ -122,9 +115,8 @@ function capabilityStarterCards(capabilities: WorkspaceCapabilities): CtaSuggest
       action_text: "Search the knowledge base for ...",
       button_label: "Query",
       icon: "📚",
-    });
-  }
-  return cards;
+    },
+  ];
 }
 
 type EmptyStateCTARowProps = {
@@ -134,19 +126,10 @@ type EmptyStateCTARowProps = {
 };
 
 export function EmptyStateCTARow({ featureStatus, onAction, dismissed = false }: EmptyStateCTARowProps) {
-  const [capabilities, setCapabilities] = useState<WorkspaceCapabilities>({
-    gitnexus: false,
-    rag: false,
-  });
-
-  useEffect(() => {
-    void getWorkspaceCapabilities().then(setCapabilities);
-  }, []);
-
   if (dismissed) return null;
 
   const lifecycleCards = lifecycleStarterCards(featureStatus);
-  const capCards = capabilityStarterCards(capabilities);
+  const capCards = capabilityStarterCards();
   const allCards = [...lifecycleCards, ...capCards].slice(0, 4);
 
   if (allCards.length === 0) return null;

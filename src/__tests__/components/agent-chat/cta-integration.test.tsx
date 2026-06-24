@@ -18,9 +18,6 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 afterEach(cleanup);
 
 // ── Mocks ────────────────────────────────────────────────────────────────────
-vi.mock("@/services/hermes-agent/chat", () => ({
-  getWorkspaceCapabilities: vi.fn().mockResolvedValue({ gitnexus: false, rag: false }),
-}));
 vi.mock("@/constants/axios", () => ({ getBffBaseUrl: () => "http://localhost" }));
 
 // ── Imports under test ───────────────────────────────────────────────────────

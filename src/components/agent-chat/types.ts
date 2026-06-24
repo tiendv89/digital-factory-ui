@@ -43,11 +43,6 @@ export type CtaSuggestion = {
   icon?: string;
 };
 
-export type WorkspaceCapabilities = {
-  gitnexus: boolean;
-  rag: boolean;
-};
-
 /** A thread member — either a human workspace member or the `@agent` sentinel. */
 export type ThreadMember = {
   id: string;

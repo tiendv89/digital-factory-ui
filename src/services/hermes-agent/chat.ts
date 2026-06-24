@@ -1,6 +1,6 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
-import type { CtaSuggestion, HermesMessage, MessageAuthor, ThreadMember, ToolCallEntry, WorkspaceCapabilities } from "@/components/agent-chat/types";
+import type { CtaSuggestion, HermesMessage, MessageAuthor, ThreadMember, ToolCallEntry } from "@/components/agent-chat/types";
 import { getBffBaseUrl } from "@/constants/axios";
 
 export type ChatSessionSummary = {
@@ -623,16 +623,5 @@ export async function joinChannel(channelId: string): Promise<void> {
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`joinChannel failed (${res.status}): ${text}`);
-  }
-}
-
-/** Fetch which optional agent capabilities are configured for this workspace. */
-export async function getWorkspaceCapabilities(): Promise<WorkspaceCapabilities> {
-  try {
-    const res = await fetch(`${getApiBase()}/api/v1/workspace/capabilities`, { credentials: "include" });
-    if (!res.ok) return { gitnexus: false, rag: false };
-    return (await res.json()) as WorkspaceCapabilities;
-  } catch {
-    return { gitnexus: false, rag: false };
   }
 }
