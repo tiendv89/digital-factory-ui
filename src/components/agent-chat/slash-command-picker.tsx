@@ -62,7 +62,7 @@ export function SlashCommandPicker({ query, onSelect, onClose }: SlashCommandPic
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setActiveIndex((i) => (i - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1));
-      } else if (e.key === "Enter" || e.key === "Tab") {
+      } else if ((e.key === "Enter" && !e.shiftKey) || e.key === "Tab") {
         e.preventDefault();
         if (filtered[activeIndex]) {
           onSelect(filtered[activeIndex].name);

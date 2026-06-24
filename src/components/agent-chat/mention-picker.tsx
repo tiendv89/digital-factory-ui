@@ -43,7 +43,7 @@ export function MentionPicker({ query, members, onSelect, onClose }: MentionPick
         e.preventDefault();
         e.stopPropagation();
         setActiveIndex((i) => (i - 1 + Math.max(filtered.length, 1)) % Math.max(filtered.length, 1));
-      } else if (e.key === "Enter" || e.key === "Tab") {
+      } else if ((e.key === "Enter" && !e.shiftKey) || e.key === "Tab") {
         e.preventDefault();
         e.stopPropagation();
         if (filtered[activeIndex]) {
