@@ -60,7 +60,7 @@ export function adaptFeatureWithTasksToFeatures(features: FeatureWithTasks[]): P
 }
 
 function adaptFeatureSummary(feature: FeatureSummary, tasks: TaskSummary[]): ParsedFeature {
-  const featureTasks = tasks.filter((t) => t.feature_id === feature.id).map(adaptTaskSummary);
+  const featureTasks = tasks.filter((t) => t.feature_id === feature.feature_id).map(adaptTaskSummary);
 
   return {
     id: feature.feature_name,
