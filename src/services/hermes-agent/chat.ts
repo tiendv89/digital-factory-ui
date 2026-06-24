@@ -312,6 +312,7 @@ export type ThreadEvent =
   | { type: "tool_result"; messageId: string; callId: string; name: string; output: unknown }
   | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" | "tasks" }
   | { type: "agent.working"; sessionId: string }
+  | { type: "turn.stopped"; messageId: string | null }
   | { type: "typing"; userId: string }
   | { type: "member.changed" }
   | { type: "channel.deleted" }
@@ -457,6 +458,11 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
     return [{ type: "done" }];
   }
 
+  if (eventType === "turn.stopped") {
+    const messageId = typeof raw.message_id === "string" ? raw.message_id : null;
+    return [{ type: "turn.stopped", messageId }];
+  }
+
   if (eventType === "agent.error") {
     return [{ type: "error", message: String(raw.error ?? raw.message ?? "Agent error") }];
   }
@@ -538,6 +544,17 @@ export async function getUnreadMentions(workspaceId: string): Promise<UnreadMent
   const res = await fetch(`${getApiBase()}/api/v1/unread?${qs}`, { credentials: "include" });
   if (!res.ok) throw new Error(`getUnreadMentions failed (${res.status})`);
   return (await res.json()) as UnreadMentionCounts;
+}
+
+/**
+ * Cancel an in-progress agent turn. Returns immediately (202 means cancel accepted).
+ * A 404 means the turn already finished naturally — safe to ignore.
+ */
+export async function cancelAgentTurn(threadId: string): Promise<void> {
+  await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/cancel`, {
+    method: "POST",
+    credentials: "include",
+  });
 }
 
 /**

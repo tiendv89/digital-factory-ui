@@ -18,6 +18,8 @@ export type HermesMessage = {
   authorId?: string;
   /** Epoch seconds; used for the channel (Discord-style) timestamp. */
   createdAt?: number;
+  /** Set to "stopped" when the agent turn was cancelled mid-stream by the user. */
+  finishReason?: string;
 };
 
 export type ToolCallEntry = {
