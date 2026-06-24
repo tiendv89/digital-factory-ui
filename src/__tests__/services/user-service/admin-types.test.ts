@@ -1,15 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type {
-  AdminOrg,
-  AdminUser,
-  AssignOrgPlanRequest,
-  AssignUserPlanRequest,
-  BillingPlan,
-  CreateBillingPlanRequest,
-  EffectivePlan,
-  UpdateBillingPlanRequest,
-} from "@/services/user-service";
+import type { AdminOrg, AdminUser, AssignOrgPlanRequest, AssignUserPlanRequest, BillingPlan, CreateBillingPlanRequest, EffectivePlan, UpdateBillingPlanRequest } from "@/services/user-service";
 
 const basePlan: BillingPlan = {
   id: "plan-1",
@@ -28,7 +19,11 @@ describe("BillingPlan", () => {
   });
 
   it("accepts null caps (unlimited)", () => {
-    const unlimited: BillingPlan = { ...basePlan, daily_credit_cap: null, weekly_credit_cap: null };
+    const unlimited: BillingPlan = {
+      ...basePlan,
+      daily_credit_cap: null,
+      weekly_credit_cap: null,
+    };
     expect(unlimited.daily_credit_cap).toBeNull();
     expect(unlimited.weekly_credit_cap).toBeNull();
   });
@@ -143,7 +138,10 @@ describe("AssignUserPlanRequest", () => {
   });
 
   it("accepts optional expires_at", () => {
-    const req: AssignUserPlanRequest = { plan_id: "plan-1", expires_at: "2027-01-01T00:00:00Z" };
+    const req: AssignUserPlanRequest = {
+      plan_id: "plan-1",
+      expires_at: "2027-01-01T00:00:00Z",
+    };
     expect(req.expires_at).toBe("2027-01-01T00:00:00Z");
   });
 });

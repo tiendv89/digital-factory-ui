@@ -22,11 +22,7 @@ export default function AdminPlansPage() {
   }
 
   if (error) {
-    return (
-      <div className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-        Failed to load plans: {(error as Error).message}
-      </div>
-    );
+    return <div className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">Failed to load plans: {(error as Error).message}</div>;
   }
 
   return (
@@ -80,18 +76,10 @@ export default function AdminPlansPage() {
                 <tr key={plan.id} className="hover:bg-surface-secondary/50">
                   <td className="px-4 py-2 font-mono text-xs text-text-muted">{plan.name}</td>
                   <td className="px-4 py-2 text-text-primary">{plan.display_name}</td>
-                  <td className="px-4 py-2 text-right text-text-primary">
-                    {plan.daily_credit_cap == null ? <span className="text-text-muted">∞</span> : plan.daily_credit_cap.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-2 text-right text-text-primary">
-                    {plan.weekly_credit_cap == null ? <span className="text-text-muted">∞</span> : plan.weekly_credit_cap.toLocaleString()}
-                  </td>
+                  <td className="px-4 py-2 text-right text-text-primary">{plan.daily_credit_cap == null ? <span className="text-text-muted">∞</span> : plan.daily_credit_cap.toLocaleString()}</td>
+                  <td className="px-4 py-2 text-right text-text-primary">{plan.weekly_credit_cap == null ? <span className="text-text-muted">∞</span> : plan.weekly_credit_cap.toLocaleString()}</td>
                   <td className="px-4 py-2 text-right">
-                    <button
-                      type="button"
-                      onClick={() => setEditingId(plan.id)}
-                      className="text-xs text-text-secondary underline hover:text-text-primary"
-                    >
+                    <button type="button" onClick={() => setEditingId(plan.id)} className="text-xs text-text-secondary underline hover:text-text-primary">
                       Edit
                     </button>
                   </td>
@@ -112,15 +100,7 @@ export default function AdminPlansPage() {
   );
 }
 
-function CreatePlanForm({
-  onSubmit,
-  error,
-  isPending,
-}: {
-  onSubmit: (body: CreateBillingPlanRequest) => void;
-  error: Error | null;
-  isPending: boolean;
-}) {
+function CreatePlanForm({ onSubmit, error, isPending }: { onSubmit: (body: CreateBillingPlanRequest) => void; error: Error | null; isPending: boolean }) {
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [dailyCap, setDailyCap] = useState("");
@@ -139,9 +119,7 @@ function CreatePlanForm({
   return (
     <form onSubmit={handleSubmit} className="rounded-md border border-border bg-surface p-4 space-y-3">
       <h2 className="text-sm font-semibold text-text-primary">Create Plan</h2>
-      {error && (
-        <div className="rounded border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error.message}</div>
-      )}
+      {error && <div className="rounded border border-danger/30 bg-danger/10 px-3 py-2 text-xs text-danger">{error.message}</div>}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-text-muted mb-1">Name (slug)</label>

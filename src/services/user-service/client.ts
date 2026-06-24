@@ -97,7 +97,9 @@ export async function revokeSession(sessionId: string): Promise<void> {
 /** logoutAllDevices revokes every session for the current user. */
 export async function logoutAllDevices(): Promise<void> {
   try {
-    await axios.delete(`${getBffBaseUrl()}/bff/account/sessions`, { withCredentials: true });
+    await axios.delete(`${getBffBaseUrl()}/bff/account/sessions`, {
+      withCredentials: true,
+    });
   } catch (err) {
     handleApiError(err, "log out of all devices");
   }
@@ -366,4 +368,3 @@ export async function adminRemoveOrgPlan(orgId: string): Promise<void> {
     handleApiError(err, "Failed to remove org plan");
   }
 }
-

@@ -44,11 +44,7 @@ export default function AdminOrgsPage() {
   }
 
   if (error) {
-    return (
-      <div className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-        Failed to load orgs: {(error as Error).message}
-      </div>
-    );
+    return <div className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">Failed to load orgs: {(error as Error).message}</div>;
   }
 
   const orgs: AdminOrg[] = data?.orgs ?? [];
@@ -75,9 +71,7 @@ export default function AdminOrgsPage() {
               <tr key={org.id} className="hover:bg-surface-secondary/50">
                 <td className="px-4 py-2 text-text-primary">{org.name}</td>
                 <td className="px-4 py-2 font-mono text-xs text-text-muted">{org.slug}</td>
-                <td className="px-4 py-2 text-text-primary">
-                  {org.effective_plan ? org.effective_plan.plan.display_name : <span className="text-text-muted">Free</span>}
-                </td>
+                <td className="px-4 py-2 text-text-primary">{org.effective_plan ? org.effective_plan.plan.display_name : <span className="text-text-muted">Free</span>}</td>
                 <td className="px-4 py-2 text-right">
                   {assigningOrgId === org.id ? (
                     <div className="flex items-center justify-end gap-2">
@@ -93,12 +87,7 @@ export default function AdminOrgsPage() {
                           </option>
                         ))}
                       </select>
-                      <button
-                        type="button"
-                        onClick={() => handleAssign(org.id)}
-                        disabled={!selectedPlanId || assignPlan.isPending}
-                        className="text-xs text-primary underline disabled:opacity-50"
-                      >
+                      <button type="button" onClick={() => handleAssign(org.id)} disabled={!selectedPlanId || assignPlan.isPending} className="text-xs text-primary underline disabled:opacity-50">
                         {assignPlan.isPending ? "Assigning…" : "Assign"}
                       </button>
                       <button
@@ -128,12 +117,7 @@ export default function AdminOrgsPage() {
                         Assign plan
                       </button>
                       {org.effective_plan && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemove(org.id)}
-                          disabled={removePlan.isPending}
-                          className="text-xs text-danger underline disabled:opacity-50"
-                        >
+                        <button type="button" onClick={() => handleRemove(org.id)} disabled={removePlan.isPending} className="text-xs text-danger underline disabled:opacity-50">
                           Remove
                         </button>
                       )}

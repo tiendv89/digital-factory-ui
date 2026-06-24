@@ -44,11 +44,7 @@ export default function AdminUsersPage() {
   }
 
   if (error) {
-    return (
-      <div className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">
-        Failed to load users: {(error as Error).message}
-      </div>
-    );
+    return <div className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">Failed to load users: {(error as Error).message}</div>;
   }
 
   const users: AdminUser[] = data?.users ?? [];
@@ -76,16 +72,8 @@ export default function AdminUsersPage() {
               <tr key={user.id} className="hover:bg-surface-secondary/50">
                 <td className="px-4 py-2 text-text-primary">{user.email}</td>
                 <td className="px-4 py-2 text-text-secondary">{user.display_name ?? "—"}</td>
-                <td className="px-4 py-2 text-text-primary">
-                  {user.effective_plan ? user.effective_plan.plan.display_name : <span className="text-text-muted">Free</span>}
-                </td>
-                <td className="px-4 py-2">
-                  {user.effective_plan ? (
-                    <SourceBadge source={user.effective_plan.source} />
-                  ) : (
-                    <span className="text-text-muted text-xs">default</span>
-                  )}
-                </td>
+                <td className="px-4 py-2 text-text-primary">{user.effective_plan ? user.effective_plan.plan.display_name : <span className="text-text-muted">Free</span>}</td>
+                <td className="px-4 py-2">{user.effective_plan ? <SourceBadge source={user.effective_plan.source} /> : <span className="text-text-muted text-xs">default</span>}</td>
                 <td className="px-4 py-2 text-right">
                   {assigningUserId === user.id ? (
                     <div className="flex items-center justify-end gap-2">
@@ -101,12 +89,7 @@ export default function AdminUsersPage() {
                           </option>
                         ))}
                       </select>
-                      <button
-                        type="button"
-                        onClick={() => handleAssign(user.id)}
-                        disabled={!selectedPlanId || assignPlan.isPending}
-                        className="text-xs text-primary underline disabled:opacity-50"
-                      >
+                      <button type="button" onClick={() => handleAssign(user.id)} disabled={!selectedPlanId || assignPlan.isPending} className="text-xs text-primary underline disabled:opacity-50">
                         {assignPlan.isPending ? "Assigning…" : "Assign"}
                       </button>
                       <button
@@ -136,12 +119,7 @@ export default function AdminUsersPage() {
                         Assign plan
                       </button>
                       {user.effective_plan?.source === "individual" && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemove(user.id)}
-                          disabled={removePlan.isPending}
-                          className="text-xs text-danger underline disabled:opacity-50"
-                        >
+                        <button type="button" onClick={() => handleRemove(user.id)} disabled={removePlan.isPending} className="text-xs text-danger underline disabled:opacity-50">
                           Remove
                         </button>
                       )}
@@ -170,9 +148,5 @@ function SourceBadge({ source }: { source: "individual" | "org" | "free" }) {
     org: "bg-success/10 text-success",
     free: "bg-surface-secondary text-text-muted",
   };
-  return (
-    <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${styles[source] ?? styles.free}`}>
-      {source}
-    </span>
-  );
+  return <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${styles[source] ?? styles.free}`}>{source}</span>;
 }

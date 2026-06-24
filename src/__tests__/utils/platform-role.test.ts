@@ -60,7 +60,14 @@ describe("isPlatformAdmin", () => {
     // An org-scoped admin (memberships.role='admin') does NOT imply platform_admin
     const orgAdmin = makeMe([]);
     orgAdmin.memberships = [
-      { organization_id: "org1", organization_slug: "org1", organization_name: "Org 1", role: "admin", member_count: 5, workspace_count: 1 },
+      {
+        organization_id: "org1",
+        organization_slug: "org1",
+        organization_name: "Org 1",
+        role: "admin",
+        member_count: 5,
+        workspace_count: 1,
+      },
     ];
     expect(isPlatformAdmin(orgAdmin)).toBe(false);
   });

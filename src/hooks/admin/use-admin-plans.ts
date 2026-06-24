@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+import type { AssignOrgPlanRequest, AssignUserPlanRequest, CreateBillingPlanRequest, UpdateBillingPlanRequest } from "@/services/user-service";
 import {
   adminAssignOrgPlan,
   adminAssignUserPlan,
@@ -10,12 +11,6 @@ import {
   adminRemoveOrgPlan,
   adminRemoveUserPlan,
   adminUpdatePlan,
-} from "@/services/user-service";
-import type {
-  AssignOrgPlanRequest,
-  AssignUserPlanRequest,
-  CreateBillingPlanRequest,
-  UpdateBillingPlanRequest,
 } from "@/services/user-service";
 
 export const ADMIN_PLANS_KEY = ["admin", "plans"] as const;
