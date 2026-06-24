@@ -129,9 +129,13 @@ export function AgentChatPanel({
   const flushRafRef = useRef<number | null>(null);
   const deltaPendingRef = useRef<{ id: string; text: string }[]>([]);
 
+  const thinkingRafRef = useRef<number | null>(null);
+  const thinkingPendingRef = useRef<{ id: string; text: string }[]>([]);
+
   const lastMessageIdRef = useRef<string | null>(null);
   const subscriptionSessionRef = useRef<string | null>(null);
   const streamingAssistantIdRef = useRef<string | null>(null);
+  const [streamingAssistantId, setStreamingAssistantId] = useState<string | null>(null);
   const openSubscriptionRef = useRef<(sessionId: string, since?: string) => void>(() => {});
 
   const nextId = () => {
@@ -142,6 +146,7 @@ export function AgentChatPanel({
   useEffect(() => {
     return () => {
       if (flushRafRef.current != null) cancelAnimationFrame(flushRafRef.current);
+      if (thinkingRafRef.current != null) cancelAnimationFrame(thinkingRafRef.current);
     };
   }, []);
 
@@ -344,6 +349,26 @@ export function AgentChatPanel({
     [drainOneDelta],
   );
 
+  const drainOneThinking = useCallback(function drainOneThinking() {
+    thinkingRafRef.current = null;
+    const item = thinkingPendingRef.current.shift();
+    if (!item) return;
+    setMessages((prev) => prev.map((m) => (m.id === item.id ? { ...m, thinking: (m.thinking ?? "") + item.text } : m)));
+    if (thinkingPendingRef.current.length > 0) {
+      thinkingRafRef.current = requestAnimationFrame(drainOneThinking);
+    }
+  }, []);
+
+  const appendThinkingDelta = useCallback(
+    (messageId: string, content: string) => {
+      thinkingPendingRef.current.push({ id: messageId, text: content });
+      if (thinkingRafRef.current == null) {
+        thinkingRafRef.current = requestAnimationFrame(drainOneThinking);
+      }
+    },
+    [drainOneThinking],
+  );
+
   const finalizeStreamForMessage = useCallback(() => {
     // Flush all remaining queued words immediately when the stream ends.
     if (flushRafRef.current != null) {
@@ -367,6 +392,7 @@ export function AgentChatPanel({
     msgIdCounter.current += 1;
     const id = `msg-${msgIdCounter.current}`;
     streamingAssistantIdRef.current = id;
+    setStreamingAssistantId(id);
     setMessages((prev) => [...prev, { id, role: "assistant", content: "", toolCalls: [] }]);
     return id;
   }, []);
@@ -383,6 +409,7 @@ export function AgentChatPanel({
         });
         if (msg.role === "assistant") {
           streamingAssistantIdRef.current = msg.id;
+          setStreamingAssistantId(msg.id);
           setStatus("streaming");
         }
         void refreshUnreadCounts();
@@ -392,6 +419,9 @@ export function AgentChatPanel({
       } else if (event.type === "delta") {
         const targetId = event.messageId || streamingAssistantIdRef.current || ensureStreamingAssistant();
         appendDelta(targetId, event.text);
+      } else if (event.type === "reasoning") {
+        const targetId = event.messageId || streamingAssistantIdRef.current || ensureStreamingAssistant();
+        appendThinkingDelta(targetId, event.content);
       } else if (event.type === "tool_start") {
         const targetId = event.messageId || streamingAssistantIdRef.current;
         if (!targetId) return;
@@ -453,12 +483,14 @@ export function AgentChatPanel({
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
         streamingAssistantIdRef.current = null;
+        setStreamingAssistantId(null);
         setAgentWorking(false);
         setStatus("idle");
       } else if (event.type === "error") {
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
         streamingAssistantIdRef.current = null;
+        setStreamingAssistantId(null);
         if (targetId) {
           setMessages((prev) => prev.map((m) => (m.id === targetId ? { ...m, content: m.content || `Error: ${event.message}` } : m)));
         }
@@ -468,11 +500,12 @@ export function AgentChatPanel({
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
         streamingAssistantIdRef.current = null;
+        setStreamingAssistantId(null);
         setAgentWorking(false);
         setStatus("idle");
       }
     },
-    [onArtifactSaved, appendDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
+    [onArtifactSaved, appendDelta, appendThinkingDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -517,6 +550,7 @@ export function AgentChatPanel({
         abortRef.current = null;
         subscriptionSessionRef.current = null;
         streamingAssistantIdRef.current = null;
+        setStreamingAssistantId(null);
         setMessages([]);
         setPanelMode({ mode: "history" });
         setStatus("idle");
@@ -537,6 +571,7 @@ export function AgentChatPanel({
     abortRef.current = null;
     subscriptionSessionRef.current = null;
     streamingAssistantIdRef.current = null;
+    setStreamingAssistantId(null);
     setMessages([]);
     setPanelMode({ mode: "history" });
     setStatus("idle");
@@ -610,12 +645,18 @@ export function AgentChatPanel({
     subscriptionSessionRef.current = null;
     lastMessageIdRef.current = null;
     streamingAssistantIdRef.current = null;
+    setStreamingAssistantId(null);
     activeCTAMessageIdRef.current = null;
     if (flushRafRef.current != null) {
       cancelAnimationFrame(flushRafRef.current);
       flushRafRef.current = null;
     }
+    if (thinkingRafRef.current != null) {
+      cancelAnimationFrame(thinkingRafRef.current);
+      thinkingRafRef.current = null;
+    }
     deltaPendingRef.current = [];
+    thinkingPendingRef.current = [];
     setMessages([]);
     setInputValue("");
     setPickerOpen(false);
@@ -732,6 +773,8 @@ export function AgentChatPanel({
           (ev) => {
             if (ev.type === "delta") {
               appendDelta(assistantId, ev.text);
+            } else if (ev.type === "reasoning") {
+              appendThinkingDelta(assistantId, ev.content);
             } else if (ev.type === "error") {
               finalizeStream();
               setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content || `Error: ${ev.message}` } : m)));
@@ -750,7 +793,7 @@ export function AgentChatPanel({
         );
       })();
     },
-    [panelMode, workspaceId, featureId, selectedModel, useSubscriptionTransport, enterActiveMode, fetchSessions, onSessionsChanged, dismissActiveCta, appendDelta],
+    [panelMode, workspaceId, featureId, selectedModel, useSubscriptionTransport, enterActiveMode, fetchSessions, onSessionsChanged, dismissActiveCta, appendDelta, appendThinkingDelta],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -835,6 +878,8 @@ export function AgentChatPanel({
       (event) => {
         if (event.type === "delta") {
           appendDelta(assistantId, event.text);
+        } else if (event.type === "reasoning") {
+          appendThinkingDelta(assistantId, event.content);
         } else if (event.type === "tool_start") {
           const toolEntry: ToolCallEntry = {
             callId: event.callId,
@@ -914,6 +959,7 @@ export function AgentChatPanel({
     fetchSessions,
     onSessionsChanged,
     appendDelta,
+    appendThinkingDelta,
     dismissActiveCta,
   ]);
 
@@ -957,6 +1003,7 @@ export function AgentChatPanel({
             <ChannelMessageList
               messages={messages}
               status={status}
+              streamingAssistantId={streamingAssistantId}
               resolveAuthor={resolveChannelAuthor}
               onCtaAction={handleCtaAction}
               featureStatus={featureStatus}
@@ -966,6 +1013,7 @@ export function AgentChatPanel({
             <MessageThread
               messages={messages}
               status={status}
+              streamingAssistantId={streamingAssistantId}
               onStageTransition={onStageTransition}
               onCtaAction={handleCtaAction}
               featureStatus={featureStatus}
