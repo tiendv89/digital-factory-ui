@@ -2,7 +2,9 @@ interface MeUser {
   id: string;
   email: string;
   display_name: string | null;
+  username: string | null;
   avatar_url: string | null;
+  linked_providers: string[];
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +30,8 @@ export interface MeResponse {
 
 export interface UpdateMeRequest {
   display_name?: string | null;
+  username?: string | null;
+  avatar_url?: string | null;
 }
 
 export interface RoleChangeRequest {
@@ -109,4 +113,14 @@ export interface WorkspaceMembersResponse {
 
 export interface CallerWorkspaceRoleResponse {
   role: WorkspaceRole;
+}
+
+export interface ActiveSession {
+  id: string;
+  device: string;
+  location: string;
+  ip_address: string;
+  created_at: number; // unix seconds
+  last_seen_at: number; // unix seconds
+  current: boolean;
 }

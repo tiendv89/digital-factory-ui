@@ -1,101 +1,138 @@
 "use client";
 
-import { AlertCircle, Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { AlertCircle, Loader2, LogOut, type LucideIcon, MapPin, Monitor, Smartphone } from "lucide-react";
 
-import { Avatar, Badge, Button, Card, Input } from "@/components/common";
-import { useAccountSettings } from "@/components/settings";
-import { deriveIconColor } from "@/components/settings/icon-colors";
+import { useSession } from "@/components/auth";
+import { Badge, Button } from "@/components/common";
+import { useActiveSessions } from "@/hooks/settings/use-active-sessions";
+import type { ActiveSession } from "@/services/user-service";
 
 export function AccountTab() {
-  const { meData, loading, error, saving, saveError, updateDisplayName } = useAccountSettings();
-
-  const [displayName, setDisplayName] = useState("");
-  const [saved, setSaved] = useState(false);
-  const [dirty, setDirty] = useState(false);
-
-  useEffect(() => {
-    if (meData?.user.display_name != null) {
-      setDisplayName(meData.user.display_name);
-    }
-  }, [meData?.user.display_name]);
-
-  const handleChange = (v: string) => {
-    setDisplayName(v);
-    setDirty(true);
-    setSaved(false);
-  };
-
-  const handleSave = async () => {
-    await updateDisplayName(displayName.trim() || null);
-    setDirty(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 py-8 text-text-muted">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-        <span className="text-sm">Loading account…</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center gap-2 py-8 text-danger">
-        <AlertCircle className="h-4 w-4" aria-hidden />
-        <span className="text-sm">Failed to load account: {error.message}</span>
-      </div>
-    );
-  }
-
-  const user = meData?.user;
-  const memberships = meData?.memberships ?? [];
-  const primaryRole = memberships[0]?.role;
-
   return (
     <div data-settings-account className="space-y-6">
-      <h2 className="text-base font-semibold text-text-primary">Account</h2>
+      <h2 className="text-base font-semibold text-text-primary">Security</h2>
+      <ActiveSessionsSection />
+    </div>
+  );
+}
 
-      {/* Profile card */}
-      <Card className="flex items-center gap-3 p-4">
-        <Avatar name={displayName || user?.email} color={deriveIconColor(user?.id ?? user?.email ?? "user")} size="lg" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-primary">{displayName || user?.email}</p>
-          <p className="truncate text-xs text-text-muted">{user?.email}</p>
-          {primaryRole && (
-            <Badge tone="primary" className="mt-1.5 capitalize">
-              {primaryRole}
-            </Badge>
-          )}
-        </div>
-      </Card>
+const dateFmt = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "numeric",
+  minute: "2-digit",
+});
 
-      {/* Display name */}
-      <div className="flex items-start justify-between gap-4 border-b border-border pb-6">
+function formatTs(unixSeconds: number): string {
+  if (!unixSeconds) return "—";
+  return dateFmt.format(new Date(unixSeconds * 1000));
+}
+
+function deviceIcon(device: string): LucideIcon {
+  return /iOS|Android|iPhone|iPad|Mobile/i.test(device) ? Smartphone : Monitor;
+}
+
+function ActiveSessionsSection() {
+  const { logout } = useSession();
+  const { sessions, loading, error, revoke, revokingId, logoutAll, loggingOutAll } = useActiveSessions();
+
+  const handleLogoutAll = async () => {
+    if (!window.confirm("Log out of all devices? You'll need to sign in again everywhere, including here.")) return;
+    await logoutAll();
+    await logout(); // clear local session + redirect to /login
+  };
+
+  const handleRevoke = async (s: ActiveSession) => {
+    if (s.current) {
+      if (!window.confirm("This is your current session. Revoking it will sign you out here.")) return;
+      await revoke(s.id);
+      await logout();
+      return;
+    }
+    if (!window.confirm("Revoke this session? That device will be signed out.")) return;
+    await revoke(s.id);
+  };
+
+  return (
+    <div data-active-sessions className="space-y-4">
+      <div className="flex items-end justify-between gap-4">
         <div>
-          <p className="text-sm font-medium text-text-primary">Display name</p>
-          <p className="mt-0.5 text-xs text-text-muted">Shown on task cards and in chat.</p>
-          {saveError && <p className="mt-1.5 text-xs text-danger">{saveError.message}</p>}
+          <h3 className="text-sm font-semibold text-text-primary">Active sessions</h3>
+          <p className="mt-0.5 text-xs text-text-muted">Devices currently signed in to your account.</p>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <Input id="display-name" value={displayName} onChange={(e) => handleChange(e.target.value)} placeholder="Your display name" maxLength={80} className="w-56" />
-          <Button variant="primary" onClick={() => void handleSave()} disabled={!dirty || saving} loading={saving}>
-            {saving ? "Saving…" : saved ? "Saved" : "Save"}
-          </Button>
-        </div>
+        <Button
+          variant="ghost"
+          onClick={() => void handleLogoutAll()}
+          disabled={loggingOutAll || sessions.length === 0}
+          loading={loggingOutAll}
+          className="shrink-0 gap-1.5 border border-border text-danger hover:bg-danger-bg hover:text-danger"
+        >
+          <LogOut className="h-3.5 w-3.5" aria-hidden />
+          Log out of all devices
+        </Button>
       </div>
 
-      {/* Email */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-text-primary">Email address</p>
-          <p className="mt-0.5 text-xs text-text-muted">Used for notifications and login.</p>
+      {loading ? (
+        <div className="flex items-center gap-2 py-6 text-text-muted">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          <span className="text-sm">Loading sessions…</span>
         </div>
-        <span className="shrink-0 font-mono text-sm text-text-muted">{user?.email}</span>
-      </div>
+      ) : error ? (
+        <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger-bg px-3 py-3 text-danger">
+          <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+          <span className="text-sm">Failed to load sessions: {error.message}</span>
+        </div>
+      ) : sessions.length === 0 ? (
+        <p className="rounded-lg border border-border bg-surface px-4 py-8 text-center text-sm text-text-muted">No active sessions.</p>
+      ) : (
+        <ul className="space-y-2">
+          {sessions.map((s) => {
+            const Icon = deviceIcon(s.device);
+            const location = s.location || s.ip_address;
+            return (
+              <li key={s.id} data-session-row={s.id} className="group flex items-center gap-3.5 rounded-lg border border-border bg-surface px-3.5 py-3 transition-colors hover:border-border-control">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-surface-secondary text-text-secondary">
+                  <Icon className="h-5 w-5" aria-hidden />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-medium text-text-primary">{s.device || "Unknown device"}</span>
+                    {s.current && (
+                      <Badge tone="primary" className="shrink-0">
+                        Current
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+                    {location && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                        {location}
+                      </span>
+                    )}
+                    {location && <span aria-hidden>·</span>}
+                    <span>Last active {formatTs(s.last_seen_at)}</span>
+                    <span aria-hidden>·</span>
+                    <span>Signed in {formatTs(s.created_at)}</span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => void handleRevoke(s)}
+                  disabled={revokingId === s.id}
+                  loading={revokingId === s.id}
+                  className="shrink-0 text-text-muted opacity-0 transition-opacity hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
+                >
+                  Revoke
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }

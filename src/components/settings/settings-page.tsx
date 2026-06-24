@@ -1,15 +1,15 @@
 "use client";
 
-import { Bot, LogOut, Settings, Shield, User } from "lucide-react";
+import { Bot, LogOut, Settings, Shield, UserCircle } from "lucide-react";
 import { useState } from "react";
 
 import { useSession } from "@/components/auth";
 
 import { AccountTab } from "./account-tab";
 import { AgentDefaultsTab } from "./agent-defaults-tab";
-import { SecurityTab } from "./security-tab";
+import { ProfileTab } from "./profile-tab";
 
-type TabId = "account" | "security" | "agent-defaults";
+type TabId = "profile" | "security" | "agent-defaults";
 
 type TabDef = {
   id: TabId;
@@ -19,20 +19,20 @@ type TabDef = {
 };
 
 const TABS: TabDef[] = [
-  { id: "account", label: "Account", icon: User },
-  { id: "security", label: "Security", icon: Shield, placeholder: true },
+  { id: "profile", label: "Profile", icon: UserCircle },
+  { id: "security", label: "Security", icon: Shield },
   { id: "agent-defaults", label: "Agent defaults", icon: Bot, placeholder: true },
 ];
 
-export function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("account");
+export function SettingsPage({ initialTab }: { initialTab?: TabId }) {
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab ?? "profile");
 
   const { logout } = useSession();
 
   const TabContent = (
     {
-      account: AccountTab,
-      security: SecurityTab,
+      profile: ProfileTab,
+      security: AccountTab,
       "agent-defaults": AgentDefaultsTab,
     } as Record<TabId, React.ComponentType | null>
   )[activeTab];

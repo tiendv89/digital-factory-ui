@@ -88,12 +88,7 @@ export function SessionHistoryList({ sessions, loading, onSelect, onDelete, onDe
               key={s.id}
               className="group relative flex items-stretch rounded-lg border border-border/60 bg-surface-secondary/40 transition-all duration-150 hover:border-primary/40 hover:bg-surface-secondary hover:shadow-sm"
             >
-              <button
-                data-session-row={s.id}
-                type="button"
-                onClick={() => onSelect(s.id)}
-                className="flex min-w-0 flex-1 items-start gap-3 px-3 py-2.5 text-left"
-              >
+              <button data-session-row={s.id} type="button" onClick={() => onSelect(s.id)} className="flex min-w-0 flex-1 items-start gap-3 px-3 py-2.5 text-left">
                 <div className="relative mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-border bg-surface text-text-muted transition-colors group-hover:border-primary/40 group-hover:text-primary">
                   <MessageSquareText className="h-3.5 w-3.5" aria-hidden="true" />
                   {unread > 0 && (

@@ -25,12 +25,31 @@ export type DocumentPrStatus = {
   url: string | null;
 };
 
+/**
+ * Surface the backend's structured error message instead of axios's generic
+ * "Request failed with status code N". The workflow-backend error envelope is
+ * { success: false, error: { code, message, source, retryable } }.
+ */
+function apiErrorMessage(err: unknown, fallback: string): string {
+  if (axios.isAxiosError(err)) {
+    const body = err.response?.data as { error?: { message?: string }; message?: string } | undefined;
+    const message = body?.error?.message ?? body?.message;
+    if (message) return message;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+}
+
 export async function getDocumentContent(workspaceId: string, featureId: string, documentType: "product_spec" | "technical_design" | "tasks" | "handoff"): Promise<DocumentContent> {
-  const res = await workflowApi.get<{
-    success: boolean;
-    data: DocumentContent;
-  }>(`/api/workspaces/${workspaceId}/features/${featureId}/documents/${documentType}/content`);
-  return res.data.data;
+  try {
+    const res = await workflowApi.get<{
+      success: boolean;
+      data: DocumentContent;
+    }>(`/api/workspaces/${workspaceId}/features/${featureId}/documents/${documentType}/content`);
+    return res.data.data;
+  } catch (err) {
+    throw new Error(apiErrorMessage(err, "Failed to load document content"));
+  }
 }
 
 export async function saveDocument(workspaceId: string, featureId: string, documentType: "product_spec" | "technical_design", content: string, baseSha: string | null): Promise<SaveDocumentResult> {
@@ -49,7 +68,7 @@ export async function saveDocument(workspaceId: string, featureId: string, docum
     if (axios.isAxiosError(err) && err.response?.status === 409) {
       throw new StaleDocumentError();
     }
-    throw err;
+    throw new Error(apiErrorMessage(err, "Failed to save document"));
   }
 }
 

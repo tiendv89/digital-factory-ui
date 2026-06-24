@@ -11,14 +11,10 @@ vi.mock("@heroui/react", async () => {
   const { createElement, Fragment } = await import("react");
   return {
     Modal: {
-      Root: ({ children, isOpen }: { children: React.ReactNode; isOpen: boolean }) =>
-        isOpen ? createElement(Fragment, null, children) : null,
-      Backdrop: ({ children }: { children: React.ReactNode }) =>
-        createElement(Fragment, null, children),
-      Container: ({ children }: { children: React.ReactNode }) =>
-        createElement(Fragment, null, children),
-      Dialog: ({ children }: { children: React.ReactNode }) =>
-        createElement(Fragment, null, children),
+      Root: ({ children, isOpen }: { children: React.ReactNode; isOpen: boolean }) => (isOpen ? createElement(Fragment, null, children) : null),
+      Backdrop: ({ children }: { children: React.ReactNode }) => createElement(Fragment, null, children),
+      Container: ({ children }: { children: React.ReactNode }) => createElement(Fragment, null, children),
+      Dialog: ({ children }: { children: React.ReactNode }) => createElement(Fragment, null, children),
     },
   };
 });

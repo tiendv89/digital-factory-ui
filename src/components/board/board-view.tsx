@@ -174,13 +174,7 @@ export function BoardView() {
           onClick={syncBoard}
           disabled={isSyncing}
           aria-label="Sync workspace"
-          title={
-            isSyncing
-              ? "Syncing…"
-              : workspaceDetail.source_state?.last_synced_at
-                ? `Last synced ${new Date(workspaceDetail.source_state.last_synced_at).toLocaleString()}`
-                : "Sync workspace"
-          }
+          title={isSyncing ? "Syncing…" : workspaceDetail.source_state?.last_synced_at ? `Last synced ${new Date(workspaceDetail.source_state.last_synced_at).toLocaleString()}` : "Sync workspace"}
           className="flex h-[30px] items-center gap-1.5 rounded-lg border border-border px-2.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-subtle hover:text-text-primary disabled:opacity-50"
         >
           {isSyncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <RefreshCcw className="h-3.5 w-3.5" aria-hidden="true" />}

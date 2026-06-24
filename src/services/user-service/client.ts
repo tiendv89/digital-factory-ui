@@ -3,6 +3,7 @@ import axios from "axios";
 import { getBffBaseUrl, userServiceApi } from "@/constants/axios";
 
 import type {
+  ActiveSession,
   CallerWorkspaceRoleResponse,
   ChangeOrgMemberRoleRequest,
   CreateOrgRequest,
@@ -54,6 +55,38 @@ export async function fetchMe(): Promise<MeResponse> {
 
 export async function logout(): Promise<void> {
   await axios.post(`${getBffBaseUrl()}/auth/logout`, null, { withCredentials: true }).catch(() => undefined);
+}
+
+/** listActiveSessions returns the current user's active BFF sessions. */
+export async function listActiveSessions(): Promise<ActiveSession[]> {
+  try {
+    const { data } = await axios.get<{ sessions: ActiveSession[] }>(`${getBffBaseUrl()}/bff/account/sessions`, {
+      withCredentials: true,
+    });
+    return data.sessions ?? [];
+  } catch (err) {
+    handleApiError(err, "list active sessions");
+  }
+}
+
+/** revokeSession revokes a single session by id. */
+export async function revokeSession(sessionId: string): Promise<void> {
+  try {
+    await axios.delete(`${getBffBaseUrl()}/bff/account/sessions/${encodeURIComponent(sessionId)}`, {
+      withCredentials: true,
+    });
+  } catch (err) {
+    handleApiError(err, "revoke session");
+  }
+}
+
+/** logoutAllDevices revokes every session for the current user. */
+export async function logoutAllDevices(): Promise<void> {
+  try {
+    await axios.delete(`${getBffBaseUrl()}/bff/account/sessions`, { withCredentials: true });
+  } catch (err) {
+    handleApiError(err, "log out of all devices");
+  }
 }
 
 export async function updateMe(body: UpdateMeRequest): Promise<MeResponse> {
