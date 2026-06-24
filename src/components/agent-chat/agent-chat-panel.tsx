@@ -248,7 +248,10 @@ export function AgentChatPanel({
   // in the same synchronous tick — a queue + RAF gives us one setState (→ one
   // render) per frame, giving smooth per-word streaming even when many SSE
   // frames arrive in the same TCP packet.
-  const drainOneDelta = useCallback(() => {
+  // Named function expression: the inner `drainOneDelta` resolves to this
+  // function's own name binding (valid inside its body), so the recursive RAF
+  // schedule doesn't reference the outer const before it's declared.
+  const drainOneDelta = useCallback(function drainOneDelta() {
     flushRafRef.current = null;
     const item = deltaPendingRef.current.shift();
     if (!item) return;
@@ -489,7 +492,10 @@ export function AgentChatPanel({
     subscriptionSessionRef.current = null;
     lastMessageIdRef.current = null;
     streamingAssistantIdRef.current = null;
-    if (flushRafRef.current != null) { cancelAnimationFrame(flushRafRef.current); flushRafRef.current = null; }
+    if (flushRafRef.current != null) {
+      cancelAnimationFrame(flushRafRef.current);
+      flushRafRef.current = null;
+    }
     deltaPendingRef.current = [];
     setMessages([]);
     setInputValue("");
@@ -654,7 +660,22 @@ export function AgentChatPanel({
         setStatus("error");
       },
     );
-  }, [inputValue, status, panelMode, workspaceId, featureId, selectedModel, onArtifactSaved, enterActiveMode, useSubscriptionTransport, nonBlocking, openSubscription, fetchSessions, onSessionsChanged]);
+  }, [
+    inputValue,
+    status,
+    panelMode,
+    workspaceId,
+    featureId,
+    selectedModel,
+    onArtifactSaved,
+    enterActiveMode,
+    useSubscriptionTransport,
+    nonBlocking,
+    openSubscription,
+    fetchSessions,
+    onSessionsChanged,
+    appendDelta,
+  ]);
 
   const isActive = panelMode.mode === "active";
 
@@ -686,7 +707,14 @@ export function AgentChatPanel({
           )}
         </Conversation>
       ) : (
-        <SessionHistoryList sessions={sessions} loading={sessionsLoading} onSelect={handleSessionSelect} onDelete={handleDeleteSession} onDeleteAll={handleDeleteAllSessions} unreadCounts={unreadCounts.perSession} />
+        <SessionHistoryList
+          sessions={sessions}
+          loading={sessionsLoading}
+          onSelect={handleSessionSelect}
+          onDelete={handleDeleteSession}
+          onDeleteAll={handleDeleteAllSessions}
+          unreadCounts={unreadCounts.perSession}
+        />
       )}
 
       {/* Input */}
