@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 // Unit tests for the turn.stopped SSE event parsing in parseThreadEvents.
 // We test the exported ThreadEvent type shape and the cancelAgentTurn function signature.
-
 import type { ThreadEvent } from "@/services/hermes-agent/chat";
 
 describe("ThreadEvent — turn.stopped type", () => {
@@ -16,11 +15,7 @@ describe("ThreadEvent — turn.stopped type", () => {
   });
 
   it("turn.stopped is a valid ThreadEvent discriminant", () => {
-    const events: ThreadEvent[] = [
-      { type: "turn.stopped", messageId: "msg-1" },
-      { type: "turn.stopped", messageId: null },
-      { type: "done" },
-    ];
+    const events: ThreadEvent[] = [{ type: "turn.stopped", messageId: "msg-1" }, { type: "turn.stopped", messageId: null }, { type: "done" }];
 
     const stopped = events.filter((e) => e.type === "turn.stopped");
     expect(stopped).toHaveLength(2);

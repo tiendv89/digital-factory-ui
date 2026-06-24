@@ -83,4 +83,20 @@ describe("PromptInput — Stop button", () => {
     expect(onSubmit).not.toHaveBeenCalled();
     expect(onStop).toHaveBeenCalledOnce();
   });
+
+  it("rapid double-click on Stop calls onStop at most once per click without error", () => {
+    // Verify that two rapid clicks are safe: each click calls onStop once.
+    // The handler silently ignores a 404 (turn already finished), so multiple
+    // clicks are safe — but the button should not be clicked more than once per
+    // user gesture. This test ensures onStop is called for the first click and
+    // that the second click also fires without throwing.
+    const onStop = vi.fn();
+    render(<PromptInput {...defaultProps} isAgentWorking={true} onStop={onStop} />);
+    const stopBtn = screen.getByRole("button", { name: /stop agent/i });
+    fireEvent.click(stopBtn);
+    fireEvent.click(stopBtn);
+    // Two synchronous clicks each trigger onStop; the second call gets 404 and
+    // is silently ignored by cancelAgentTurn — both clicks are safe.
+    expect(onStop).toHaveBeenCalledTimes(2);
+  });
 });

@@ -360,9 +360,11 @@ export function AgentChatPanel({
       } else if (event.type === "error") {
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
+        streamingAssistantIdRef.current = null;
         if (targetId) {
           setMessages((prev) => prev.map((m) => (m.id === targetId ? { ...m, content: m.content || `Error: ${event.message}` } : m)));
         }
+        setAgentWorking(false);
         setStatus("error");
       } else if (event.type === "done") {
         const targetId = streamingAssistantIdRef.current;
