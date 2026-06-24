@@ -176,6 +176,7 @@ function SessionChat({
   onArtifactSaved,
   onStageTransition,
   onSessionsChanged,
+  featureStatus,
 }: {
   workspaceId: string;
   featureId: string;
@@ -192,6 +193,7 @@ function SessionChat({
   onStageTransition?: () => void;
   /** Reload the sidebar Sessions list when the panel creates/deletes sessions. */
   onSessionsChanged?: () => void;
+  featureStatus?: string | null;
 }) {
   useEffect(() => {
     if (!isChannel || !sessionId) return;
@@ -238,6 +240,7 @@ function SessionChat({
             onSessionsChanged={onSessionsChanged}
             useSubscriptionTransport
             nonBlocking={isChannel}
+            featureStatus={featureStatus}
           />
         </div>
       </div>
@@ -720,6 +723,7 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
               onArtifactSaved={handleArtifactSaved}
               onStageTransition={handleStageTransition}
               onSessionsChanged={loadSessions}
+              featureStatus={feature.status}
             />
           </div>
         )}

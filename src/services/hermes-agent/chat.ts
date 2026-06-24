@@ -1,6 +1,6 @@
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 
-import type { HermesMessage, MessageAuthor, ThreadMember, ToolCallEntry } from "@/components/agent-chat/types";
+import type { CtaSuggestion, HermesMessage, MessageAuthor, ThreadMember, ToolCallEntry } from "@/components/agent-chat/types";
 import { getBffBaseUrl } from "@/constants/axios";
 
 export type ChatSessionSummary = {
@@ -311,6 +311,7 @@ export type ThreadEvent =
   | { type: "tool_start"; messageId: string; callId: string; name: string }
   | { type: "tool_result"; messageId: string; callId: string; name: string; output: unknown }
   | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" | "tasks" }
+  | { type: "turn.cta_suggestions"; messageId: string; suggestions: CtaSuggestion[] }
   | { type: "agent.working"; sessionId: string }
   | { type: "turn.stopped"; messageId: string | null }
   | { type: "typing"; userId: string }
@@ -326,6 +327,7 @@ type RawThreadMessage = {
   created_at?: number;
   author_id?: string | null;
   tool_calls?: unknown;
+  cta_suggestions?: unknown;
   author?: {
     id: string;
     name: string;
@@ -353,6 +355,10 @@ function rawMessageToHermesMessage(m: RawThreadMessage): HermesMessage {
   };
   const toolCalls = parseToolCalls(m.tool_calls);
   if (toolCalls.length > 0) msg.toolCalls = toolCalls;
+  if (Array.isArray(m.cta_suggestions) && m.cta_suggestions.length > 0) {
+    msg.ctaSuggestions = m.cta_suggestions as CtaSuggestion[];
+    msg.ctaActive = false; // history messages are inert
+  }
   return msg;
 }
 
@@ -452,6 +458,11 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
   if (eventType === "agent.delta") {
     const content = typeof raw.content === "string" ? raw.content : "";
     return content ? [{ type: "delta", messageId: String(raw.message_id ?? ""), text: content }] : [];
+  }
+
+  if (eventType === "turn.cta_suggestions") {
+    const suggestions = Array.isArray(raw.suggestions) ? (raw.suggestions as CtaSuggestion[]) : [];
+    return [{ type: "turn.cta_suggestions", messageId: String(raw.message_id ?? ""), suggestions }];
   }
 
   if (eventType === "agent.done") {

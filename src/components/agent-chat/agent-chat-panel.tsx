@@ -74,6 +74,8 @@ type AgentChatPanelProps = {
    * multi-user channel is async, so users keep typing while the agent replies.
    */
   nonBlocking?: boolean;
+  /** Feature lifecycle status, used to generate empty-state starter CTA cards. */
+  featureStatus?: string | null;
 };
 
 export function AgentChatPanel({
@@ -86,6 +88,7 @@ export function AgentChatPanel({
   newChatSignal,
   useSubscriptionTransport = false,
   nonBlocking = false,
+  featureStatus,
 }: AgentChatPanelProps) {
   const [panelMode, setPanelMode] = useState<PanelMode>({ mode: "history" });
   const [sessions, setSessions] = useState<ChatSessionSummary[]>([]);
@@ -97,9 +100,29 @@ export function AgentChatPanel({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [models, setModels] = useState<ModelOption[]>([]);
   const [selectedModel, setSelectedModel] = useState("");
-  const [unreadCounts, setUnreadCounts] = useState<UnreadMentionCounts>({ total: 0, perSession: {} });
-  const [workspaceMembers, setWorkspaceMembers] = useState<Record<string, { name: string | null; handle: string; email: string | null; role: string | null; avatarUrl: string | null }>>({});
-  const meRef = useRef<{ id: string; name: string; avatarUrl: string | null } | null>(null);
+  const [unreadCounts, setUnreadCounts] = useState<UnreadMentionCounts>({
+    total: 0,
+    perSession: {},
+  });
+  const [workspaceMembers, setWorkspaceMembers] = useState<
+    Record<
+      string,
+      {
+        name: string | null;
+        handle: string;
+        email: string | null;
+        role: string | null;
+        avatarUrl: string | null;
+      }
+    >
+  >({});
+  const [emptyStateDismissed, setEmptyStateDismissed] = useState(false);
+  const activeCTAMessageIdRef = useRef<string | null>(null);
+  const meRef = useRef<{
+    id: string;
+    name: string;
+    avatarUrl: string | null;
+  } | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const msgIdCounter = useRef(0);
 
@@ -166,13 +189,26 @@ export function AgentChatPanel({
       let orgId: string | undefined;
       try {
         const me = getMeData(await fetchMe());
-        meRef.current = { id: me.user.id, name: displayNameOf(me.user.display_name, me.user.email) ?? "You", avatarUrl: me.user.avatar_url };
+        meRef.current = {
+          id: me.user.id,
+          name: displayNameOf(me.user.display_name, me.user.email) ?? "You",
+          avatarUrl: me.user.avatar_url,
+        };
         orgId = Object.keys(me.org_workspace_ids ?? {}).find((oid) => (me.org_workspace_ids?.[oid] ?? []).includes(workspaceId));
       } catch {
         /* ignore */
       }
 
-      const map: Record<string, { name: string | null; handle: string; email: string | null; role: string | null; avatarUrl: string | null }> = {};
+      const map: Record<
+        string,
+        {
+          name: string | null;
+          handle: string;
+          email: string | null;
+          role: string | null;
+          avatarUrl: string | null;
+        }
+      > = {};
       if (orgId) {
         try {
           for (const m of await fetchOrgMembers(orgId)) {
@@ -203,12 +239,46 @@ export function AgentChatPanel({
       const handle = member?.handle ?? null;
       const email = member?.email ?? null;
       const roleLabel = member?.role ?? msg.author?.roleLabel ?? null;
-      if (msg.author?.name) return { id, name: msg.author.name, handle, email, avatarUrl: msg.author.avatarUrl, roleLabel, isAgent: false };
+      if (msg.author?.name)
+        return {
+          id,
+          name: msg.author.name,
+          handle,
+          email,
+          avatarUrl: msg.author.avatarUrl,
+          roleLabel,
+          isAgent: false,
+        };
       if (id && meRef.current && id === meRef.current.id) {
-        return { id, name: meRef.current.name, handle, email, avatarUrl: meRef.current.avatarUrl, roleLabel, isAgent: false };
+        return {
+          id,
+          name: meRef.current.name,
+          handle,
+          email,
+          avatarUrl: meRef.current.avatarUrl,
+          roleLabel,
+          isAgent: false,
+        };
       }
-      if (member?.name) return { id, name: member.name, handle, email, avatarUrl: member.avatarUrl, roleLabel, isAgent: false };
-      return { id, name: "Member", handle, email, avatarUrl: msg.author?.avatarUrl ?? member?.avatarUrl, roleLabel, isAgent: false };
+      if (member?.name)
+        return {
+          id,
+          name: member.name,
+          handle,
+          email,
+          avatarUrl: member.avatarUrl,
+          roleLabel,
+          isAgent: false,
+        };
+      return {
+        id,
+        name: "Member",
+        handle,
+        email,
+        avatarUrl: msg.author?.avatarUrl ?? member?.avatarUrl,
+        roleLabel,
+        isAgent: false,
+      };
     },
     [workspaceMembers],
   );
@@ -306,6 +376,7 @@ export function AgentChatPanel({
       if (event.type === "message.created") {
         const msg = event.message;
         lastMessageIdRef.current = msg.id;
+        setEmptyStateDismissed(true);
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
           return [...prev, msg];
@@ -324,7 +395,11 @@ export function AgentChatPanel({
       } else if (event.type === "tool_start") {
         const targetId = event.messageId || streamingAssistantIdRef.current;
         if (!targetId) return;
-        const toolEntry: ToolCallEntry = { callId: event.callId, name: event.name, status: "running" };
+        const toolEntry: ToolCallEntry = {
+          callId: event.callId,
+          name: event.name,
+          status: "running",
+        };
         setMessages((prev) =>
           prev.map((m) => {
             if (m.id !== targetId) return m;
@@ -340,8 +415,31 @@ export function AgentChatPanel({
         const targetId = event.messageId || streamingAssistantIdRef.current;
         if (!targetId) return;
         setMessages((prev) =>
-          prev.map((m) => (m.id === targetId ? { ...m, toolCalls: (m.toolCalls ?? []).map((tc) => (tc.callId === event.callId ? { ...tc, status: "done" as const, output: event.output } : tc)) } : m)),
+          prev.map((m) =>
+            m.id === targetId
+              ? {
+                  ...m,
+                  toolCalls: (m.toolCalls ?? []).map((tc) => (tc.callId === event.callId ? { ...tc, status: "done" as const, output: event.output } : tc)),
+                }
+              : m,
+          ),
         );
+      } else if (event.type === "turn.cta_suggestions") {
+        const { suggestions } = event;
+        setMessages((prev) => {
+          let targetId = streamingAssistantIdRef.current;
+          if (!targetId) {
+            for (let i = prev.length - 1; i >= 0; i--) {
+              if (prev[i].role === "assistant") {
+                targetId = prev[i].id;
+                break;
+              }
+            }
+          }
+          if (!targetId) return prev;
+          activeCTAMessageIdRef.current = targetId;
+          return prev.map((m) => (m.id === targetId ? { ...m, ctaSuggestions: suggestions, ctaActive: true } : m));
+        });
       } else if (event.type === "artifact_saved") {
         onArtifactSaved?.(event.artifact);
       } else if (event.type === "agent.working") {
@@ -454,7 +552,11 @@ export function AgentChatPanel({
       }
       setMessages([]);
       setInputValue("");
-      setPanelMode({ mode: "active", sessionId: id, sessionTitle: session?.title ?? "" });
+      setPanelMode({
+        mode: "active",
+        sessionId: id,
+        sessionTitle: session?.title ?? "",
+      });
       setStatus("connecting");
 
       void markThreadRead(id).then(() => {
@@ -508,6 +610,7 @@ export function AgentChatPanel({
     subscriptionSessionRef.current = null;
     lastMessageIdRef.current = null;
     streamingAssistantIdRef.current = null;
+    activeCTAMessageIdRef.current = null;
     if (flushRafRef.current != null) {
       cancelAnimationFrame(flushRafRef.current);
       flushRafRef.current = null;
@@ -518,6 +621,7 @@ export function AgentChatPanel({
     setPickerOpen(false);
     setStatus("idle");
     setAgentWorking(false);
+    setEmptyStateDismissed(false);
     // Land on the history list (with the composer below) so past conversations
     // are visible; typing the first message starts a fresh session.
     setPanelMode({ mode: "history" });
@@ -546,6 +650,108 @@ export function AgentChatPanel({
   const handlePickerClose = useCallback(() => {
     setPickerOpen(false);
   }, []);
+
+  const dismissActiveCta = useCallback(() => {
+    const id = activeCTAMessageIdRef.current;
+    if (!id) return;
+    activeCTAMessageIdRef.current = null;
+    setMessages((prev) => prev.map((m) => (m.id === id ? { ...m, ctaActive: false } : m)));
+  }, []);
+
+  const handleCtaAction = useCallback(
+    (actionText: string) => {
+      setInputValue("");
+      setPickerOpen(false);
+      setEmptyStateDismissed(true);
+      dismissActiveCta();
+      void (async () => {
+        let sessionId: string;
+        let sessionTitle: string;
+
+        const needsNewSession = panelMode.mode === "history" || (panelMode.mode === "active" && !panelMode.sessionId);
+        if (needsNewSession) {
+          setStatus("connecting");
+          try {
+            const created = await createChatSession(workspaceId, featureId);
+            sessionId = created.session_id;
+            sessionTitle = actionText.trim().slice(0, 60);
+            enterActiveMode(sessionId, sessionTitle);
+            if (useSubscriptionTransport) openSubscriptionRef.current(sessionId);
+            void fetchSessions();
+            onSessionsChanged?.();
+          } catch {
+            setStatus("error");
+            return;
+          }
+        } else {
+          sessionId = panelMode.sessionId;
+          sessionTitle = panelMode.sessionTitle;
+        }
+
+        const userMsg: HermesMessage = {
+          id: `msg-${++msgIdCounter.current}`,
+          role: "user",
+          content: actionText,
+          authorId: meRef.current?.id,
+          createdAt: Date.now() / 1000,
+        };
+
+        setMessages((prev) => [...prev, userMsg]);
+
+        if (useSubscriptionTransport) {
+          setStatus("connecting");
+          try {
+            const { message_id, agent_triggered } = await sendThreadMessage(sessionId, actionText);
+            setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)));
+            setStatus(agent_triggered ? "streaming" : "idle");
+          } catch {
+            setStatus("error");
+          }
+          return;
+        }
+
+        setStatus("streaming");
+        const assistantId = `msg-${++msgIdCounter.current}`;
+        setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", toolCalls: [] }]);
+
+        const finalizeStream = () => {
+          if (flushRafRef.current != null) {
+            cancelAnimationFrame(flushRafRef.current);
+            flushRafRef.current = null;
+          }
+        };
+
+        abortRef.current = streamChatTurn(
+          {
+            workspaceId,
+            featureId,
+            sessionId,
+            message: actionText,
+            model: selectedModel,
+          },
+          (ev) => {
+            if (ev.type === "delta") {
+              appendDelta(assistantId, ev.text);
+            } else if (ev.type === "error") {
+              finalizeStream();
+              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content || `Error: ${ev.message}` } : m)));
+              setStatus("error");
+            }
+          },
+          () => {
+            finalizeStream();
+            setStatus("idle");
+          },
+          (err) => {
+            finalizeStream();
+            if (err?.name === "AbortError") return;
+            setStatus("error");
+          },
+        );
+      })();
+    },
+    [panelMode, workspaceId, featureId, selectedModel, useSubscriptionTransport, enterActiveMode, fetchSessions, onSessionsChanged, dismissActiveCta, appendDelta],
+  );
 
   const handleSubmit = useCallback(async () => {
     if (!inputValue.trim()) return;
@@ -591,6 +797,8 @@ export function AgentChatPanel({
 
     setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
+    setEmptyStateDismissed(true);
+    dismissActiveCta();
 
     if (useSubscriptionTransport) {
       setStatus("connecting");
@@ -617,7 +825,13 @@ export function AgentChatPanel({
     };
 
     abortRef.current = streamChatTurn(
-      { workspaceId, featureId, sessionId, message: userMsg.content, model: selectedModel },
+      {
+        workspaceId,
+        featureId,
+        sessionId,
+        message: userMsg.content,
+        model: selectedModel,
+      },
       (event) => {
         if (event.type === "delta") {
           appendDelta(assistantId, event.text);
@@ -644,7 +858,15 @@ export function AgentChatPanel({
               m.id === assistantId
                 ? {
                     ...m,
-                    toolCalls: (m.toolCalls ?? []).map((tc) => (tc.callId === event.callId ? { ...tc, status: "done" as const, output: event.output } : tc)),
+                    toolCalls: (m.toolCalls ?? []).map((tc) =>
+                      tc.callId === event.callId
+                        ? {
+                            ...tc,
+                            status: "done" as const,
+                            output: event.output,
+                          }
+                        : tc,
+                    ),
                   }
                 : m,
             ),
@@ -692,6 +914,7 @@ export function AgentChatPanel({
     fetchSessions,
     onSessionsChanged,
     appendDelta,
+    dismissActiveCta,
   ]);
 
   const handleStop = useCallback(() => {
@@ -705,7 +928,13 @@ export function AgentChatPanel({
 
   const mentionMembers = useMemo<ThreadMember[]>(() => {
     const humans: ThreadMember[] = Object.entries(workspaceMembers)
-      .map(([id, m]) => ({ id, name: m.name ?? m.handle, handle: m.handle, avatarUrl: m.avatarUrl, kind: "user" as const }))
+      .map(([id, m]) => ({
+        id,
+        name: m.name ?? m.handle,
+        handle: m.handle,
+        avatarUrl: m.avatarUrl,
+        kind: "user" as const,
+      }))
       .filter((m) => m.handle);
     return [{ id: "agent", name: "Hermes Agent", handle: "agent", kind: "agent" }, ...humans];
   }, [workspaceMembers]);
@@ -725,9 +954,23 @@ export function AgentChatPanel({
       {isActive ? (
         <Conversation>
           {nonBlocking ? (
-            <ChannelMessageList messages={messages} status={status} resolveAuthor={resolveChannelAuthor} />
+            <ChannelMessageList
+              messages={messages}
+              status={status}
+              resolveAuthor={resolveChannelAuthor}
+              onCtaAction={handleCtaAction}
+              featureStatus={featureStatus}
+              emptyStateDismissed={emptyStateDismissed}
+            />
           ) : (
-            <MessageThread messages={messages} status={status} onStageTransition={onStageTransition} />
+            <MessageThread
+              messages={messages}
+              status={status}
+              onStageTransition={onStageTransition}
+              onCtaAction={handleCtaAction}
+              featureStatus={featureStatus}
+              emptyStateDismissed={emptyStateDismissed}
+            />
           )}
         </Conversation>
       ) : (

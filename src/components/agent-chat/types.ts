@@ -20,6 +20,10 @@ export type HermesMessage = {
   createdAt?: number;
   /** Set to "stopped" when the agent turn was cancelled mid-stream by the user. */
   finishReason?: string;
+  /** CTA suggestions attached to an assistant turn — populated from turn.cta_suggestions SSE event or history load. */
+  ctaSuggestions?: CtaSuggestion[];
+  /** Whether the CTA row for this message is still active (clickable). False for past turns. */
+  ctaActive?: boolean;
 };
 
 export type ToolCallEntry = {
@@ -30,6 +34,16 @@ export type ToolCallEntry = {
 };
 
 export type ChatStatus = "idle" | "connecting" | "streaming" | "error";
+
+export type CtaSuggestion = {
+  id: string;
+  title: string;
+  category: "Lifecycle" | "Clarify" | "Review" | "Edit" | "Action" | "GitNexus" | "RAG";
+  description: string;
+  action_text: string;
+  button_label: string;
+  icon?: string;
+};
 
 /** A thread member — either a human workspace member or the `@agent` sentinel. */
 export type ThreadMember = {
