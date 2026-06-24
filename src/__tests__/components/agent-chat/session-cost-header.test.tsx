@@ -51,21 +51,16 @@ describe("SessionCostHeader", () => {
   });
 
   it("clamps daily remaining to 0 when over-used", () => {
-    render(
-      <SessionCostHeader
-        sessionCredits={0}
-        quota={makeQuota({ daily_used: 12000, daily_cap: 10000 })}
-      />,
-    );
+    render(<SessionCostHeader sessionCredits={0} quota={makeQuota({ daily_used: 12000, daily_cap: 10000 })} />);
     const text = screen.getByText(/Daily:/);
     expect(text.textContent).toContain("0");
     expect(text.textContent).toContain("10,000");
   });
 
   it("renders with zero session credits", () => {
-    render(<SessionCostHeader sessionCredits={0} quota={makeQuota()} />);
+    const { container } = render(<SessionCostHeader sessionCredits={0} quota={makeQuota()} />);
     expect(screen.getByText(/Session:/)).toBeInTheDocument();
-    expect(screen.getByText(/0/)).toBeInTheDocument();
+    expect(container.textContent).toContain("0 credits");
   });
 
   it("renders the data-session-cost-header attribute", () => {

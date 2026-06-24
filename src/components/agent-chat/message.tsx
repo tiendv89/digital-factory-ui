@@ -185,11 +185,7 @@ export const Message = memo(function Message({ message }: { message: HermesMessa
             </span>
           )}
           {hasCredits && (
-            <Badge
-              tone="neutral"
-              data-credit-badge
-              aria-label={`${message.creditsUsed} ${message.creditsUsed === 1 ? "credit" : "credits"}`}
-            >
+            <Badge tone="neutral" data-credit-badge aria-label={`${message.creditsUsed} ${message.creditsUsed === 1 ? "credit" : "credits"}`}>
               {message.creditsUsed} {message.creditsUsed === 1 ? "credit" : "credits"}
             </Badge>
           )}

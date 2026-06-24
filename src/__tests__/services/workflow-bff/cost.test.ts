@@ -60,10 +60,7 @@ describe("getSessionCost", () => {
 
     await getSessionCost("session-abc");
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/sessions/session-abc/cost"),
-      expect.objectContaining({ credentials: "include" }),
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("/sessions/session-abc/cost"), expect.objectContaining({ credentials: "include" }));
   });
 
   it("returns the session cost response", async () => {
@@ -126,9 +123,6 @@ describe("getSessionCost", () => {
 
     await getSessionCost("session/with/slashes");
 
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("session%2Fwith%2Fslashes"),
-      expect.any(Object),
-    );
+    expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("session%2Fwith%2Fslashes"), expect.any(Object));
   });
 });
