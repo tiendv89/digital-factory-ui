@@ -1,6 +1,6 @@
 "use client";
 
-import { Bot, User } from "lucide-react";
+import { User } from "lucide-react";
 import { memo } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeRaw from "rehype-raw";
@@ -124,14 +124,7 @@ export function MessageContent({ content }: { content: string }) {
   );
 }
 
-function AuthorAvatar({ author, isAgent }: { author?: MessageAuthor; isAgent?: boolean }) {
-  if (isAgent) {
-    return (
-      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10" aria-label="Hermes agent">
-        <Bot className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
-      </div>
-    );
-  }
+function AuthorAvatar({ author }: { author?: MessageAuthor }) {
   if (author?.avatarUrl) {
     return <img src={author.avatarUrl} alt={author.name} className="h-6 w-6 shrink-0 rounded-full object-cover" />;
   }
@@ -142,14 +135,7 @@ function AuthorAvatar({ author, isAgent }: { author?: MessageAuthor; isAgent?: b
   );
 }
 
-function AuthorLabel({ author, isAgent }: { author?: MessageAuthor; isAgent?: boolean }) {
-  if (isAgent) {
-    return (
-      <span className="text-[11px] font-medium text-primary" data-author-agent>
-        @agent
-      </span>
-    );
-  }
+function AuthorLabel({ author }: { author?: MessageAuthor }) {
   if (!author) return null;
   return (
     <span className="text-[11px] font-medium text-text-secondary" data-author-human>
@@ -163,6 +149,7 @@ export const Message = memo(function Message({ message }: { message: HermesMessa
   const isUser = message.role === "user";
   const isAgent = message.role === "assistant";
   const hasAuthor = !!message.author;
+  const isStopped = message.finishReason === "stopped";
 
   if (!message.content.trim()) {
     return null;
@@ -180,14 +167,19 @@ export const Message = memo(function Message({ message }: { message: HermesMessa
 
   return (
     <div data-message data-role="assistant" className="flex w-full flex-col gap-1">
-      {(hasAuthor || isAgent) && (
+      {hasAuthor && !isAgent && (
         <div className="flex items-center gap-1.5">
-          <AuthorAvatar isAgent={isAgent} />
-          <AuthorLabel isAgent={isAgent} />
+          <AuthorAvatar author={message.author} />
+          <AuthorLabel author={message.author} />
         </div>
       )}
-      <div className={`w-full max-w-none text-sm text-text-primary ${hasAuthor || isAgent ? "pl-7" : ""}`}>
+      <div className={`w-full max-w-none text-sm text-text-primary ${hasAuthor && !isAgent ? "pl-7" : ""}`}>
         <MessageContent content={message.content} />
+        {isStopped && (
+          <span data-stopped-indicator className="ml-1 text-xs text-text-muted">
+            — stopped
+          </span>
+        )}
       </div>
     </div>
   );
