@@ -10,7 +10,7 @@ import type { ActiveSession } from "@/services/user-service";
 export function AccountTab() {
   return (
     <div data-settings-account className="space-y-6">
-      <h2 className="text-base font-semibold text-text-primary">Account</h2>
+      <h2 className="text-base font-semibold text-text-primary">Security</h2>
       <ActiveSessionsSection />
     </div>
   );
