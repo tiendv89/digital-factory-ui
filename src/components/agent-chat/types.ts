@@ -24,6 +24,8 @@ export type HermesMessage = {
   ctaSuggestions?: CtaSuggestion[];
   /** Whether the CTA row for this message is still active (clickable). False for past turns. */
   ctaActive?: boolean;
+  /** Ephemeral live reasoning trace for the current view only — never persisted, never in history. */
+  thinking?: string;
 };
 
 export type ToolCallEntry = {

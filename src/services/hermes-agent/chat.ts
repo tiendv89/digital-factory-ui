@@ -28,6 +28,7 @@ export async function listModels(): Promise<{ models: ModelOption[]; default: st
 
 export type HermesEvent =
   | { type: "delta"; text: string }
+  | { type: "reasoning"; content: string }
   | { type: "tool_start"; name: string; callId: string }
   | { type: "tool_result"; name: string; callId: string; output: unknown }
   | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" | "tasks" }
@@ -255,6 +256,11 @@ type OpenAIChunk = {
  *     delta.content (text), finish_reason (stop/error), and usage.
  */
 function parseHermesEvents(eventType: string | undefined, raw: Record<string, unknown>): HermesEvent[] {
+  if (eventType === "agent.reasoning") {
+    const content = typeof raw.content === "string" ? raw.content : "";
+    return content ? [{ type: "reasoning", content }] : [];
+  }
+
   if (eventType === "hermes.tool.progress") {
     const status = String(raw.status ?? "");
     const name = String(raw.tool ?? "");
@@ -308,6 +314,7 @@ function parseHermesEvents(eventType: string | undefined, raw: Record<string, un
 export type ThreadEvent =
   | { type: "message.created"; message: HermesMessage }
   | { type: "delta"; messageId: string; text: string }
+  | { type: "reasoning"; messageId: string; content: string }
   | { type: "tool_start"; messageId: string; callId: string; name: string }
   | { type: "tool_result"; messageId: string; callId: string; name: string; output: unknown }
   | { type: "artifact_saved"; artifact: "product_spec" | "technical_design" | "tasks" }
@@ -445,6 +452,11 @@ export function subscribeToThread(threadId: string, since: string | null, onEven
 }
 
 function parseThreadEvents(eventType: string | undefined, raw: Record<string, unknown>): ThreadEvent[] {
+  if (eventType === "agent.reasoning") {
+    const content = typeof raw.content === "string" ? raw.content : "";
+    return content ? [{ type: "reasoning", messageId: String(raw.message_id ?? ""), content }] : [];
+  }
+
   if (eventType === "message.created") {
     const msg = raw.message as RawThreadMessage | undefined;
     if (!msg) return [];
@@ -494,6 +506,9 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
   return legacyEvents.flatMap((e): ThreadEvent[] => {
     if (e.type === "delta") {
       return [{ type: "delta", messageId: String(raw.message_id ?? ""), text: e.text }];
+    }
+    if (e.type === "reasoning") {
+      return [{ type: "reasoning", messageId: String(raw.message_id ?? ""), content: e.content }];
     }
     if (e.type === "tool_start") {
       return [{ type: "tool_start", messageId: String(raw.message_id ?? ""), callId: e.callId, name: e.name }];
