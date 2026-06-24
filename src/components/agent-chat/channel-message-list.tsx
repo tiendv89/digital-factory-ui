@@ -7,6 +7,8 @@ import { type ReactNode, useEffect, useRef } from "react";
 import { deriveIconColor } from "@/components/settings/icon-colors";
 
 import { ConversationContent, useConversationScroll } from "./conversation";
+import { CTASuggestionRow } from "./cta-suggestion-row";
+import { EmptyStateCTARow } from "./empty-state-cta-row";
 import { Loader } from "./loader";
 import { MessageContent, UserMessageContent } from "./message";
 import type { ChatStatus, HermesMessage } from "./types";
@@ -27,6 +29,9 @@ type ChannelMessageListProps = {
   status: ChatStatus;
   /** Resolve a message to its display author (name + avatar). */
   resolveAuthor: (msg: HermesMessage) => ChannelAuthor;
+  onCtaAction?: (actionText: string) => void;
+  featureStatus?: string | null;
+  emptyStateDismissed?: boolean;
 };
 
 function initials(name: string): string {
@@ -125,7 +130,7 @@ function formatTime(epochSeconds?: number): string {
  * align with the first. Agent replies render as markdown; human messages as
  * plain text with @mention chips. Clicking an avatar/name opens a profile card.
  */
-export function ChannelMessageList({ messages, status, resolveAuthor }: ChannelMessageListProps) {
+export function ChannelMessageList({ messages, status, resolveAuthor, onCtaAction, featureStatus, emptyStateDismissed = false }: ChannelMessageListProps) {
   const isStreaming = status === "streaming";
   const { scrollRef, isAtBottomRef } = useConversationScroll();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -147,9 +152,14 @@ export function ChannelMessageList({ messages, status, resolveAuthor }: ChannelM
 
   if (visible.length === 0 && !isStreaming && status !== "connecting") {
     return (
-      <div data-channel-empty className="flex h-full flex-col items-center justify-center gap-2 px-4 text-center">
-        <p className="text-[13px] font-medium text-text-secondary">No messages yet</p>
-        <p className="text-[11px] text-text-muted">Say hello, or mention @agent to ask a question.</p>
+      <div data-channel-empty className="flex h-full flex-col items-center justify-center gap-4 px-4 text-center">
+        <div>
+          <p className="text-[13px] font-medium text-text-secondary">No messages yet</p>
+          <p className="text-[11px] text-text-muted">Say hello, or mention @agent to ask a question.</p>
+        </div>
+        {onCtaAction && (
+          <EmptyStateCTARow featureStatus={featureStatus} onAction={onCtaAction} dismissed={emptyStateDismissed} />
+        )}
       </div>
     );
   }
@@ -179,7 +189,18 @@ export function ChannelMessageList({ messages, status, resolveAuthor }: ChannelM
                 </div>
               )}
               {msg.role === "assistant" ? (
-                <MessageContent content={msg.content} />
+                <>
+                  <MessageContent content={msg.content} />
+                  {(msg.ctaSuggestions?.length ?? 0) > 0 && onCtaAction && (
+                    <div className="mt-2">
+                      <CTASuggestionRow
+                        suggestions={msg.ctaSuggestions ?? []}
+                        active={msg.ctaActive ?? false}
+                        onAction={onCtaAction}
+                      />
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="text-sm leading-relaxed text-text-primary">
                   <UserMessageContent content={msg.content} />
