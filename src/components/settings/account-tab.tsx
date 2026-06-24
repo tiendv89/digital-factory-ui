@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertCircle, Loader2, Monitor } from "lucide-react";
+import { AlertCircle, Loader2, LogOut, type LucideIcon, MapPin, Monitor, Smartphone } from "lucide-react";
 
 import { useSession } from "@/components/auth";
 import { Badge, Button } from "@/components/common";
@@ -29,6 +29,10 @@ function formatTs(unixSeconds: number): string {
   return dateFmt.format(new Date(unixSeconds * 1000));
 }
 
+function deviceIcon(device: string): LucideIcon {
+  return /iOS|Android|iPhone|iPad|Mobile/i.test(device) ? Smartphone : Monitor;
+}
+
 function ActiveSessionsSection() {
   const { logout } = useSession();
   const { sessions, loading, error, revoke, revokingId, logoutAll, loggingOutAll } = useActiveSessions();
@@ -51,13 +55,20 @@ function ActiveSessionsSection() {
   };
 
   return (
-    <div data-active-sessions className="space-y-3">
-      <div className="flex items-center justify-between">
+    <div data-active-sessions className="space-y-4">
+      <div className="flex items-end justify-between gap-4">
         <div>
           <h3 className="text-sm font-semibold text-text-primary">Active sessions</h3>
           <p className="mt-0.5 text-xs text-text-muted">Devices currently signed in to your account.</p>
         </div>
-        <Button variant="ghost" onClick={() => void handleLogoutAll()} disabled={loggingOutAll || sessions.length === 0} loading={loggingOutAll}>
+        <Button
+          variant="ghost"
+          onClick={() => void handleLogoutAll()}
+          disabled={loggingOutAll || sessions.length === 0}
+          loading={loggingOutAll}
+          className="shrink-0 gap-1.5 border border-border text-danger hover:bg-danger-bg hover:text-danger"
+        >
+          <LogOut className="h-3.5 w-3.5" aria-hidden />
           Log out of all devices
         </Button>
       </div>
@@ -68,57 +79,59 @@ function ActiveSessionsSection() {
           <span className="text-sm">Loading sessions…</span>
         </div>
       ) : error ? (
-        <div className="flex items-center gap-2 py-6 text-danger">
-          <AlertCircle className="h-4 w-4" aria-hidden />
+        <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger-bg px-3 py-3 text-danger">
+          <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
           <span className="text-sm">Failed to load sessions: {error.message}</span>
         </div>
       ) : sessions.length === 0 ? (
-        <p className="py-6 text-sm text-text-muted">No active sessions.</p>
+        <p className="rounded-lg border border-border bg-surface px-4 py-8 text-center text-sm text-text-muted">No active sessions.</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[40rem] border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-xs font-medium text-text-muted">
-                <th className="py-2 pr-4 font-medium">Device</th>
-                <th className="py-2 pr-4 font-medium">Location</th>
-                <th className="py-2 pr-4 font-medium">Created</th>
-                <th className="py-2 pr-4 font-medium">Updated</th>
-                <th className="py-2 pl-4 text-right font-medium" aria-label="Actions" />
-              </tr>
-            </thead>
-            <tbody>
-              {sessions.map((s) => (
-                <tr key={s.id} className="group border-b border-border/60 last:border-0">
-                  <td className="py-3 pr-4">
-                    <div className="flex items-center gap-2">
-                      <Monitor className="h-4 w-4 shrink-0 text-text-muted" aria-hidden />
-                      <span className="font-medium text-text-primary">{s.device || "Unknown device"}</span>
-                      {s.current && (
-                        <Badge tone="primary" className="ml-1">
-                          Current
-                        </Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="py-3 pr-4 text-text-secondary">{s.location || s.ip_address || "—"}</td>
-                  <td className="py-3 pr-4 whitespace-nowrap text-text-secondary">{formatTs(s.created_at)}</td>
-                  <td className="py-3 pr-4 whitespace-nowrap text-text-secondary">{formatTs(s.last_seen_at)}</td>
-                  <td className="py-3 pl-4 text-right">
-                    <Button
-                      variant="ghost"
-                      onClick={() => void handleRevoke(s)}
-                      disabled={revokingId === s.id}
-                      loading={revokingId === s.id}
-                      className="text-danger opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
-                    >
-                      Revoke
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ul className="space-y-2">
+          {sessions.map((s) => {
+            const Icon = deviceIcon(s.device);
+            const location = s.location || s.ip_address;
+            return (
+              <li key={s.id} data-session-row={s.id} className="group flex items-center gap-3.5 rounded-lg border border-border bg-surface px-3.5 py-3 transition-colors hover:border-border-control">
+                <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-surface-secondary text-text-secondary">
+                  <Icon className="h-5 w-5" aria-hidden />
+                </div>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate text-sm font-medium text-text-primary">{s.device || "Unknown device"}</span>
+                    {s.current && (
+                      <Badge tone="primary" className="shrink-0">
+                        Current
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-text-muted">
+                    {location && (
+                      <span className="inline-flex items-center gap-1">
+                        <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+                        {location}
+                      </span>
+                    )}
+                    {location && <span aria-hidden>·</span>}
+                    <span>Last active {formatTs(s.last_seen_at)}</span>
+                    <span aria-hidden>·</span>
+                    <span>Signed in {formatTs(s.created_at)}</span>
+                  </div>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  onClick={() => void handleRevoke(s)}
+                  disabled={revokingId === s.id}
+                  loading={revokingId === s.id}
+                  className="shrink-0 text-text-muted opacity-0 transition-opacity hover:text-danger focus-visible:opacity-100 group-hover:opacity-100"
+                >
+                  Revoke
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
