@@ -7,6 +7,7 @@ export {
   fetchOrg,
   fetchOrgInvitations,
   fetchOrgMembers,
+  fetchUserQuota,
   getCallerWorkspaceRole,
   getMeData,
   inviteOrgMember,
@@ -36,6 +37,7 @@ export type {
   TransferOrgOwnershipRequest,
   UpdateMeRequest,
   UpdateOrgRequest,
+  UserQuota,
   WorkspaceMember,
   WorkspaceRole,
 } from "./types";

@@ -20,6 +20,8 @@ import type {
   TransferOrgOwnershipRequest,
   UpdateMeRequest,
   UpdateOrgRequest,
+  UserQuota,
+  UserQuotaResponse,
   WorkspaceMember,
   WorkspaceMembersResponse,
 } from "./types";
@@ -216,6 +218,15 @@ export async function listWorkspaceMembers(workspaceId: string): Promise<Workspa
     return unwrapWorkspaceMembers(data);
   } catch (err) {
     handleApiError(err, "Failed to list workspace members");
+  }
+}
+
+export async function fetchUserQuota(): Promise<UserQuota> {
+  try {
+    const { data } = await userServiceApi.get<UserQuotaResponse | UserQuota>("/users/me/quota");
+    return "data" in data ? data.data : data;
+  } catch (err) {
+    handleApiError(err, "Failed to fetch /users/me/quota");
   }
 }
 

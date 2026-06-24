@@ -124,3 +124,17 @@ export interface ActiveSession {
   last_seen_at: number; // unix seconds
   current: boolean;
 }
+
+export interface UserQuota {
+  plan_name: string;
+  daily_used: number;
+  daily_cap: number;
+  weekly_used: number;
+  weekly_cap: number;
+  daily_reset_at: string;
+  weekly_reset_at: string;
+}
+
+export interface UserQuotaResponse {
+  data: UserQuota;
+}
