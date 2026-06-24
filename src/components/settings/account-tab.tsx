@@ -3,65 +3,14 @@
 import { AlertCircle, Loader2, Monitor } from "lucide-react";
 
 import { useSession } from "@/components/auth";
-import { Avatar, Badge, Button, Card } from "@/components/common";
-import { useAccountSettings } from "@/components/settings";
-import { deriveIconColor } from "@/components/settings/icon-colors";
+import { Badge, Button } from "@/components/common";
 import { useActiveSessions } from "@/hooks/settings/use-active-sessions";
 import type { ActiveSession } from "@/services/user-service";
 
 export function AccountTab() {
-  const { meData, loading, error } = useAccountSettings();
-
-  if (loading) {
-    return (
-      <div className="flex items-center gap-2 py-8 text-text-muted">
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-        <span className="text-sm">Loading account…</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center gap-2 py-8 text-danger">
-        <AlertCircle className="h-4 w-4" aria-hidden />
-        <span className="text-sm">Failed to load account: {error.message}</span>
-      </div>
-    );
-  }
-
-  const user = meData?.user;
-  const memberships = meData?.memberships ?? [];
-  const primaryRole = memberships[0]?.role;
-  const displayName = user?.display_name || user?.email;
-
   return (
     <div data-settings-account className="space-y-6">
       <h2 className="text-base font-semibold text-text-primary">Account</h2>
-
-      {/* Profile card */}
-      <Card className="flex items-center gap-3 p-4">
-        <Avatar name={displayName} color={deriveIconColor(user?.id ?? user?.email ?? "user")} size="lg" />
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-primary">{displayName}</p>
-          <p className="truncate text-xs text-text-muted">{user?.email}</p>
-          {primaryRole && (
-            <Badge tone="primary" className="mt-1.5 capitalize">
-              {primaryRole}
-            </Badge>
-          )}
-        </div>
-      </Card>
-
-      {/* Email */}
-      <div className="flex items-start justify-between gap-4 border-b border-border pb-6">
-        <div>
-          <p className="text-sm font-medium text-text-primary">Email address</p>
-          <p className="mt-0.5 text-xs text-text-muted">Used for notifications and login.</p>
-        </div>
-        <span className="shrink-0 font-mono text-sm text-text-muted">{user?.email}</span>
-      </div>
-
       <ActiveSessionsSection />
     </div>
   );
