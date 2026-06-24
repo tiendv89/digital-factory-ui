@@ -1,6 +1,34 @@
-import { describe, expect, it } from "vitest";
+// @vitest-environment jsdom
+import "@testing-library/jest-dom/vitest";
 
-import { computeBarState, formatDailyCountdown, formatRelativeTimestamp, formatWeeklyCountdown } from "@/hooks/settings/use-quota";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { act, renderHook, waitFor } from "@testing-library/react";
+import { createElement } from "react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+import { computeBarState, formatDailyCountdown, formatRelativeTimestamp, formatWeeklyCountdown, useQuota } from "@/hooks/settings/use-quota";
+import type { UserQuota } from "@/services/user-service";
+
+vi.mock("@/services/user-service", () => ({
+  fetchUserQuota: vi.fn(),
+}));
+
+const MOCK_QUOTA: UserQuota = {
+  plan_name: "Pro",
+  daily_used: 100,
+  daily_cap: 1000,
+  weekly_used: 200,
+  weekly_cap: 5000,
+  daily_reset_at: "2026-06-25T00:00:00Z",
+  weekly_reset_at: "2026-06-29T00:00:00Z",
+};
+
+function makeWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return ({ children }: { children: React.ReactNode }) => createElement(QueryClientProvider, { client: queryClient }, children);
+}
 
 // ── computeBarState ──────────────────────────────────────────────────────────
 
@@ -148,5 +176,31 @@ describe("formatRelativeTimestamp", () => {
     const fetchedAt = new Date("2026-06-25T09:00:00Z");
     const now = new Date("2026-06-25T11:00:00Z");
     expect(formatRelativeTimestamp(fetchedAt, now)).toBe("2h ago");
+  });
+});
+
+// ── useQuota — refresh ───────────────────────────────────────────────────────
+
+describe("useQuota — refresh", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("re-fetches quota when refresh() is called", async () => {
+    const { fetchUserQuota } = await import("@/services/user-service");
+    const mockFetch = vi.mocked(fetchUserQuota);
+    mockFetch.mockResolvedValue(MOCK_QUOTA);
+
+    const { result } = renderHook(() => useQuota(), { wrapper: makeWrapper() });
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(result.current.quota?.plan_name).toBe("Pro");
+
+    act(() => {
+      result.current.refresh();
+    });
+
+    await waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
   });
 });

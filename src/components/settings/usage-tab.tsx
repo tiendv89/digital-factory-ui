@@ -20,8 +20,6 @@ const BADGE_TONE: Record<"neutral" | "warning" | "danger", "neutral" | "warning"
 
 interface QuotaSectionProps {
   label: string;
-  used: number;
-  cap: number;
   pct: number;
   color: "neutral" | "warning" | "danger";
   countdown: string;
@@ -88,10 +86,10 @@ export function UsageTab() {
       </div>
 
       {/* Daily */}
-      <QuotaSection label="Daily" used={daily.used} cap={daily.cap} pct={daily.pct} color={daily.color} countdown={dailyCountdown} />
+      <QuotaSection label="Daily" pct={daily.pct} color={daily.color} countdown={dailyCountdown} />
 
       {/* Weekly */}
-      <QuotaSection label="Weekly" used={weekly.used} cap={weekly.cap} pct={weekly.pct} color={weekly.color} countdown={weeklyCountdown} />
+      <QuotaSection label="Weekly" pct={weekly.pct} color={weekly.color} countdown={weeklyCountdown} />
 
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-border pt-4">
