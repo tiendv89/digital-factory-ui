@@ -4,6 +4,8 @@ import { Bot, ChevronRight, Loader2, Wrench } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { ConversationContent, useConversationScroll } from "./conversation";
+import { CTASuggestionRow } from "./cta-suggestion-row";
+import { EmptyStateCTARow } from "./empty-state-cta-row";
 import { Loader } from "./loader";
 import { Message } from "./message";
 import type { ApprovalRequest } from "./tool-cards/approval-card";
@@ -18,9 +20,12 @@ type MessageThreadProps = {
   messages: HermesMessage[];
   status: ChatStatus;
   onStageTransition?: () => void;
+  onCtaAction?: (actionText: string) => void;
+  featureStatus?: string | null;
+  emptyStateDismissed?: boolean;
 };
 
-export function MessageThread({ messages, status, onStageTransition }: MessageThreadProps) {
+export function MessageThread({ messages, status, onStageTransition, onCtaAction, featureStatus, emptyStateDismissed }: MessageThreadProps) {
   const isStreaming = status === "streaming";
   const { scrollRef, isAtBottomRef } = useConversationScroll();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -39,12 +44,13 @@ export function MessageThread({ messages, status, onStageTransition }: MessageTh
 
   if (messages.length === 0 && !isStreaming && status !== "connecting") {
     return (
-      <div data-message-thread-empty className="flex h-full flex-col items-center justify-center gap-3 px-4 text-center">
+      <div data-message-thread-empty className="flex h-full flex-col items-center justify-center gap-4 px-4 py-6 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface">
           <Bot className="h-5 w-5 text-text-muted" />
         </div>
         <p className="text-[13px] font-medium text-text-secondary">Start a conversation</p>
         <p className="text-[11px] text-text-muted">Ask a question or use a slash command to get started.</p>
+        {onCtaAction && <EmptyStateCTARow featureStatus={featureStatus} onAction={onCtaAction} dismissed={emptyStateDismissed} />}
       </div>
     );
   }
@@ -58,6 +64,9 @@ export function MessageThread({ messages, status, onStageTransition }: MessageTh
             <div className="flex flex-col gap-1 pl-2">
               <ToolCallGroup toolCalls={msg.toolCalls} onStageTransition={onStageTransition} />
             </div>
+          )}
+          {msg.role === "assistant" && msg.ctaSuggestions && msg.ctaSuggestions.length > 0 && onCtaAction && (
+            <CTASuggestionRow suggestions={msg.ctaSuggestions} active={msg.ctaActive ?? false} onAction={onCtaAction} />
           )}
         </div>
       ))}
@@ -221,7 +230,11 @@ function extractApprovalOutput(output: unknown): ApprovalRequest | null {
   if (typeof req.feature_id !== "string" || typeof req.stage !== "string" || typeof req.review_status !== "string") {
     return null;
   }
-  return { feature_id: req.feature_id, stage: req.stage, review_status: req.review_status };
+  return {
+    feature_id: req.feature_id,
+    stage: req.stage,
+    review_status: req.review_status,
+  };
 }
 
 function extractDocumentEditOutput(output: unknown): DocumentEditOutput | null {
