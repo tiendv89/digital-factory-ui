@@ -10,14 +10,18 @@ export {
   getCallerWorkspaceRole,
   getMeData,
   inviteOrgMember,
+  listActiveSessions,
   listWorkspaceMembers,
   logout,
+  logoutAllDevices,
   removeOrgMember,
+  revokeSession,
   transferOrgOwnership,
   updateMe,
   updateOrg,
 } from "./client";
 export type {
+  ActiveSession,
   CallerWorkspaceRoleResponse,
   ChangeOrgMemberRoleRequest,
   CreateOrgRequest,

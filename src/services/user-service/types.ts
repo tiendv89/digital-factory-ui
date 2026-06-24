@@ -114,3 +114,13 @@ export interface WorkspaceMembersResponse {
 export interface CallerWorkspaceRoleResponse {
   role: WorkspaceRole;
 }
+
+export interface ActiveSession {
+  id: string;
+  device: string;
+  location: string;
+  ip_address: string;
+  created_at: number; // unix seconds
+  last_seen_at: number; // unix seconds
+  current: boolean;
+}
