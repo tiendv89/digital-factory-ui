@@ -919,7 +919,14 @@ export function AgentChatPanel({
       {isActive ? (
         <Conversation>
           {nonBlocking ? (
-            <ChannelMessageList messages={messages} status={status} resolveAuthor={resolveChannelAuthor} />
+            <ChannelMessageList
+              messages={messages}
+              status={status}
+              resolveAuthor={resolveChannelAuthor}
+              onCtaAction={handleCtaAction}
+              featureStatus={featureStatus}
+              emptyStateDismissed={emptyStateDismissed}
+            />
           ) : (
             <MessageThread
               messages={messages}
