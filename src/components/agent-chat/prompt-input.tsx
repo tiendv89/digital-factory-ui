@@ -1,7 +1,7 @@
 "use client";
 
 import { ListBox, Select } from "@heroui/react";
-import { Check, ChevronDown, Send, Zap } from "lucide-react";
+import { Check, ChevronDown, Send, Square, Zap } from "lucide-react";
 import { type ChangeEvent, type FormEvent, type KeyboardEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import type { ModelOption } from "@/services/hermes-agent/chat";
@@ -125,6 +125,24 @@ function PromptInputSubmit({ disabled, onClick }: PromptInputSubmitProps) {
       aria-label="Send message"
     >
       <Send className="h-3.5 w-3.5" aria-hidden="true" />
+    </button>
+  );
+}
+
+type PromptInputStopProps = {
+  onClick: () => void;
+};
+
+function PromptInputStop({ onClick }: PromptInputStopProps) {
+  return (
+    <button
+      type="button"
+      data-prompt-stop
+      onClick={onClick}
+      className="flex h-7 w-7 shrink-0 items-center justify-center rounded bg-surface-secondary text-text-primary transition-colors hover:bg-surface-secondary/80"
+      aria-label="Stop agent"
+    >
+      <Square className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
     </button>
   );
 }
@@ -257,7 +275,11 @@ type PromptInputProps = {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  /** Called when the user clicks the Stop button during an active agent turn. */
+  onStop?: () => void;
   status: ChatStatus;
+  /** When true, renders a Stop button in place of the Send button. */
+  isAgentWorking?: boolean;
   history?: string[];
   models: ModelOption[];
   selectedModel: string;
@@ -268,7 +290,7 @@ type PromptInputProps = {
   nonBlocking?: boolean;
 };
 
-export function PromptInput({ value, onChange, onSubmit, status, history, models, selectedModel, onModelChange, members = [], nonBlocking = false }: PromptInputProps) {
+export function PromptInput({ value, onChange, onSubmit, onStop, status, isAgentWorking = false, history, models, selectedModel, onModelChange, members = [], nonBlocking = false }: PromptInputProps) {
   const isDisabled = !nonBlocking && (status === "connecting" || status === "streaming");
   const [mentionState, setMentionState] = useState<{ query: string; atIndex: number } | null>(null);
 
@@ -330,7 +352,7 @@ export function PromptInput({ value, onChange, onSubmit, status, history, models
         />
         <PromptInputToolbar>
           <ModelPicker models={models} selectedModel={selectedModel} onModelChange={onModelChange} disabled={isDisabled} />
-          <PromptInputSubmit disabled={isDisabled || !value.trim()} onClick={onSubmit} />
+          {isAgentWorking ? <PromptInputStop onClick={() => onStop?.()} /> : <PromptInputSubmit disabled={isDisabled || !value.trim()} onClick={onSubmit} />}
         </PromptInputToolbar>
       </div>
     </form>

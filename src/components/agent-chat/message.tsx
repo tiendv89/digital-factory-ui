@@ -163,6 +163,7 @@ export const Message = memo(function Message({ message }: { message: HermesMessa
   const isUser = message.role === "user";
   const isAgent = message.role === "assistant";
   const hasAuthor = !!message.author;
+  const isStopped = message.finishReason === "stopped";
 
   if (!message.content.trim()) {
     return null;
@@ -188,6 +189,11 @@ export const Message = memo(function Message({ message }: { message: HermesMessa
       )}
       <div className={`w-full max-w-none text-sm text-text-primary ${hasAuthor || isAgent ? "pl-7" : ""}`}>
         <MessageContent content={message.content} />
+        {isStopped && (
+          <span data-stopped-indicator className="ml-1 text-xs text-text-muted">
+            — stopped
+          </span>
+        )}
       </div>
     </div>
   );

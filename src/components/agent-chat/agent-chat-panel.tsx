@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { ChatSessionSummary, ModelOption, ThreadEvent, UnreadMentionCounts } from "@/services/hermes-agent/chat";
 import {
+  cancelAgentTurn,
   createChatSession,
   deleteAllSessions,
   deleteSession,
@@ -91,6 +92,7 @@ export function AgentChatPanel({
   const [sessionsLoading, setSessionsLoading] = useState(false);
   const [messages, setMessages] = useState<HermesMessage[]>([]);
   const [status, setStatus] = useState<ChatStatus>("idle");
+  const [agentWorking, setAgentWorking] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [models, setModels] = useState<ModelOption[]>([]);
@@ -239,6 +241,7 @@ export function AgentChatPanel({
   const enterActiveMode = useCallback((sessionId: string, sessionTitle: string) => {
     setMessages([]);
     setStatus("idle");
+    setAgentWorking(false);
     setInputValue("");
     setPanelMode({ mode: "active", sessionId, sessionTitle });
   }, []);
@@ -344,6 +347,16 @@ export function AgentChatPanel({
       } else if (event.type === "agent.working") {
         ensureStreamingAssistant();
         setStatus("streaming");
+        setAgentWorking(true);
+      } else if (event.type === "turn.stopped") {
+        if (event.messageId) {
+          setMessages((prev) => prev.map((m) => (m.id === event.messageId ? { ...m, finishReason: "stopped" } : m)));
+        }
+        const targetId = streamingAssistantIdRef.current;
+        if (targetId) finalizeStreamForMessage();
+        streamingAssistantIdRef.current = null;
+        setAgentWorking(false);
+        setStatus("idle");
       } else if (event.type === "error") {
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
@@ -355,6 +368,7 @@ export function AgentChatPanel({
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
         streamingAssistantIdRef.current = null;
+        setAgentWorking(false);
         setStatus("idle");
       }
     },
@@ -501,6 +515,7 @@ export function AgentChatPanel({
     setInputValue("");
     setPickerOpen(false);
     setStatus("idle");
+    setAgentWorking(false);
     // Land on the history list (with the composer below) so past conversations
     // are visible; typing the first message starts a fresh session.
     setPanelMode({ mode: "history" });
@@ -677,6 +692,13 @@ export function AgentChatPanel({
     appendDelta,
   ]);
 
+  const handleStop = useCallback(() => {
+    if (panelMode.mode !== "active") return;
+    void cancelAgentTurn(panelMode.sessionId).catch(() => {
+      // 404 means the turn already finished naturally — safe to ignore
+    });
+  }, [panelMode]);
+
   const isActive = panelMode.mode === "active";
 
   const mentionMembers = useMemo<ThreadMember[]>(() => {
@@ -724,7 +746,9 @@ export function AgentChatPanel({
           value={inputValue}
           onChange={handleInputChange}
           onSubmit={() => void handleSubmit()}
+          onStop={handleStop}
           status={status}
+          isAgentWorking={agentWorking}
           nonBlocking={nonBlocking}
           history={promptHistory}
           models={models}
