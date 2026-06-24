@@ -157,9 +157,7 @@ export function ChannelMessageList({ messages, status, resolveAuthor, onCtaActio
           <p className="text-[13px] font-medium text-text-secondary">No messages yet</p>
           <p className="text-[11px] text-text-muted">Say hello, or mention @agent to ask a question.</p>
         </div>
-        {onCtaAction && (
-          <EmptyStateCTARow featureStatus={featureStatus} onAction={onCtaAction} dismissed={emptyStateDismissed} />
-        )}
+        {onCtaAction && <EmptyStateCTARow featureStatus={featureStatus} onAction={onCtaAction} dismissed={emptyStateDismissed} />}
       </div>
     );
   }
@@ -193,11 +191,7 @@ export function ChannelMessageList({ messages, status, resolveAuthor, onCtaActio
                   <MessageContent content={msg.content} />
                   {(msg.ctaSuggestions?.length ?? 0) > 0 && onCtaAction && (
                     <div className="mt-2">
-                      <CTASuggestionRow
-                        suggestions={msg.ctaSuggestions ?? []}
-                        active={msg.ctaActive ?? false}
-                        onAction={onCtaAction}
-                      />
+                      <CTASuggestionRow suggestions={msg.ctaSuggestions ?? []} active={msg.ctaActive ?? false} onAction={onCtaAction} />
                     </div>
                   )}
                 </>

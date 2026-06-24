@@ -13,14 +13,6 @@ afterEach(cleanup);
 import { capabilityStarterCards, lifecycleStarterCards } from "@/components/agent-chat/empty-state-cta-row";
 import type { CtaSuggestion } from "@/components/agent-chat/types";
 
-// ──────────────────────────────────────────────────────────────────────
-// Mocks for modules that need browser APIs / fetch
-// ──────────────────────────────────────────────────────────────────────
-
-vi.mock("@/services/hermes-agent/chat", () => ({
-  getWorkspaceCapabilities: vi.fn().mockResolvedValue({ gitnexus: false, rag: false }),
-}));
-
 vi.mock("@/constants/axios", () => ({ getBffBaseUrl: () => "http://localhost" }));
 
 // ──────────────────────────────────────────────────────────────────────
@@ -79,47 +71,44 @@ describe("lifecycleStarterCards", () => {
 });
 
 // ──────────────────────────────────────────────────────────────────────
-// capabilityStarterCards — gating tests
+// capabilityStarterCards — always returns all starters (no gating)
 // ──────────────────────────────────────────────────────────────────────
 
 describe("capabilityStarterCards", () => {
-  it("returns empty array when both gitnexus and rag are false", () => {
-    const cards = capabilityStarterCards({ gitnexus: false, rag: false });
-    expect(cards).toHaveLength(0);
-  });
-
-  it("returns gitnexus card when gitnexus is true", () => {
-    const cards = capabilityStarterCards({ gitnexus: true, rag: false });
-    expect(cards).toHaveLength(1);
-    expect(cards[0].id).toBe("starter-gitnexus");
-    expect(cards[0].category).toBe("GitNexus");
-  });
-
-  it("returns rag card when rag is true", () => {
-    const cards = capabilityStarterCards({ gitnexus: false, rag: true });
-    expect(cards).toHaveLength(1);
-    expect(cards[0].id).toBe("starter-rag");
-    expect(cards[0].category).toBe("RAG");
-  });
-
-  it("returns both cards when both capabilities are true", () => {
-    const cards = capabilityStarterCards({ gitnexus: true, rag: true });
+  it("always returns both gitnexus and rag starters", () => {
+    const cards = capabilityStarterCards();
     expect(cards).toHaveLength(2);
     const ids = cards.map((c) => c.id);
     expect(ids).toContain("starter-gitnexus");
     expect(ids).toContain("starter-rag");
   });
 
-  it("suppresses gitnexus starter when gitnexus is false", () => {
-    const cards = capabilityStarterCards({ gitnexus: false, rag: true });
-    const ids = cards.map((c) => c.id);
-    expect(ids).not.toContain("starter-gitnexus");
+  it("gitnexus starter has correct category and action_text", () => {
+    const cards = capabilityStarterCards();
+    const gitnexus = cards.find((c) => c.id === "starter-gitnexus");
+    expect(gitnexus).toBeDefined();
+    expect(gitnexus?.category).toBe("GitNexus");
+    expect(gitnexus?.action_text).toBe("Search the codebase for ...");
   });
 
-  it("suppresses rag starter when rag is false", () => {
-    const cards = capabilityStarterCards({ gitnexus: true, rag: false });
-    const ids = cards.map((c) => c.id);
-    expect(ids).not.toContain("starter-rag");
+  it("rag starter has correct category and action_text", () => {
+    const cards = capabilityStarterCards();
+    const rag = cards.find((c) => c.id === "starter-rag");
+    expect(rag).toBeDefined();
+    expect(rag?.category).toBe("RAG");
+    expect(rag?.action_text).toBe("Search the knowledge base for ...");
+  });
+
+  it("all capability starters have required fields", () => {
+    const cards = capabilityStarterCards();
+    for (const card of cards) {
+      expect(card.id).toBeTruthy();
+      expect(card.title).toBeTruthy();
+      expect(card.category).toBeTruthy();
+      expect(card.action_text).toBeTruthy();
+      expect(card.button_label).toBeTruthy();
+      expect(card.description).toBeTruthy();
+    }
   });
 });
 

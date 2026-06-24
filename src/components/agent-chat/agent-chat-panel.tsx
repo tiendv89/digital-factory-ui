@@ -425,14 +425,21 @@ export function AgentChatPanel({
           ),
         );
       } else if (event.type === "turn.cta_suggestions") {
-        const { messageId, suggestions } = event;
-        setMessages((prev) =>
-          prev.map((m) => {
-            if (m.id !== messageId) return m;
-            return { ...m, ctaSuggestions: suggestions, ctaActive: true };
-          }),
-        );
-        activeCTAMessageIdRef.current = messageId;
+        const { suggestions } = event;
+        setMessages((prev) => {
+          let targetId = streamingAssistantIdRef.current;
+          if (!targetId) {
+            for (let i = prev.length - 1; i >= 0; i--) {
+              if (prev[i].role === "assistant") {
+                targetId = prev[i].id;
+                break;
+              }
+            }
+          }
+          if (!targetId) return prev;
+          activeCTAMessageIdRef.current = targetId;
+          return prev.map((m) => (m.id === targetId ? { ...m, ctaSuggestions: suggestions, ctaActive: true } : m));
+        });
       } else if (event.type === "artifact_saved") {
         onArtifactSaved?.(event.artifact);
       } else if (event.type === "agent.working") {
