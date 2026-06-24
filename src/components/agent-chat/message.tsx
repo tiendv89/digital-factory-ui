@@ -6,6 +6,8 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import rehypeRaw from "rehype-raw";
 import remarkGfm from "remark-gfm";
 
+import { Badge } from "@/components/common/badge";
+
 import type { HermesMessage, MessageAuthor } from "./types";
 
 /**
@@ -150,6 +152,7 @@ export const Message = memo(function Message({ message }: { message: HermesMessa
   const isAgent = message.role === "assistant";
   const hasAuthor = !!message.author;
   const isStopped = message.finishReason === "stopped";
+  const hasCredits = isAgent && typeof message.creditsUsed === "number";
 
   if (!message.content.trim()) {
     return null;
@@ -175,11 +178,22 @@ export const Message = memo(function Message({ message }: { message: HermesMessa
       )}
       <div className={`w-full max-w-none text-sm text-text-primary ${hasAuthor && !isAgent ? "pl-7" : ""}`}>
         <MessageContent content={message.content} />
-        {isStopped && (
-          <span data-stopped-indicator className="ml-1 text-xs text-text-muted">
-            — stopped
-          </span>
-        )}
+        <div className="mt-1.5 flex items-center gap-1.5">
+          {isStopped && (
+            <span data-stopped-indicator className="text-xs text-text-muted">
+              — stopped
+            </span>
+          )}
+          {hasCredits && (
+            <Badge
+              tone="neutral"
+              data-credit-badge
+              aria-label={`${message.creditsUsed} ${message.creditsUsed === 1 ? "credit" : "credits"}`}
+            >
+              {message.creditsUsed} {message.creditsUsed === 1 ? "credit" : "credits"}
+            </Badge>
+          )}
+        </div>
       </div>
     </div>
   );
