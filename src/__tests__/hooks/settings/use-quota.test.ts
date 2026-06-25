@@ -6,22 +6,29 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { computeBarState, formatDailyCountdown, formatRelativeTimestamp, formatWeeklyCountdown, useQuota } from "@/hooks/settings/use-quota";
-import type { UserQuota } from "@/services/user-service";
+import { computeBarState, formatDailyCountdown, formatRelativeTimestamp, formatWeeklyCountdown, useUsage } from "@/hooks/settings/use-quota";
+import type { OrgUsage } from "@/services/user-service/usage";
 
-vi.mock("@/services/user-service", () => ({
-  fetchUserQuota: vi.fn(),
+vi.mock("@/services/user-service/usage", () => ({
+  getUsage: vi.fn(),
 }));
 
-const MOCK_QUOTA: UserQuota = {
-  plan_name: "Pro",
-  daily_used: 100,
-  daily_cap: 1000,
-  weekly_used: 200,
-  weekly_cap: 5000,
-  daily_reset_at: "2026-06-25T00:00:00Z",
-  weekly_reset_at: "2026-06-29T00:00:00Z",
-};
+const MOCK_USAGE: OrgUsage[] = [
+  {
+    org_id: "org-1",
+    org_slug: "acme",
+    org_name: "Acme",
+    role: "admin",
+    plan_name: "pro",
+    plan_display_name: "Pro",
+    daily_used: 100,
+    daily_cap: 1000,
+    weekly_used: 200,
+    weekly_cap: 5000,
+    daily_reset_at: "2026-06-25T00:00:00Z",
+    weekly_reset_at: "2026-06-29T00:00:00Z",
+  },
+];
 
 function makeWrapper() {
   const queryClient = new QueryClient({
@@ -179,23 +186,23 @@ describe("formatRelativeTimestamp", () => {
   });
 });
 
-// ── useQuota — refresh ───────────────────────────────────────────────────────
+// ── useUsage — refresh ───────────────────────────────────────────────────────
 
-describe("useQuota — refresh", () => {
+describe("useUsage — refresh", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it("re-fetches quota when refresh() is called", async () => {
-    const { fetchUserQuota } = await import("@/services/user-service");
-    const mockFetch = vi.mocked(fetchUserQuota);
-    mockFetch.mockResolvedValue(MOCK_QUOTA);
+  it("re-fetches usage when refresh() is called", async () => {
+    const { getUsage } = await import("@/services/user-service/usage");
+    const mockFetch = vi.mocked(getUsage);
+    mockFetch.mockResolvedValue(MOCK_USAGE);
 
-    const { result } = renderHook(() => useQuota(), { wrapper: makeWrapper() });
+    const { result } = renderHook(() => useUsage(), { wrapper: makeWrapper() });
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(mockFetch).toHaveBeenCalledTimes(1);
-    expect(result.current.quota?.plan_name).toBe("Pro");
+    expect(result.current.sections[0]?.plan_display_name).toBe("Pro");
 
     act(() => {
       result.current.refresh();

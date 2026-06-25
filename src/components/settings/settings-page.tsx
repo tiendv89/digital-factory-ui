@@ -1,29 +1,26 @@
 "use client";
 
-import { BarChart2, Bot, LogOut, Settings, Shield, UserCircle } from "lucide-react";
+import { BarChart2, LogOut, Settings, Shield, UserCircle } from "lucide-react";
 import { useState } from "react";
 
 import { useSession } from "@/components/auth";
 
 import { AccountTab } from "./account-tab";
-import { AgentDefaultsTab } from "./agent-defaults-tab";
 import { ProfileTab } from "./profile-tab";
 import { UsageTab } from "./usage-tab";
 
-type TabId = "profile" | "security" | "agent-defaults" | "usage";
+type TabId = "profile" | "security" | "usage";
 
 type TabDef = {
   id: TabId;
   label: string;
   icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
-  placeholder?: boolean;
 };
 
 const TABS: TabDef[] = [
   { id: "profile", label: "Profile", icon: UserCircle },
   { id: "security", label: "Security", icon: Shield },
   { id: "usage", label: "Usage", icon: BarChart2 },
-  { id: "agent-defaults", label: "Agent defaults", icon: Bot, placeholder: true },
 ];
 
 export function SettingsPage({ initialTab }: { initialTab?: TabId }) {
@@ -36,7 +33,6 @@ export function SettingsPage({ initialTab }: { initialTab?: TabId }) {
       profile: ProfileTab,
       security: AccountTab,
       usage: UsageTab,
-      "agent-defaults": AgentDefaultsTab,
     } as Record<TabId, React.ComponentType | null>
   )[activeTab];
 
@@ -68,11 +64,6 @@ export function SettingsPage({ initialTab }: { initialTab?: TabId }) {
               >
                 <Icon className={"h-4 w-4 shrink-0 " + (isActive ? "text-accent-foreground" : "")} aria-hidden />
                 <span className="flex-1 truncate">{tab.label}</span>
-                {tab.placeholder && (
-                  <span aria-label="placeholder" className="rounded border border-border bg-chip-bg px-1 py-0 text-[10px] text-text-muted">
-                    soon
-                  </span>
-                )}
               </button>
             );
           })}

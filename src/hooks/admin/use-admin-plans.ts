@@ -5,6 +5,7 @@ import {
   adminAssignOrgPlan,
   adminAssignUserPlan,
   adminCreatePlan,
+  adminDeleteOrg,
   adminListOrgs,
   adminListPlans,
   adminListUsers,
@@ -92,6 +93,16 @@ export function useRemoveOrgPlan() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (orgId: string) => adminRemoveOrgPlan(orgId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ADMIN_ORGS_KEY });
+    },
+  });
+}
+
+export function useDeleteOrg() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (orgId: string) => adminDeleteOrg(orgId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ADMIN_ORGS_KEY });
     },

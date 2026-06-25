@@ -41,6 +41,16 @@ function useBreadcrumbs(pathname: string): BreadcrumbSegment[] {
     return [{ label: "Features", href: "/board" }, ...(featureId ? [{ label: featureName, href: `/feature/${encodeURIComponent(featureId)}` }] : [{ label: featureName }]), { label: taskName }];
   }
 
+  if (pathname.startsWith("/admin")) {
+    const sub: Record<string, string> = { "/admin/plans": "Plans", "/admin/users": "Users", "/admin/orgs": "Orgs" };
+    const section = sub[pathname];
+    return [{ label: "Admin", href: "/admin/plans" }, ...(section ? [{ label: section }] : [])];
+  }
+
+  if (pathname.startsWith("/settings")) {
+    return [{ label: "Settings" }];
+  }
+
   const label = ROUTE_LABELS[pathname] ?? "Board";
   return [{ label }];
 }

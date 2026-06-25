@@ -31,8 +31,6 @@ import type {
   UpdateBillingPlanRequest,
   UpdateMeRequest,
   UpdateOrgRequest,
-  UserQuota,
-  UserQuotaResponse,
   WorkspaceMember,
   WorkspaceMembersResponse,
 } from "./types";
@@ -234,17 +232,6 @@ export async function listWorkspaceMembers(workspaceId: string): Promise<Workspa
   }
 }
 
-export async function fetchUserQuota(): Promise<UserQuota> {
-  try {
-    const { data } = await axios.get<UserQuotaResponse | UserQuota>(`${getBffBaseUrl()}/bff/users/me/quota`, {
-      withCredentials: true,
-    });
-    return "data" in data ? data.data : data;
-  } catch (err) {
-    handleApiError(err, "Failed to fetch /bff/users/me/quota");
-  }
-}
-
 export async function getCallerWorkspaceRole(workspaceId: string): Promise<"member" | "admin"> {
   try {
     const { data } = await userServiceApi.get<CallerWorkspaceRoleResponse | { data: CallerWorkspaceRoleResponse }>(`/api/workspaces/${workspaceId}/me/role`);
@@ -367,5 +354,13 @@ export async function adminRemoveOrgPlan(orgId: string): Promise<void> {
     await userServiceApi.delete(`/admin/orgs/${orgId}/plan`);
   } catch (err) {
     handleApiError(err, "Failed to remove org plan");
+  }
+}
+
+export async function adminDeleteOrg(orgId: string): Promise<void> {
+  try {
+    await userServiceApi.delete(`/admin/orgs/${orgId}`);
+  } catch (err) {
+    handleApiError(err, "Failed to delete org");
   }
 }

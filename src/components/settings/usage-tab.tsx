@@ -4,18 +4,14 @@ import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Badge, Button, cn } from "@/components/common";
-import { computeBarState, formatDailyCountdown, formatRelativeTimestamp, formatWeeklyCountdown, useQuota } from "@/hooks/settings/use-quota";
+import { computeBarState, formatDailyCountdown, formatRelativeTimestamp, formatWeeklyCountdown, useUsage } from "@/hooks/settings/use-quota";
+import type { OrgUsage } from "@/services/user-service/usage";
+import { useOrgWorkspaceStore } from "@/stores/org-workspace";
 
 const BAR_COLOR: Record<"neutral" | "warning" | "danger", string> = {
   neutral: "bg-primary",
   warning: "bg-warning",
   danger: "bg-danger",
-};
-
-const BADGE_TONE: Record<"neutral" | "warning" | "danger", "neutral" | "warning" | "danger"> = {
-  neutral: "neutral",
-  warning: "warning",
-  danger: "danger",
 };
 
 interface QuotaSectionProps {
@@ -40,9 +36,31 @@ function QuotaSection({ label, pct, color, countdown }: QuotaSectionProps) {
   );
 }
 
+function OrgUsageCard({ usage, now }: { usage: OrgUsage; now: Date }) {
+  const daily = computeBarState(usage.daily_used, usage.daily_cap, usage.daily_reset_at);
+  const weekly = computeBarState(usage.weekly_used, usage.weekly_cap, usage.weekly_reset_at);
+  const tone = daily.color === "danger" || weekly.color === "danger" ? "danger" : daily.color === "warning" || weekly.color === "warning" ? "warning" : "neutral";
+
+  return (
+    <section className="space-y-4 rounded-lg border border-border bg-surface p-4" data-usage-org={usage.org_id}>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-text-primary">{usage.org_name}</h3>
+        <Badge tone={tone}>{usage.plan_display_name || usage.plan_name}</Badge>
+      </div>
+      <QuotaSection label="Daily" pct={daily.pct} color={daily.color} countdown={formatDailyCountdown(daily.resetAt, now)} />
+      <QuotaSection label="Weekly" pct={weekly.pct} color={weekly.color} countdown={formatWeeklyCountdown(weekly.resetAt)} />
+    </section>
+  );
+}
+
 export function UsageTab() {
-  const { quota, loading, error, fetchedAt, refresh } = useQuota();
+  const { sections, loading, error, fetchedAt, refresh } = useUsage();
+  const selectedOrgSlug = useOrgWorkspaceStore((s) => s.selectedOrgSlug);
   const [now, setNow] = useState(() => new Date());
+
+  // Show only the currently active org (from the top-nav switcher). Fall back to
+  // the first section if the active org isn't resolved yet / has no usage row.
+  const active = sections.find((s) => s.org_slug === selectedOrgSlug) ?? sections[0] ?? null;
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 60_000);
@@ -57,10 +75,10 @@ export function UsageTab() {
     );
   }
 
-  if (error || !quota) {
+  if (error) {
     return (
       <div className="flex flex-col items-start gap-3 py-4">
-        <p className="text-sm text-danger">{error?.message ?? "Failed to load quota."}</p>
+        <p className="text-sm text-danger">{error.message ?? "Failed to load usage."}</p>
         <Button variant="secondary" size="sm" onClick={refresh}>
           Retry
         </Button>
@@ -68,30 +86,20 @@ export function UsageTab() {
     );
   }
 
-  const daily = computeBarState(quota.daily_used, quota.daily_cap, quota.daily_reset_at);
-  const weekly = computeBarState(quota.weekly_used, quota.weekly_cap, quota.weekly_reset_at);
-
-  const dailyCountdown = formatDailyCountdown(daily.resetAt, now);
-  const weeklyCountdown = formatWeeklyCountdown(weekly.resetAt);
   const lastUpdated = fetchedAt ? formatRelativeTimestamp(fetchedAt, now) : "—";
-
-  const planBadgeTone = BADGE_TONE[daily.color === "danger" || weekly.color === "danger" ? "danger" : daily.color === "warning" || weekly.color === "warning" ? "warning" : "neutral"];
 
   return (
     <div className="space-y-6" data-usage-tab>
-      {/* Header */}
       <div className="flex items-center gap-2">
         <h2 className="text-base font-semibold text-text-primary">Your usage limits</h2>
-        <Badge tone={planBadgeTone}>{quota.plan_name}</Badge>
       </div>
 
-      {/* Daily */}
-      <QuotaSection label="Daily" pct={daily.pct} color={daily.color} countdown={dailyCountdown} />
+      {active === null ? (
+        <p className="text-sm text-text-muted">You&apos;re not a member of any organization yet.</p>
+      ) : (
+        <OrgUsageCard key={active.org_id} usage={active} now={now} />
+      )}
 
-      {/* Weekly */}
-      <QuotaSection label="Weekly" pct={weekly.pct} color={weekly.color} countdown={weeklyCountdown} />
-
-      {/* Footer */}
       <div className="flex items-center justify-between border-t border-border pt-4">
         <span className="text-xs text-text-muted">Last updated: {lastUpdated}</span>
         <button

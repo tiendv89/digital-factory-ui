@@ -6,8 +6,8 @@ const basePlan: BillingPlan = {
   id: "plan-1",
   name: "pro",
   display_name: "Pro",
-  daily_credit_cap: 1000,
-  weekly_credit_cap: 5000,
+  daily_credits_cap: 1000,
+  weekly_credits_cap: 5000,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
 };
@@ -15,30 +15,30 @@ const basePlan: BillingPlan = {
 describe("BillingPlan", () => {
   it("accepts a plan with caps", () => {
     expect(basePlan.name).toBe("pro");
-    expect(basePlan.daily_credit_cap).toBe(1000);
+    expect(basePlan.daily_credits_cap).toBe(1000);
   });
 
-  it("accepts null caps (unlimited)", () => {
+  it("accepts 0 caps (unlimited)", () => {
     const unlimited: BillingPlan = {
       ...basePlan,
-      daily_credit_cap: null,
-      weekly_credit_cap: null,
+      daily_credits_cap: 0,
+      weekly_credits_cap: 0,
     };
-    expect(unlimited.daily_credit_cap).toBeNull();
-    expect(unlimited.weekly_credit_cap).toBeNull();
+    expect(unlimited.daily_credits_cap).toBe(0);
+    expect(unlimited.weekly_credits_cap).toBe(0);
   });
 });
 
 describe("CreateBillingPlanRequest", () => {
-  it("requires name, display_name and caps (nullable)", () => {
+  it("requires name, display_name and caps (0 = unlimited)", () => {
     const req: CreateBillingPlanRequest = {
       name: "team",
       display_name: "Team",
-      daily_credit_cap: 500,
-      weekly_credit_cap: null,
+      daily_credits_cap: 500,
+      weekly_credits_cap: 0,
     };
     expect(req.name).toBe("team");
-    expect(req.weekly_credit_cap).toBeNull();
+    expect(req.weekly_credits_cap).toBe(0);
   });
 });
 
@@ -46,12 +46,12 @@ describe("UpdateBillingPlanRequest", () => {
   it("allows partial update (display_name only)", () => {
     const req: UpdateBillingPlanRequest = { display_name: "Pro Plus" };
     expect(req.display_name).toBe("Pro Plus");
-    expect(req.daily_credit_cap).toBeUndefined();
+    expect(req.daily_credits_cap).toBeUndefined();
   });
 
-  it("allows setting cap to null to make unlimited", () => {
-    const req: UpdateBillingPlanRequest = { daily_credit_cap: null };
-    expect(req.daily_credit_cap).toBeNull();
+  it("allows setting cap to 0 to make unlimited", () => {
+    const req: UpdateBillingPlanRequest = { daily_credits_cap: 0 };
+    expect(req.daily_credits_cap).toBe(0);
   });
 });
 

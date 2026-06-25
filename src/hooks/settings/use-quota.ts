@@ -2,11 +2,10 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { UserQuota } from "@/services/user-service";
-import { fetchUserQuota } from "@/services/user-service";
+import { getUsage, type OrgUsage } from "@/services/user-service/usage";
 
-const quotaKeys = {
-  me: () => ["settings", "quota", "me"] as const,
+const usageKeys = {
+  me: () => ["settings", "usage", "me"] as const,
 };
 
 export interface QuotaBarState {
@@ -54,21 +53,22 @@ export function formatRelativeTimestamp(fetchedAt: Date, now: Date): string {
   return `${diffHr}h ago`;
 }
 
-export function useQuota() {
+/** useUsage returns the caller's per-org usage sections. */
+export function useUsage() {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error, dataUpdatedAt } = useQuery<UserQuota, Error>({
-    queryKey: quotaKeys.me(),
-    queryFn: fetchUserQuota,
+  const { data, isLoading, error, dataUpdatedAt } = useQuery<OrgUsage[], Error>({
+    queryKey: usageKeys.me(),
+    queryFn: () => getUsage(),
     staleTime: 30_000,
   });
 
   function refresh() {
-    void queryClient.invalidateQueries({ queryKey: quotaKeys.me() });
+    void queryClient.invalidateQueries({ queryKey: usageKeys.me() });
   }
 
   return {
-    quota: data ?? null,
+    sections: data ?? [],
     loading: isLoading,
     error: error ?? null,
     fetchedAt: dataUpdatedAt ? new Date(dataUpdatedAt) : null,

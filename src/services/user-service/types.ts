@@ -146,8 +146,9 @@ export interface BillingPlan {
   id: string;
   name: string;
   display_name: string;
-  daily_credit_cap: number | null;
-  weekly_credit_cap: number | null;
+  // Matches user-service JSON. 0 = unlimited (rendered as ∞).
+  daily_credits_cap: number;
+  weekly_credits_cap: number;
   created_at: string;
   updated_at: string;
 }
@@ -155,14 +156,14 @@ export interface BillingPlan {
 export interface CreateBillingPlanRequest {
   name: string;
   display_name: string;
-  daily_credit_cap: number | null;
-  weekly_credit_cap: number | null;
+  daily_credits_cap: number;
+  weekly_credits_cap: number;
 }
 
 export interface UpdateBillingPlanRequest {
   display_name?: string;
-  daily_credit_cap?: number | null;
-  weekly_credit_cap?: number | null;
+  daily_credits_cap?: number;
+  weekly_credits_cap?: number;
 }
 
 export interface BillingPlansResponse {

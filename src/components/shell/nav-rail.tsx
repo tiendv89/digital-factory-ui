@@ -1,14 +1,17 @@
 "use client";
 
-import { GitBranch, LayoutGrid, Settings, Zap } from "lucide-react";
+import { GitBranch, LayoutGrid, Settings, Shield, Zap } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useSession } from "@/components/auth";
 import { cn } from "@/components/common";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
+import { getMeData } from "@/services/user-service";
 import { getUnreadMentions } from "@/services/hermes-agent/chat";
 import { useBoardStore } from "@/stores/board";
+import { isPlatformAdmin } from "@/utils/platform-role";
 
 const UNREAD_POLL_INTERVAL_MS = 30_000;
 
@@ -28,6 +31,12 @@ const SETTINGS_ITEM: NavItem = {
   label: "Settings",
   href: "/settings",
   icon: Settings,
+};
+
+const ADMIN_ITEM: NavItem = {
+  label: "Admin",
+  href: "/admin/plans",
+  icon: Shield,
 };
 
 function NavRailLink({ item, active }: { item: NavItem; active: boolean }) {
@@ -111,6 +120,9 @@ export function NavRail() {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
   const unreadCount = useWorkspaceUnreadCount();
 
+  const { session } = useSession();
+  const isAdmin = session.status === "authenticated" && isPlatformAdmin(getMeData(session.data));
+
   const nonTaskItems = MAIN_ITEMS.filter((i) => i.href !== "/tasks");
 
   return (
@@ -142,6 +154,7 @@ export function NavRail() {
       </div>
 
       <div className="flex flex-col items-center gap-1">
+        {isAdmin && <NavRailLink item={ADMIN_ITEM} active={pathname.startsWith("/admin")} />}
         <NavRailLink item={SETTINGS_ITEM} active={isActive(SETTINGS_ITEM.href)} />
       </div>
     </nav>
