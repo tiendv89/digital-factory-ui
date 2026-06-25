@@ -11,6 +11,7 @@ import { CTASuggestionRow } from "./cta-suggestion-row";
 import { EmptyStateCTARow } from "./empty-state-cta-row";
 import { Loader } from "./loader";
 import { MessageContent, UserMessageContent } from "./message";
+import { ThinkingDisclosure } from "./thinking-disclosure";
 import type { ChatStatus, HermesMessage } from "./types";
 
 /** Resolved display identity for a channel message author. */
@@ -27,6 +28,8 @@ export type ChannelAuthor = {
 type ChannelMessageListProps = {
   messages: HermesMessage[];
   status: ChatStatus;
+  /** The id of the assistant message currently streaming (used to show live thinking). */
+  streamingAssistantId?: string | null;
   /** Resolve a message to its display author (name + avatar). */
   resolveAuthor: (msg: HermesMessage) => ChannelAuthor;
   onCtaAction?: (actionText: string) => void;
@@ -130,7 +133,7 @@ function formatTime(epochSeconds?: number): string {
  * align with the first. Agent replies render as markdown; human messages as
  * plain text with @mention chips. Clicking an avatar/name opens a profile card.
  */
-export function ChannelMessageList({ messages, status, resolveAuthor, onCtaAction, featureStatus, emptyStateDismissed = false }: ChannelMessageListProps) {
+export function ChannelMessageList({ messages, status, streamingAssistantId, resolveAuthor, onCtaAction, featureStatus, emptyStateDismissed = false }: ChannelMessageListProps) {
   const isStreaming = status === "streaming";
   const { scrollRef, isAtBottomRef } = useConversationScroll();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -189,7 +192,12 @@ export function ChannelMessageList({ messages, status, resolveAuthor, onCtaActio
               {msg.role === "assistant" ? (
                 <>
                   <MessageContent content={msg.content} />
-                  {(msg.ctaSuggestions?.length ?? 0) > 0 && onCtaAction && (
+                  {msg.thinking && (
+                    <div className="mt-1">
+                      <ThinkingDisclosure thinking={msg.thinking} streaming={msg.id === streamingAssistantId && isStreaming} durationSeconds={msg.thinkingSeconds} />
+                    </div>
+                  )}
+                  {(msg.ctaSuggestions?.length ?? 0) > 0 && onCtaAction && !(msg.id === streamingAssistantId && isStreaming) && (
                     <div className="mt-2">
                       <CTASuggestionRow suggestions={msg.ctaSuggestions ?? []} active={msg.ctaActive ?? false} onAction={onCtaAction} />
                     </div>

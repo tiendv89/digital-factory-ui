@@ -24,6 +24,10 @@ export type HermesMessage = {
   ctaSuggestions?: CtaSuggestion[];
   /** Whether the CTA row for this message is still active (clickable). False for past turns. */
   ctaActive?: boolean;
+  /** Ephemeral live reasoning trace for the current view only — never persisted, never in history. */
+  thinking?: string;
+  /** Wall-clock seconds the turn took (set when streaming finishes); shown as "Thought for …". Ephemeral. */
+  thinkingSeconds?: number;
 };
 
 export type ToolCallEntry = {

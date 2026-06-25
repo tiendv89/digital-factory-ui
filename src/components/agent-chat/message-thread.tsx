@@ -8,6 +8,7 @@ import { CTASuggestionRow } from "./cta-suggestion-row";
 import { EmptyStateCTARow } from "./empty-state-cta-row";
 import { Loader } from "./loader";
 import { Message } from "./message";
+import { ThinkingDisclosure } from "./thinking-disclosure";
 import type { ApprovalRequest } from "./tool-cards/approval-card";
 import { ApprovalCard } from "./tool-cards/approval-card";
 import type { DocumentEditOutput } from "./tool-cards/document-edit-card";
@@ -19,13 +20,15 @@ const DOCUMENT_EDIT_TOOLS = new Set(["workflow_edit_document", "workflow_write_p
 type MessageThreadProps = {
   messages: HermesMessage[];
   status: ChatStatus;
+  /** The id of the assistant message currently streaming (used to show live thinking). */
+  streamingAssistantId?: string | null;
   onStageTransition?: () => void;
   onCtaAction?: (actionText: string) => void;
   featureStatus?: string | null;
   emptyStateDismissed?: boolean;
 };
 
-export function MessageThread({ messages, status, onStageTransition, onCtaAction, featureStatus, emptyStateDismissed }: MessageThreadProps) {
+export function MessageThread({ messages, status, streamingAssistantId, onStageTransition, onCtaAction, featureStatus, emptyStateDismissed }: MessageThreadProps) {
   const isStreaming = status === "streaming";
   const { scrollRef, isAtBottomRef } = useConversationScroll();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -60,12 +63,17 @@ export function MessageThread({ messages, status, onStageTransition, onCtaAction
       {messages.map((msg) => (
         <div key={msg.id} className="flex flex-col gap-1.5">
           <Message message={msg} />
+          {msg.role === "assistant" && msg.thinking && (
+            <div>
+              <ThinkingDisclosure thinking={msg.thinking} streaming={msg.id === streamingAssistantId && isStreaming} durationSeconds={msg.thinkingSeconds} />
+            </div>
+          )}
           {msg.toolCalls && msg.toolCalls.length > 0 && (
-            <div className="flex flex-col gap-1 pl-2">
+            <div className="flex flex-col gap-1">
               <ToolCallGroup toolCalls={msg.toolCalls} onStageTransition={onStageTransition} />
             </div>
           )}
-          {msg.role === "assistant" && msg.ctaSuggestions && msg.ctaSuggestions.length > 0 && onCtaAction && (
+          {msg.role === "assistant" && msg.ctaSuggestions && msg.ctaSuggestions.length > 0 && onCtaAction && !(msg.id === streamingAssistantId && isStreaming) && (
             <CTASuggestionRow suggestions={msg.ctaSuggestions} active={msg.ctaActive ?? false} onAction={onCtaAction} />
           )}
         </div>

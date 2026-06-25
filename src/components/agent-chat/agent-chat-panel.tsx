@@ -129,9 +129,15 @@ export function AgentChatPanel({
   const flushRafRef = useRef<number | null>(null);
   const deltaPendingRef = useRef<{ id: string; text: string }[]>([]);
 
+  const thinkingRafRef = useRef<number | null>(null);
+  const thinkingPendingRef = useRef<{ id: string; text: string }[]>([]);
+
   const lastMessageIdRef = useRef<string | null>(null);
   const subscriptionSessionRef = useRef<string | null>(null);
   const streamingAssistantIdRef = useRef<string | null>(null);
+  const [streamingAssistantId, setStreamingAssistantId] = useState<string | null>(null);
+  /** Epoch ms when the current agent turn began, used to compute "Thought for …". */
+  const turnStartRef = useRef<number | null>(null);
   const openSubscriptionRef = useRef<(sessionId: string, since?: string) => void>(() => {});
 
   const nextId = () => {
@@ -142,6 +148,7 @@ export function AgentChatPanel({
   useEffect(() => {
     return () => {
       if (flushRafRef.current != null) cancelAnimationFrame(flushRafRef.current);
+      if (thinkingRafRef.current != null) cancelAnimationFrame(thinkingRafRef.current);
     };
   }, []);
 
@@ -344,6 +351,26 @@ export function AgentChatPanel({
     [drainOneDelta],
   );
 
+  const drainOneThinking = useCallback(function drainOneThinking() {
+    thinkingRafRef.current = null;
+    const item = thinkingPendingRef.current.shift();
+    if (!item) return;
+    setMessages((prev) => prev.map((m) => (m.id === item.id ? { ...m, thinking: (m.thinking ?? "") + item.text } : m)));
+    if (thinkingPendingRef.current.length > 0) {
+      thinkingRafRef.current = requestAnimationFrame(drainOneThinking);
+    }
+  }, []);
+
+  const appendThinkingDelta = useCallback(
+    (messageId: string, content: string) => {
+      thinkingPendingRef.current.push({ id: messageId, text: content });
+      if (thinkingRafRef.current == null) {
+        thinkingRafRef.current = requestAnimationFrame(drainOneThinking);
+      }
+    },
+    [drainOneThinking],
+  );
+
   const finalizeStreamForMessage = useCallback(() => {
     // Flush all remaining queued words immediately when the stream ends.
     if (flushRafRef.current != null) {
@@ -364,11 +391,22 @@ export function AgentChatPanel({
 
   const ensureStreamingAssistant = useCallback(() => {
     if (streamingAssistantIdRef.current) return streamingAssistantIdRef.current;
+    if (turnStartRef.current == null) turnStartRef.current = Date.now();
     msgIdCounter.current += 1;
     const id = `msg-${msgIdCounter.current}`;
     streamingAssistantIdRef.current = id;
+    setStreamingAssistantId(id);
     setMessages((prev) => [...prev, { id, role: "assistant", content: "", toolCalls: [] }]);
     return id;
+  }, []);
+
+  /** Stamp the finished turn's wall-clock duration onto its message for the "Thought for …" label. */
+  const recordTurnDuration = useCallback((messageId: string | null) => {
+    if (messageId && turnStartRef.current != null) {
+      const secs = Math.max(0, Math.round((Date.now() - turnStartRef.current) / 1000));
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, thinkingSeconds: secs } : m)));
+    }
+    turnStartRef.current = null;
   }, []);
 
   const handleThreadEvent = useCallback(
@@ -382,7 +420,9 @@ export function AgentChatPanel({
           return [...prev, msg];
         });
         if (msg.role === "assistant") {
+          if (turnStartRef.current == null) turnStartRef.current = Date.now();
           streamingAssistantIdRef.current = msg.id;
+          setStreamingAssistantId(msg.id);
           setStatus("streaming");
         }
         void refreshUnreadCounts();
@@ -392,6 +432,9 @@ export function AgentChatPanel({
       } else if (event.type === "delta") {
         const targetId = event.messageId || streamingAssistantIdRef.current || ensureStreamingAssistant();
         appendDelta(targetId, event.text);
+      } else if (event.type === "reasoning") {
+        const targetId = event.messageId || streamingAssistantIdRef.current || ensureStreamingAssistant();
+        appendThinkingDelta(targetId, event.content);
       } else if (event.type === "tool_start") {
         const targetId = event.messageId || streamingAssistantIdRef.current;
         if (!targetId) return;
@@ -452,13 +495,17 @@ export function AgentChatPanel({
         }
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
+        recordTurnDuration(targetId);
         streamingAssistantIdRef.current = null;
+        setStreamingAssistantId(null);
         setAgentWorking(false);
         setStatus("idle");
       } else if (event.type === "error") {
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
+        recordTurnDuration(targetId);
         streamingAssistantIdRef.current = null;
+        setStreamingAssistantId(null);
         if (targetId) {
           setMessages((prev) => prev.map((m) => (m.id === targetId ? { ...m, content: m.content || `Error: ${event.message}` } : m)));
         }
@@ -467,12 +514,14 @@ export function AgentChatPanel({
       } else if (event.type === "done") {
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
+        recordTurnDuration(targetId);
         streamingAssistantIdRef.current = null;
+        setStreamingAssistantId(null);
         setAgentWorking(false);
         setStatus("idle");
       }
     },
-    [onArtifactSaved, appendDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
+    [onArtifactSaved, appendDelta, appendThinkingDelta, finalizeStreamForMessage, recordTurnDuration, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -517,6 +566,8 @@ export function AgentChatPanel({
         abortRef.current = null;
         subscriptionSessionRef.current = null;
         streamingAssistantIdRef.current = null;
+        setStreamingAssistantId(null);
+        turnStartRef.current = null;
         setMessages([]);
         setPanelMode({ mode: "history" });
         setStatus("idle");
@@ -537,6 +588,8 @@ export function AgentChatPanel({
     abortRef.current = null;
     subscriptionSessionRef.current = null;
     streamingAssistantIdRef.current = null;
+    setStreamingAssistantId(null);
+    turnStartRef.current = null;
     setMessages([]);
     setPanelMode({ mode: "history" });
     setStatus("idle");
@@ -604,18 +657,47 @@ export function AgentChatPanel({
     };
   }, []);
 
+  // When the user reloads or closes the tab mid-turn, the SSE stream drops but
+  // the agent keeps generating server-side. Treat that the same as pressing
+  // Stop: cancel the in-flight turn on pagehide. We mirror the live turn state
+  // into a ref so the listener (registered once) always sees the latest value.
+  // Gated to the 1:1 agent chat (not channels — a shared turn shouldn't stop
+  // for everyone because one viewer reloaded). pagehide fires on reload / close
+  // / navigation but NOT on transient network blips, so auto-reconnect after a
+  // blip is unaffected.
+  const inFlightSessionRef = useRef<string | null>(null);
+  useEffect(() => {
+    const streaming = status === "streaming" || status === "connecting" || agentWorking;
+    inFlightSessionRef.current = !nonBlocking && panelMode.mode === "active" && streaming ? panelMode.sessionId : null;
+  }, [nonBlocking, panelMode, status, agentWorking]);
+  useEffect(() => {
+    const onPageHide = () => {
+      const sessionId = inFlightSessionRef.current;
+      if (sessionId) void cancelAgentTurn(sessionId);
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, []);
+
   const handleNewChat = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
     subscriptionSessionRef.current = null;
     lastMessageIdRef.current = null;
     streamingAssistantIdRef.current = null;
+    setStreamingAssistantId(null);
+    turnStartRef.current = null;
     activeCTAMessageIdRef.current = null;
     if (flushRafRef.current != null) {
       cancelAnimationFrame(flushRafRef.current);
       flushRafRef.current = null;
     }
+    if (thinkingRafRef.current != null) {
+      cancelAnimationFrame(thinkingRafRef.current);
+      thinkingRafRef.current = null;
+    }
     deltaPendingRef.current = [];
+    thinkingPendingRef.current = [];
     setMessages([]);
     setInputValue("");
     setPickerOpen(false);
@@ -712,6 +794,7 @@ export function AgentChatPanel({
 
         setStatus("streaming");
         const assistantId = `msg-${++msgIdCounter.current}`;
+        turnStartRef.current = Date.now();
         setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", toolCalls: [] }]);
 
         const finalizeStream = () => {
@@ -732,25 +815,43 @@ export function AgentChatPanel({
           (ev) => {
             if (ev.type === "delta") {
               appendDelta(assistantId, ev.text);
+            } else if (ev.type === "reasoning") {
+              appendThinkingDelta(assistantId, ev.content);
             } else if (ev.type === "error") {
               finalizeStream();
+              recordTurnDuration(assistantId);
               setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content || `Error: ${ev.message}` } : m)));
               setStatus("error");
             }
           },
           () => {
             finalizeStream();
+            recordTurnDuration(assistantId);
             setStatus("idle");
           },
           (err) => {
             finalizeStream();
+            recordTurnDuration(assistantId);
             if (err?.name === "AbortError") return;
             setStatus("error");
           },
         );
       })();
     },
-    [panelMode, workspaceId, featureId, selectedModel, useSubscriptionTransport, enterActiveMode, fetchSessions, onSessionsChanged, dismissActiveCta, appendDelta],
+    [
+      panelMode,
+      workspaceId,
+      featureId,
+      selectedModel,
+      useSubscriptionTransport,
+      enterActiveMode,
+      fetchSessions,
+      onSessionsChanged,
+      dismissActiveCta,
+      appendDelta,
+      appendThinkingDelta,
+      recordTurnDuration,
+    ],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -815,6 +916,7 @@ export function AgentChatPanel({
     setStatus("streaming");
 
     const assistantId = nextId();
+    turnStartRef.current = Date.now();
     setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", toolCalls: [] }]);
 
     const finalizeStream = () => {
@@ -835,6 +937,8 @@ export function AgentChatPanel({
       (event) => {
         if (event.type === "delta") {
           appendDelta(assistantId, event.text);
+        } else if (event.type === "reasoning") {
+          appendThinkingDelta(assistantId, event.content);
         } else if (event.type === "tool_start") {
           const toolEntry: ToolCallEntry = {
             callId: event.callId,
@@ -875,16 +979,19 @@ export function AgentChatPanel({
           onArtifactSaved?.(event.artifact);
         } else if (event.type === "error") {
           finalizeStream();
+          recordTurnDuration(assistantId);
           setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content || `Error: ${event.message}` } : m)));
           setStatus("error");
         }
       },
       () => {
         finalizeStream();
+        recordTurnDuration(assistantId);
         setStatus("idle");
       },
       (err) => {
         finalizeStream();
+        recordTurnDuration(assistantId);
         if (err?.name === "AbortError") return;
         setMessages((prev) =>
           prev.map((m) =>
@@ -914,7 +1021,9 @@ export function AgentChatPanel({
     fetchSessions,
     onSessionsChanged,
     appendDelta,
+    appendThinkingDelta,
     dismissActiveCta,
+    recordTurnDuration,
   ]);
 
   const handleStop = useCallback(() => {
@@ -957,6 +1066,7 @@ export function AgentChatPanel({
             <ChannelMessageList
               messages={messages}
               status={status}
+              streamingAssistantId={streamingAssistantId}
               resolveAuthor={resolveChannelAuthor}
               onCtaAction={handleCtaAction}
               featureStatus={featureStatus}
@@ -966,6 +1076,7 @@ export function AgentChatPanel({
             <MessageThread
               messages={messages}
               status={status}
+              streamingAssistantId={streamingAssistantId}
               onStageTransition={onStageTransition}
               onCtaAction={handleCtaAction}
               featureStatus={featureStatus}
