@@ -2,6 +2,38 @@
 
 import { Brain, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+/**
+ * Markdown renderers for the reasoning trace. Same idiom as the message body,
+ * but tuned smaller and muted so the trace stays visually secondary to the
+ * answer. Color is inherited from the muted container, so elements don't pin
+ * their own text color.
+ */
+const thinkingMarkdown: Components = {
+  p: ({ children }) => <p className="my-1.5 first:mt-0 last:mb-0">{children}</p>,
+  ul: ({ children }) => <ul className="my-1.5 list-disc space-y-0.5 pl-4 marker:text-text-muted">{children}</ul>,
+  ol: ({ children }) => <ol className="my-1.5 list-decimal space-y-0.5 pl-4 marker:text-text-muted">{children}</ol>,
+  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  strong: ({ children }) => <strong className="font-semibold text-text-secondary">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  a: ({ children, href }) => (
+    <a href={href} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-text-secondary">
+      {children}
+    </a>
+  ),
+  h1: ({ children }) => <p className="my-1.5 font-semibold text-text-secondary first:mt-0">{children}</p>,
+  h2: ({ children }) => <p className="my-1.5 font-semibold text-text-secondary first:mt-0">{children}</p>,
+  h3: ({ children }) => <p className="my-1.5 font-semibold text-text-secondary first:mt-0">{children}</p>,
+  blockquote: ({ children }) => <blockquote className="my-1.5 border-l-2 border-border pl-2">{children}</blockquote>,
+  code: ({ className, children }) => {
+    const isBlock = (className ?? "").includes("language-");
+    if (isBlock) return <code className={`${className ?? ""} font-mono`}>{children}</code>;
+    return <code className="rounded bg-surface-secondary px-1 py-0.5 font-mono text-[10px] text-text-secondary">{children}</code>;
+  },
+  pre: ({ children }) => <pre className="my-1.5 overflow-x-auto rounded border border-border bg-surface-secondary p-2 text-[10px] leading-relaxed">{children}</pre>,
+};
 
 type ThinkingDisclosureProps = {
   thinking: string;
@@ -60,8 +92,10 @@ export function ThinkingDisclosure({ thinking, streaming, durationSeconds }: Thi
         {!streaming && <ChevronRight className={`h-3 w-3 shrink-0 transition-transform ${expanded ? "rotate-90" : ""}`} aria-hidden="true" />}
       </button>
       {isExpanded && (
-        <div data-thinking-content className="mt-1 border-l border-border pl-2.5 text-[11px] leading-relaxed text-text-muted">
-          {thinking}
+        <div data-thinking-content className="mt-1 max-w-none border-l border-border pl-2.5 text-[11px] leading-relaxed text-text-muted">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={thinkingMarkdown}>
+            {thinking}
+          </ReactMarkdown>
         </div>
       )}
     </div>
