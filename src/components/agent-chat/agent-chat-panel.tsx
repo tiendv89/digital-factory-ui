@@ -19,12 +19,15 @@ import {
   subscribeToThread,
 } from "@/services/hermes-agent/chat";
 import { fetchMe, fetchOrgMembers, getMeData, listWorkspaceMembers } from "@/services/user-service";
+import type { SessionCostResponse } from "@/services/workflow-bff/cost";
+import { getSessionCost } from "@/services/workflow-bff/cost";
 import { useLocalWorkspaceStore } from "@/stores/workspace";
 
 import { type ChannelAuthor, ChannelMessageList } from "./channel-message-list";
 import { Conversation } from "./conversation";
 import { MessageThread } from "./message-thread";
 import { PromptInput } from "./prompt-input";
+import { SessionCostHeader } from "./session-cost-header";
 import { SessionHistoryList } from "./session-history-list";
 import { SlashCommandPicker } from "./slash-command-picker";
 import type { ChatStatus, HermesMessage, ThreadMember, ToolCallEntry } from "./types";
@@ -117,6 +120,7 @@ export function AgentChatPanel({
     >
   >({});
   const [emptyStateDismissed, setEmptyStateDismissed] = useState(false);
+  const [sessionCost, setSessionCost] = useState<SessionCostResponse | null>(null);
   const activeCTAMessageIdRef = useRef<string | null>(null);
   const meRef = useRef<{
     id: string;
@@ -164,6 +168,23 @@ export function AgentChatPanel({
       setUnreadCounts(data);
     } catch {}
   }, [workspaceId]);
+
+  const refreshSessionCost = useCallback(async (sessionId: string) => {
+    try {
+      const cost = await getSessionCost(sessionId);
+      setSessionCost(cost);
+      // Attach per-turn credits to the corresponding messages.
+      setMessages((prev) =>
+        prev.map((msg) => {
+          const turn = cost.turns.find((t) => t.turn_id === msg.id);
+          if (turn && msg.role === "assistant") return { ...msg, creditsUsed: turn.credits_used };
+          return msg;
+        }),
+      );
+    } catch {
+      // Cost data is non-critical; ignore fetch failures.
+    }
+  }, []);
 
   useEffect(() => {
     void fetchSessions();
@@ -310,6 +331,7 @@ export function AgentChatPanel({
 
   const enterActiveMode = useCallback((sessionId: string, sessionTitle: string) => {
     setMessages([]);
+    setSessionCost(null);
     setStatus("idle");
     setAgentWorking(false);
     setInputValue("");
@@ -446,6 +468,10 @@ export function AgentChatPanel({
         ensureStreamingAssistant();
         setStatus("streaming");
         setAgentWorking(true);
+      } else if (event.type === "usage") {
+        // A turn emitted usage data — refresh the session cost to get updated credits and quota.
+        const sid = subscriptionSessionRef.current;
+        if (sid) void refreshSessionCost(sid);
       } else if (event.type === "turn.stopped") {
         if (event.messageId) {
           setMessages((prev) => prev.map((m) => (m.id === event.messageId ? { ...m, finishReason: "stopped" } : m)));
@@ -455,6 +481,8 @@ export function AgentChatPanel({
         streamingAssistantIdRef.current = null;
         setAgentWorking(false);
         setStatus("idle");
+        const sid = subscriptionSessionRef.current;
+        if (sid) void refreshSessionCost(sid);
       } else if (event.type === "error") {
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
@@ -470,9 +498,11 @@ export function AgentChatPanel({
         streamingAssistantIdRef.current = null;
         setAgentWorking(false);
         setStatus("idle");
+        const sid = subscriptionSessionRef.current;
+        if (sid) void refreshSessionCost(sid);
       }
     },
-    [onArtifactSaved, appendDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
+    [onArtifactSaved, appendDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged, refreshSessionCost],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -518,6 +548,7 @@ export function AgentChatPanel({
         subscriptionSessionRef.current = null;
         streamingAssistantIdRef.current = null;
         setMessages([]);
+        setSessionCost(null);
         setPanelMode({ mode: "history" });
         setStatus("idle");
       }
@@ -538,6 +569,7 @@ export function AgentChatPanel({
     subscriptionSessionRef.current = null;
     streamingAssistantIdRef.current = null;
     setMessages([]);
+    setSessionCost(null);
     setPanelMode({ mode: "history" });
     setStatus("idle");
     void fetchSessions();
@@ -580,15 +612,17 @@ export function AgentChatPanel({
         if (useSubscriptionTransport) {
           openSubscription(id);
         }
+        void refreshSessionCost(id);
       } catch {
         setMessages([]);
         setStatus("idle");
         if (useSubscriptionTransport) {
           openSubscription(id);
         }
+        void refreshSessionCost(id);
       }
     },
-    [sessions, workspaceId, featureId, models, useSubscriptionTransport, openSubscription],
+    [sessions, workspaceId, featureId, models, useSubscriptionTransport, openSubscription, refreshSessionCost],
   );
 
   const requestedRef = useRef<string | null>(null);
@@ -617,6 +651,7 @@ export function AgentChatPanel({
     }
     deltaPendingRef.current = [];
     setMessages([]);
+    setSessionCost(null);
     setInputValue("");
     setPickerOpen(false);
     setStatus("idle");
@@ -950,6 +985,8 @@ export function AgentChatPanel({
 
   return (
     <div data-agent-chat-panel className="flex h-full flex-col bg-surface">
+      {/* Session cost header — shown only in active session view */}
+      {isActive && sessionCost && <SessionCostHeader sessionCredits={sessionCost.session_credits} quota={sessionCost.quota} />}
       {/* Body */}
       {isActive ? (
         <Conversation>

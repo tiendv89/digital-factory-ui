@@ -20,6 +20,8 @@ export type HermesMessage = {
   createdAt?: number;
   /** Set to "stopped" when the agent turn was cancelled mid-stream by the user. */
   finishReason?: string;
+  /** Credits consumed by this agent turn — populated from the session cost API. Absent for user messages. */
+  creditsUsed?: number;
   /** CTA suggestions attached to an assistant turn — populated from turn.cta_suggestions SSE event or history load. */
   ctaSuggestions?: CtaSuggestion[];
   /** Whether the CTA row for this message is still active (clickable). False for past turns. */

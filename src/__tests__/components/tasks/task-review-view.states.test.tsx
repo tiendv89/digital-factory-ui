@@ -6,8 +6,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(cleanup);
 
-import type { RepoPill, ThreadEntry } from "@/components/tasks/task-review-view";
-import { DiffPanel, SpecPanel, ThreadPanel } from "@/components/tasks/task-review-view";
+import type {
+  RepoPill,
+  ThreadEntry,
+} from "@/components/tasks/task-review-view";
+import {
+  DiffPanel,
+  SpecPanel,
+  ThreadPanel,
+} from "@/components/tasks/task-review-view";
 import type { UseTaskDiffResult } from "@/hooks/tasks/use-task-diff";
 import type { UseTaskReviewThreadResult } from "@/hooks/tasks/use-task-review-thread";
 import type { TaskSummary } from "@/services/workflow-backend/types";
@@ -27,12 +34,28 @@ const baseTask: TaskSummary = {
   is_blocked: false,
 };
 
-function makeDiffResult(overrides: Partial<UseTaskDiffResult> = {}): UseTaskDiffResult {
-  return { data: null, loading: false, error: null, reload: noop, ...overrides };
+function makeDiffResult(
+  overrides: Partial<UseTaskDiffResult> = {},
+): UseTaskDiffResult {
+  return {
+    data: null,
+    loading: false,
+    error: null,
+    reload: noop,
+    ...overrides,
+  };
 }
 
-function makeThreadResult(overrides: Partial<UseTaskReviewThreadResult> = {}): UseTaskReviewThreadResult {
-  return { data: null, loading: false, error: null, reload: noop, ...overrides };
+function makeThreadResult(
+  overrides: Partial<UseTaskReviewThreadResult> = {},
+): UseTaskReviewThreadResult {
+  return {
+    data: null,
+    loading: false,
+    error: null,
+    reload: noop,
+    ...overrides,
+  };
 }
 
 // ──────────────────────────────────────────────────────────────────────
@@ -46,20 +69,43 @@ describe("DiffPanel", () => {
   });
 
   it("loading state: shows loading indicator", () => {
-    render(<DiffPanel hasPr={true} diffResult={makeDiffResult({ loading: true })} />);
+    render(
+      <DiffPanel hasPr={true} diffResult={makeDiffResult({ loading: true })} />,
+    );
     expect(screen.getByText(/Loading diff/i)).toBeInTheDocument();
   });
 
   it("error state: shows error message with retry button", () => {
     const reload = vi.fn();
-    render(<DiffPanel hasPr={true} diffResult={makeDiffResult({ error: { message: "403 Forbidden", status: 403 }, reload })} />);
+    render(
+      <DiffPanel
+        hasPr={true}
+        diffResult={makeDiffResult({
+          error: {
+            message: "403 Forbidden",
+            code: "forbidden",
+            retryable: false,
+          },
+          reload,
+        })}
+      />,
+    );
     expect(screen.getByText(/Failed to load diff/i)).toBeInTheDocument();
     expect(screen.getByText(/Retry/i)).toBeInTheDocument();
   });
 
   it("empty state: shows no-changes message when files array is empty", () => {
-    render(<DiffPanel hasPr={true} diffResult={makeDiffResult({ data: { files: [], total_additions: 0, total_deletions: 0 } })} />);
-    expect(screen.getByText(/No changes in this pull request/i)).toBeInTheDocument();
+    render(
+      <DiffPanel
+        hasPr={true}
+        diffResult={makeDiffResult({
+          data: { files: [], total_additions: 0, total_deletions: 0 },
+        })}
+      />,
+    );
+    expect(
+      screen.getByText(/No changes in this pull request/i),
+    ).toBeInTheDocument();
   });
 
   it("renders file list when data has files", () => {
@@ -68,7 +114,16 @@ describe("DiffPanel", () => {
         hasPr={true}
         diffResult={makeDiffResult({
           data: {
-            files: [{ filename: "src/foo.ts", additions: 3, deletions: 1, patch: "+new line\n-old line" }],
+            files: [
+              {
+                filename: "src/foo.ts",
+                status: "modified",
+                additions: 3,
+                deletions: 1,
+                changes: 4,
+                patch: "+new line\n-old line",
+              },
+            ],
             total_additions: 3,
             total_deletions: 1,
           },
@@ -85,24 +140,57 @@ describe("DiffPanel", () => {
 
 describe("ThreadPanel", () => {
   it("no-PR state: shows no-PR message", () => {
-    render(<ThreadPanel hasPr={false} threadResult={makeThreadResult()} threadEntries={[]} currentRepo={undefined} />);
+    render(
+      <ThreadPanel
+        hasPr={false}
+        threadResult={makeThreadResult()}
+        threadEntries={[]}
+        currentRepo={undefined}
+      />,
+    );
     expect(screen.getByText(/No pull request yet/i)).toBeInTheDocument();
   });
 
   it("loading state: shows loading indicator", () => {
-    render(<ThreadPanel hasPr={true} threadResult={makeThreadResult({ loading: true })} threadEntries={[]} currentRepo={undefined} />);
+    render(
+      <ThreadPanel
+        hasPr={true}
+        threadResult={makeThreadResult({ loading: true })}
+        threadEntries={[]}
+        currentRepo={undefined}
+      />,
+    );
     expect(screen.getByText(/Loading review thread/i)).toBeInTheDocument();
   });
 
   it("error state: shows error message with retry button", () => {
     const reload = vi.fn();
-    render(<ThreadPanel hasPr={true} threadResult={makeThreadResult({ error: { message: "500", status: 500 }, reload })} threadEntries={[]} currentRepo={undefined} />);
-    expect(screen.getByText(/Failed to load review thread/i)).toBeInTheDocument();
+    render(
+      <ThreadPanel
+        hasPr={true}
+        threadResult={makeThreadResult({
+          error: { message: "500", code: "internal_error", retryable: true },
+          reload,
+        })}
+        threadEntries={[]}
+        currentRepo={undefined}
+      />,
+    );
+    expect(
+      screen.getByText(/Failed to load review thread/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Retry/i)).toBeInTheDocument();
   });
 
   it("empty state: shows no-activity message when threadEntries is empty", () => {
-    render(<ThreadPanel hasPr={true} threadResult={makeThreadResult({ data: { items: [] } })} threadEntries={[]} currentRepo={undefined} />);
+    render(
+      <ThreadPanel
+        hasPr={true}
+        threadResult={makeThreadResult({ data: { items: [] } })}
+        threadEntries={[]}
+        currentRepo={undefined}
+      />,
+    );
     expect(screen.getByText(/No review activity yet/i)).toBeInTheDocument();
   });
 
@@ -118,8 +206,17 @@ describe("ThreadPanel", () => {
         at: "2026-01-01T01:00:00Z",
       },
     ];
-    render(<ThreadPanel hasPr={true} threadResult={makeThreadResult({ data: { items: [] } })} threadEntries={entries} currentRepo={undefined} />);
-    expect(screen.getByText(/managed by the review workflow/i)).toBeInTheDocument();
+    render(
+      <ThreadPanel
+        hasPr={true}
+        threadResult={makeThreadResult({ data: { items: [] } })}
+        threadEntries={entries}
+        currentRepo={undefined}
+      />,
+    );
+    expect(
+      screen.getByText(/managed by the review workflow/i),
+    ).toBeInTheDocument();
   });
 });
 
@@ -139,12 +236,18 @@ describe("SpecPanel", () => {
   });
 
   it("renders description when present", () => {
-    render(<SpecPanel task={{ ...baseTask, description: "Detailed description here." }} />);
+    render(
+      <SpecPanel
+        task={{ ...baseTask, description: "Detailed description here." }}
+      />,
+    );
     expect(screen.getByText("Detailed description here.")).toBeInTheDocument();
   });
 
   it("does not render description section when absent", () => {
-    const { queryByText } = render(<SpecPanel task={{ ...baseTask, description: undefined }} />);
+    const { queryByText } = render(
+      <SpecPanel task={{ ...baseTask, description: undefined }} />,
+    );
     expect(queryByText("Description")).not.toBeInTheDocument();
   });
 
@@ -155,17 +258,25 @@ describe("SpecPanel", () => {
   });
 
   it("does not render depends_on section for empty array", () => {
-    const { queryByText } = render(<SpecPanel task={{ ...baseTask, depends_on: [] }} />);
+    const { queryByText } = render(
+      <SpecPanel task={{ ...baseTask, depends_on: [] }} />,
+    );
     expect(queryByText("Depends on")).not.toBeInTheDocument();
   });
 
   it("renders blocked_reason when present", () => {
-    render(<SpecPanel task={{ ...baseTask, blocked_reason: "Missing credentials." }} />);
+    render(
+      <SpecPanel
+        task={{ ...baseTask, blocked_reason: "Missing credentials." }}
+      />,
+    );
     expect(screen.getByText("Missing credentials.")).toBeInTheDocument();
   });
 
   it("does not render blocked section when blocked_reason is absent", () => {
-    const { queryByText } = render(<SpecPanel task={{ ...baseTask, blocked_reason: undefined }} />);
+    const { queryByText } = render(
+      <SpecPanel task={{ ...baseTask, blocked_reason: undefined }} />,
+    );
     expect(queryByText("Blocked")).not.toBeInTheDocument();
   });
 

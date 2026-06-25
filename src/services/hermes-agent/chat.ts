@@ -314,6 +314,7 @@ export type ThreadEvent =
   | { type: "turn.cta_suggestions"; messageId: string; suggestions: CtaSuggestion[] }
   | { type: "agent.working"; sessionId: string }
   | { type: "turn.stopped"; messageId: string | null }
+  | { type: "usage"; messageId: string; inputTokens: number; outputTokens: number; cachedTokens: number }
   | { type: "typing"; userId: string }
   | { type: "member.changed" }
   | { type: "channel.deleted" }
@@ -469,6 +470,18 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
     return [{ type: "done" }];
   }
 
+  if (eventType === "agent.usage") {
+    return [
+      {
+        type: "usage",
+        messageId: String(raw.message_id ?? ""),
+        inputTokens: Number(raw.input_tokens ?? 0),
+        outputTokens: Number(raw.output_tokens ?? 0),
+        cachedTokens: Number(raw.cached_tokens ?? 0),
+      },
+    ];
+  }
+
   if (eventType === "turn.stopped") {
     const messageId = typeof raw.message_id === "string" ? raw.message_id : null;
     return [{ type: "turn.stopped", messageId }];
@@ -503,6 +516,9 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
     }
     if (e.type === "artifact_saved") {
       return [{ type: "artifact_saved", artifact: e.artifact }];
+    }
+    if (e.type === "usage") {
+      return [{ type: "usage", messageId: String(raw.message_id ?? ""), inputTokens: e.inputTokens, outputTokens: e.outputTokens, cachedTokens: e.cachedTokens }];
     }
     if (e.type === "error") {
       return [{ type: "error", message: e.message }];
