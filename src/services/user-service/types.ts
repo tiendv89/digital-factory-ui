@@ -22,6 +22,7 @@ export interface MeData {
   user: MeUser;
   memberships: MeMembership[];
   org_workspace_ids: Record<string, string[]>;
+  platform_roles: string[];
 }
 
 export interface MeResponse {
@@ -137,4 +138,83 @@ export interface UserQuota {
 
 export interface UserQuotaResponse {
   data: UserQuota;
+}
+
+// ─── Admin Billing Plan Types ─────────────────────────────────────────────────
+
+export interface BillingPlan {
+  id: string;
+  name: string;
+  display_name: string;
+  daily_credit_cap: number | null;
+  weekly_credit_cap: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateBillingPlanRequest {
+  name: string;
+  display_name: string;
+  daily_credit_cap: number | null;
+  weekly_credit_cap: number | null;
+}
+
+export interface UpdateBillingPlanRequest {
+  display_name?: string;
+  daily_credit_cap?: number | null;
+  weekly_credit_cap?: number | null;
+}
+
+export interface BillingPlansResponse {
+  plans: BillingPlan[];
+}
+
+export interface BillingPlanResponse {
+  plan: BillingPlan;
+}
+
+export interface EffectivePlan {
+  plan: BillingPlan;
+  source: "individual" | "org" | "free";
+  assigned_at: string | null;
+  expires_at: string | null;
+}
+
+export interface EffectivePlanResponse {
+  effective_plan: EffectivePlan;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  display_name: string | null;
+  username: string | null;
+  effective_plan: EffectivePlan | null;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUser[];
+  total: number;
+}
+
+export interface AssignUserPlanRequest {
+  plan_id: string;
+  expires_at?: string | null;
+}
+
+export interface AdminOrg {
+  id: string;
+  name: string;
+  slug: string;
+  effective_plan: EffectivePlan | null;
+}
+
+export interface AdminOrgsResponse {
+  orgs: AdminOrg[];
+  total: number;
+}
+
+export interface AssignOrgPlanRequest {
+  plan_id: string;
+  expires_at?: string | null;
 }

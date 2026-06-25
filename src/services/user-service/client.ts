@@ -4,9 +4,19 @@ import { getBffBaseUrl, userServiceApi } from "@/constants/axios";
 
 import type {
   ActiveSession,
+  AdminOrgsResponse,
+  AdminUsersResponse,
+  AssignOrgPlanRequest,
+  AssignUserPlanRequest,
+  BillingPlan,
+  BillingPlanResponse,
+  BillingPlansResponse,
   CallerWorkspaceRoleResponse,
   ChangeOrgMemberRoleRequest,
+  CreateBillingPlanRequest,
   CreateOrgRequest,
+  EffectivePlan,
+  EffectivePlanResponse,
   MeData,
   MeResponse,
   Org,
@@ -18,6 +28,7 @@ import type {
   OrgResponse,
   RoleChangeRequest,
   TransferOrgOwnershipRequest,
+  UpdateBillingPlanRequest,
   UpdateMeRequest,
   UpdateOrgRequest,
   UserQuota,
@@ -85,7 +96,9 @@ export async function revokeSession(sessionId: string): Promise<void> {
 /** logoutAllDevices revokes every session for the current user. */
 export async function logoutAllDevices(): Promise<void> {
   try {
-    await axios.delete(`${getBffBaseUrl()}/bff/account/sessions`, { withCredentials: true });
+    await axios.delete(`${getBffBaseUrl()}/bff/account/sessions`, {
+      withCredentials: true,
+    });
   } catch (err) {
     handleApiError(err, "log out of all devices");
   }
@@ -223,10 +236,12 @@ export async function listWorkspaceMembers(workspaceId: string): Promise<Workspa
 
 export async function fetchUserQuota(): Promise<UserQuota> {
   try {
-    const { data } = await userServiceApi.get<UserQuotaResponse | UserQuota>("/users/me/quota");
+    const { data } = await axios.get<UserQuotaResponse | UserQuota>(`${getBffBaseUrl()}/bff/users/me/quota`, {
+      withCredentials: true,
+    });
     return "data" in data ? data.data : data;
   } catch (err) {
-    handleApiError(err, "Failed to fetch /users/me/quota");
+    handleApiError(err, "Failed to fetch /bff/users/me/quota");
   }
 }
 
@@ -237,5 +252,120 @@ export async function getCallerWorkspaceRole(workspaceId: string): Promise<"memb
     return body.role;
   } catch (err) {
     handleApiError(err, "Failed to get caller workspace role");
+  }
+}
+
+// ─── Admin Billing Plan Client Functions ────────────────────────────────────
+
+function unwrapPlans(json: BillingPlansResponse | { data: BillingPlansResponse }): BillingPlan[] {
+  const body = "data" in json ? json.data : json;
+  return body.plans;
+}
+
+function unwrapPlan(json: BillingPlanResponse | { data: BillingPlanResponse }): BillingPlan {
+  const body = "data" in json ? json.data : json;
+  return body.plan;
+}
+
+function unwrapEffectivePlan(json: EffectivePlanResponse | { data: EffectivePlanResponse }): EffectivePlan {
+  const body = "data" in json ? json.data : json;
+  return body.effective_plan;
+}
+
+function unwrapAdminUsers(json: AdminUsersResponse | { data: AdminUsersResponse }): AdminUsersResponse {
+  return "data" in json ? json.data : json;
+}
+
+function unwrapAdminOrgs(json: AdminOrgsResponse | { data: AdminOrgsResponse }): AdminOrgsResponse {
+  return "data" in json ? json.data : json;
+}
+
+export async function adminListPlans(): Promise<BillingPlan[]> {
+  try {
+    const { data } = await userServiceApi.get<BillingPlansResponse | { data: BillingPlansResponse }>("/admin/plans");
+    return unwrapPlans(data);
+  } catch (err) {
+    handleApiError(err, "Failed to list billing plans");
+  }
+}
+
+export async function adminCreatePlan(body: CreateBillingPlanRequest): Promise<BillingPlan> {
+  try {
+    const { data } = await userServiceApi.post<BillingPlanResponse | { data: BillingPlanResponse }>("/admin/plans", body);
+    return unwrapPlan(data);
+  } catch (err) {
+    handleApiError(err, "Failed to create billing plan");
+  }
+}
+
+export async function adminUpdatePlan(planId: string, body: UpdateBillingPlanRequest): Promise<BillingPlan> {
+  try {
+    const { data } = await userServiceApi.patch<BillingPlanResponse | { data: BillingPlanResponse }>(`/admin/plans/${planId}`, body);
+    return unwrapPlan(data);
+  } catch (err) {
+    handleApiError(err, "Failed to update billing plan");
+  }
+}
+
+export async function adminListUsers(page = 1, pageSize = 50): Promise<AdminUsersResponse> {
+  try {
+    const { data } = await userServiceApi.get<AdminUsersResponse | { data: AdminUsersResponse }>("/admin/users", {
+      params: { page, page_size: pageSize },
+    });
+    return unwrapAdminUsers(data);
+  } catch (err) {
+    handleApiError(err, "Failed to list admin users");
+  }
+}
+
+export async function adminGetUserEffectivePlan(userId: string): Promise<EffectivePlan> {
+  try {
+    const { data } = await userServiceApi.get<EffectivePlanResponse | { data: EffectivePlanResponse }>(`/admin/users/${userId}/effective-plan`);
+    return unwrapEffectivePlan(data);
+  } catch (err) {
+    handleApiError(err, "Failed to get user effective plan");
+  }
+}
+
+export async function adminAssignUserPlan(userId: string, body: AssignUserPlanRequest): Promise<void> {
+  try {
+    await userServiceApi.post(`/admin/users/${userId}/plan`, body);
+  } catch (err) {
+    handleApiError(err, "Failed to assign user plan");
+  }
+}
+
+export async function adminRemoveUserPlan(userId: string): Promise<void> {
+  try {
+    await userServiceApi.delete(`/admin/users/${userId}/plan`);
+  } catch (err) {
+    handleApiError(err, "Failed to remove user plan");
+  }
+}
+
+export async function adminListOrgs(page = 1, pageSize = 50): Promise<AdminOrgsResponse> {
+  try {
+    const { data } = await userServiceApi.get<AdminOrgsResponse | { data: AdminOrgsResponse }>("/admin/orgs", {
+      params: { page, page_size: pageSize },
+    });
+    return unwrapAdminOrgs(data);
+  } catch (err) {
+    handleApiError(err, "Failed to list admin orgs");
+  }
+}
+
+export async function adminAssignOrgPlan(orgId: string, body: AssignOrgPlanRequest): Promise<void> {
+  try {
+    await userServiceApi.post(`/admin/orgs/${orgId}/plan`, body);
+  } catch (err) {
+    handleApiError(err, "Failed to assign org plan");
+  }
+}
+
+export async function adminRemoveOrgPlan(orgId: string): Promise<void> {
+  try {
+    await userServiceApi.delete(`/admin/orgs/${orgId}/plan`);
+  } catch (err) {
+    handleApiError(err, "Failed to remove org plan");
   }
 }
