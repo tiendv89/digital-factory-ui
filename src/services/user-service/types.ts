@@ -22,6 +22,7 @@ export interface MeData {
   user: MeUser;
   memberships: MeMembership[];
   org_workspace_ids: Record<string, string[]>;
+  platform_roles: string[];
 }
 
 export interface MeResponse {
@@ -123,4 +124,98 @@ export interface ActiveSession {
   created_at: number; // unix seconds
   last_seen_at: number; // unix seconds
   current: boolean;
+}
+
+export interface UserQuota {
+  plan_name: string;
+  daily_used: number;
+  daily_cap: number;
+  weekly_used: number;
+  weekly_cap: number;
+  daily_reset_at: string;
+  weekly_reset_at: string;
+}
+
+export interface UserQuotaResponse {
+  data: UserQuota;
+}
+
+// ─── Admin Billing Plan Types ─────────────────────────────────────────────────
+
+export interface BillingPlan {
+  id: string;
+  name: string;
+  display_name: string;
+  // Matches user-service JSON. 0 = unlimited (rendered as ∞).
+  daily_credits_cap: number;
+  weekly_credits_cap: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateBillingPlanRequest {
+  name: string;
+  display_name: string;
+  daily_credits_cap: number;
+  weekly_credits_cap: number;
+}
+
+export interface UpdateBillingPlanRequest {
+  display_name?: string;
+  daily_credits_cap?: number;
+  weekly_credits_cap?: number;
+}
+
+export interface BillingPlansResponse {
+  plans: BillingPlan[];
+}
+
+export interface BillingPlanResponse {
+  plan: BillingPlan;
+}
+
+export interface EffectivePlan {
+  plan: BillingPlan;
+  source: "individual" | "org" | "free";
+  assigned_at: string | null;
+  expires_at: string | null;
+}
+
+export interface EffectivePlanResponse {
+  effective_plan: EffectivePlan;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  display_name: string | null;
+  username: string | null;
+  effective_plan: EffectivePlan | null;
+}
+
+export interface AdminUsersResponse {
+  users: AdminUser[];
+  total: number;
+}
+
+export interface AssignUserPlanRequest {
+  plan_id: string;
+  expires_at?: string | null;
+}
+
+export interface AdminOrg {
+  id: string;
+  name: string;
+  slug: string;
+  effective_plan: EffectivePlan | null;
+}
+
+export interface AdminOrgsResponse {
+  orgs: AdminOrg[];
+  total: number;
+}
+
+export interface AssignOrgPlanRequest {
+  plan_id: string;
+  expires_at?: string | null;
 }

@@ -521,7 +521,17 @@ export function AgentChatPanel({
         setStatus("idle");
       }
     },
-    [onArtifactSaved, appendDelta, appendThinkingDelta, finalizeStreamForMessage, recordTurnDuration, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
+    [
+      onArtifactSaved,
+      appendDelta,
+      appendThinkingDelta,
+      finalizeStreamForMessage,
+      recordTurnDuration,
+      refreshUnreadCounts,
+      ensureStreamingAssistant,
+      fetchSessions,
+      onSessionsChanged,
+    ],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
