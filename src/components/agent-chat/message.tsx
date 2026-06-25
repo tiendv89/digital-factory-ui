@@ -55,13 +55,13 @@ function remarkMentions() {
 }
 
 const markdownComponents: Components = {
-  h1: ({ children }) => <h1 className="mt-4 mb-2 text-base font-semibold text-text-primary first:mt-0">{children}</h1>,
-  h2: ({ children }) => <h2 className="mt-4 mb-2 text-sm font-semibold text-text-primary first:mt-0">{children}</h2>,
-  h3: ({ children }) => <h3 className="mt-3 mb-1.5 text-[13px] font-semibold text-text-primary first:mt-0">{children}</h3>,
-  p: ({ children }) => <p className="my-2 leading-relaxed text-text-primary first:mt-0 last:mb-0">{children}</p>,
+  h1: ({ children }) => <h1 className="agent-fade-in mt-4 mb-2 text-base font-semibold text-text-primary first:mt-0">{children}</h1>,
+  h2: ({ children }) => <h2 className="agent-fade-in mt-4 mb-2 text-sm font-semibold text-text-primary first:mt-0">{children}</h2>,
+  h3: ({ children }) => <h3 className="agent-fade-in mt-3 mb-1.5 text-[13px] font-semibold text-text-primary first:mt-0">{children}</h3>,
+  p: ({ children }) => <p className="agent-fade-in my-2 leading-relaxed text-text-primary first:mt-0 last:mb-0">{children}</p>,
   ul: ({ children }) => <ul className="my-2 list-disc space-y-1 pl-5 text-text-primary marker:text-text-muted">{children}</ul>,
   ol: ({ children }) => <ol className="my-2 list-decimal space-y-1 pl-5 text-text-primary marker:text-text-muted">{children}</ol>,
-  li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+  li: ({ children }) => <li className="agent-fade-in leading-relaxed">{children}</li>,
   a: ({ children, href }) => (
     <a href={href} target="_blank" rel="noreferrer" className="text-primary underline underline-offset-2 hover:opacity-80">
       {children}

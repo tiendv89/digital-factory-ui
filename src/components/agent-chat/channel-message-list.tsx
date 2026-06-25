@@ -194,10 +194,10 @@ export function ChannelMessageList({ messages, status, streamingAssistantId, res
                   <MessageContent content={msg.content} />
                   {msg.thinking && (
                     <div className="mt-1">
-                      <ThinkingDisclosure thinking={msg.thinking} streaming={msg.id === streamingAssistantId && isStreaming} />
+                      <ThinkingDisclosure thinking={msg.thinking} streaming={msg.id === streamingAssistantId && isStreaming} durationSeconds={msg.thinkingSeconds} />
                     </div>
                   )}
-                  {(msg.ctaSuggestions?.length ?? 0) > 0 && onCtaAction && (
+                  {(msg.ctaSuggestions?.length ?? 0) > 0 && onCtaAction && !(msg.id === streamingAssistantId && isStreaming) && (
                     <div className="mt-2">
                       <CTASuggestionRow suggestions={msg.ctaSuggestions ?? []} active={msg.ctaActive ?? false} onAction={onCtaAction} />
                     </div>
@@ -212,16 +212,11 @@ export function ChannelMessageList({ messages, status, streamingAssistantId, res
           </div>
         );
       })}
-      {showTyping &&
-        (() => {
-          const streamingMsg = streamingAssistantId ? messages.find((m) => m.id === streamingAssistantId) : null;
-          const hasThinking = Boolean(streamingMsg?.thinking);
-          return !hasThinking ? (
-            <div className="flex justify-start pl-12">
-              <Loader />
-            </div>
-          ) : null;
-        })()}
+      {showTyping && (
+        <div className="flex justify-start pl-12">
+          <Loader />
+        </div>
+      )}
     </ConversationContent>
   );
 }

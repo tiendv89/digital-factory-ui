@@ -580,6 +580,7 @@ export async function cancelAgentTurn(threadId: string): Promise<void> {
   await fetch(`${getApiBase()}/api/v1/threads/${encodeURIComponent(threadId)}/cancel`, {
     method: "POST",
     credentials: "include",
+    keepalive: true,
   });
 }
 

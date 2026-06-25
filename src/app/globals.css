@@ -102,6 +102,21 @@ body {
   }
 }
 
+/* ── Streaming text fade-in ────────────────────────────────────── */
+/* Applied to block elements as the agent streams, so each new paragraph /
+   list item / heading eases in instead of popping. Existing DOM nodes persist
+   across re-renders, so the animation only plays for newly appended blocks. */
+@keyframes agent-fade-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.agent-fade-in {
+  animation: agent-fade-in 0.3s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-fade-in { animation: none; }
+}
+
 /* ── Markdown body ─────────────────────────────────────────────── */
 .markdown-body {
   font-size: 0.875rem;

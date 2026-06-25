@@ -32,9 +32,7 @@ describe("parseHermesEvents — agent.reasoning", () => {
   });
 
   it("HermesEvent type includes reasoning discriminant", async () => {
-    const { type: _mod } = await import("@/services/hermes-agent/chat");
-    // Compile-time: HermesEvent | { type: "reasoning"; content: string } must assignable
-    type HermesEvent = Awaited<ReturnType<typeof import("@/services/hermes-agent/chat").streamChatTurn>> extends never ? never : never;
+    // Compile-time: a reasoning event must be assignable to HermesEvent.
     const _evt: import("@/services/hermes-agent/chat").HermesEvent = { type: "reasoning", content: "test" };
     expect(_evt.type).toBe("reasoning");
   });

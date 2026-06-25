@@ -64,30 +64,25 @@ export function MessageThread({ messages, status, streamingAssistantId, onStageT
         <div key={msg.id} className="flex flex-col gap-1.5">
           <Message message={msg} />
           {msg.role === "assistant" && msg.thinking && (
-            <div className="pl-2">
-              <ThinkingDisclosure thinking={msg.thinking} streaming={msg.id === streamingAssistantId && isStreaming} />
+            <div>
+              <ThinkingDisclosure thinking={msg.thinking} streaming={msg.id === streamingAssistantId && isStreaming} durationSeconds={msg.thinkingSeconds} />
             </div>
           )}
           {msg.toolCalls && msg.toolCalls.length > 0 && (
-            <div className="flex flex-col gap-1 pl-2">
+            <div className="flex flex-col gap-1">
               <ToolCallGroup toolCalls={msg.toolCalls} onStageTransition={onStageTransition} />
             </div>
           )}
-          {msg.role === "assistant" && msg.ctaSuggestions && msg.ctaSuggestions.length > 0 && onCtaAction && (
+          {msg.role === "assistant" && msg.ctaSuggestions && msg.ctaSuggestions.length > 0 && onCtaAction && !(msg.id === streamingAssistantId && isStreaming) && (
             <CTASuggestionRow suggestions={msg.ctaSuggestions} active={msg.ctaActive ?? false} onAction={onCtaAction} />
           )}
         </div>
       ))}
-      {(isStreaming || status === "connecting") &&
-        (() => {
-          const streamingMsg = streamingAssistantId ? messages.find((m) => m.id === streamingAssistantId) : null;
-          const hasThinking = Boolean(streamingMsg?.thinking);
-          return !hasThinking ? (
-            <div className="flex justify-start">
-              <Loader />
-            </div>
-          ) : null;
-        })()}
+      {(isStreaming || status === "connecting") && (
+        <div className="flex justify-start">
+          <Loader />
+        </div>
+      )}
     </ConversationContent>
   );
 }

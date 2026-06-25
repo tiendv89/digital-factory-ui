@@ -136,6 +136,8 @@ export function AgentChatPanel({
   const subscriptionSessionRef = useRef<string | null>(null);
   const streamingAssistantIdRef = useRef<string | null>(null);
   const [streamingAssistantId, setStreamingAssistantId] = useState<string | null>(null);
+  /** Epoch ms when the current agent turn began, used to compute "Thought for …". */
+  const turnStartRef = useRef<number | null>(null);
   const openSubscriptionRef = useRef<(sessionId: string, since?: string) => void>(() => {});
 
   const nextId = () => {
@@ -389,12 +391,22 @@ export function AgentChatPanel({
 
   const ensureStreamingAssistant = useCallback(() => {
     if (streamingAssistantIdRef.current) return streamingAssistantIdRef.current;
+    if (turnStartRef.current == null) turnStartRef.current = Date.now();
     msgIdCounter.current += 1;
     const id = `msg-${msgIdCounter.current}`;
     streamingAssistantIdRef.current = id;
     setStreamingAssistantId(id);
     setMessages((prev) => [...prev, { id, role: "assistant", content: "", toolCalls: [] }]);
     return id;
+  }, []);
+
+  /** Stamp the finished turn's wall-clock duration onto its message for the "Thought for …" label. */
+  const recordTurnDuration = useCallback((messageId: string | null) => {
+    if (messageId && turnStartRef.current != null) {
+      const secs = Math.max(0, Math.round((Date.now() - turnStartRef.current) / 1000));
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, thinkingSeconds: secs } : m)));
+    }
+    turnStartRef.current = null;
   }, []);
 
   const handleThreadEvent = useCallback(
@@ -408,6 +420,7 @@ export function AgentChatPanel({
           return [...prev, msg];
         });
         if (msg.role === "assistant") {
+          if (turnStartRef.current == null) turnStartRef.current = Date.now();
           streamingAssistantIdRef.current = msg.id;
           setStreamingAssistantId(msg.id);
           setStatus("streaming");
@@ -482,6 +495,7 @@ export function AgentChatPanel({
         }
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
+        recordTurnDuration(targetId);
         streamingAssistantIdRef.current = null;
         setStreamingAssistantId(null);
         setAgentWorking(false);
@@ -489,6 +503,7 @@ export function AgentChatPanel({
       } else if (event.type === "error") {
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
+        recordTurnDuration(targetId);
         streamingAssistantIdRef.current = null;
         setStreamingAssistantId(null);
         if (targetId) {
@@ -499,13 +514,14 @@ export function AgentChatPanel({
       } else if (event.type === "done") {
         const targetId = streamingAssistantIdRef.current;
         if (targetId) finalizeStreamForMessage();
+        recordTurnDuration(targetId);
         streamingAssistantIdRef.current = null;
         setStreamingAssistantId(null);
         setAgentWorking(false);
         setStatus("idle");
       }
     },
-    [onArtifactSaved, appendDelta, appendThinkingDelta, finalizeStreamForMessage, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
+    [onArtifactSaved, appendDelta, appendThinkingDelta, finalizeStreamForMessage, recordTurnDuration, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -551,6 +567,7 @@ export function AgentChatPanel({
         subscriptionSessionRef.current = null;
         streamingAssistantIdRef.current = null;
         setStreamingAssistantId(null);
+        turnStartRef.current = null;
         setMessages([]);
         setPanelMode({ mode: "history" });
         setStatus("idle");
@@ -572,6 +589,7 @@ export function AgentChatPanel({
     subscriptionSessionRef.current = null;
     streamingAssistantIdRef.current = null;
     setStreamingAssistantId(null);
+    turnStartRef.current = null;
     setMessages([]);
     setPanelMode({ mode: "history" });
     setStatus("idle");
@@ -639,6 +657,28 @@ export function AgentChatPanel({
     };
   }, []);
 
+  // When the user reloads or closes the tab mid-turn, the SSE stream drops but
+  // the agent keeps generating server-side. Treat that the same as pressing
+  // Stop: cancel the in-flight turn on pagehide. We mirror the live turn state
+  // into a ref so the listener (registered once) always sees the latest value.
+  // Gated to the 1:1 agent chat (not channels — a shared turn shouldn't stop
+  // for everyone because one viewer reloaded). pagehide fires on reload / close
+  // / navigation but NOT on transient network blips, so auto-reconnect after a
+  // blip is unaffected.
+  const inFlightSessionRef = useRef<string | null>(null);
+  useEffect(() => {
+    const streaming = status === "streaming" || status === "connecting" || agentWorking;
+    inFlightSessionRef.current = !nonBlocking && panelMode.mode === "active" && streaming ? panelMode.sessionId : null;
+  }, [nonBlocking, panelMode, status, agentWorking]);
+  useEffect(() => {
+    const onPageHide = () => {
+      const sessionId = inFlightSessionRef.current;
+      if (sessionId) void cancelAgentTurn(sessionId);
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, []);
+
   const handleNewChat = useCallback(() => {
     abortRef.current?.abort();
     abortRef.current = null;
@@ -646,6 +686,7 @@ export function AgentChatPanel({
     lastMessageIdRef.current = null;
     streamingAssistantIdRef.current = null;
     setStreamingAssistantId(null);
+    turnStartRef.current = null;
     activeCTAMessageIdRef.current = null;
     if (flushRafRef.current != null) {
       cancelAnimationFrame(flushRafRef.current);
@@ -753,6 +794,7 @@ export function AgentChatPanel({
 
         setStatus("streaming");
         const assistantId = `msg-${++msgIdCounter.current}`;
+        turnStartRef.current = Date.now();
         setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", toolCalls: [] }]);
 
         const finalizeStream = () => {
@@ -777,23 +819,39 @@ export function AgentChatPanel({
               appendThinkingDelta(assistantId, ev.content);
             } else if (ev.type === "error") {
               finalizeStream();
+              recordTurnDuration(assistantId);
               setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content || `Error: ${ev.message}` } : m)));
               setStatus("error");
             }
           },
           () => {
             finalizeStream();
+            recordTurnDuration(assistantId);
             setStatus("idle");
           },
           (err) => {
             finalizeStream();
+            recordTurnDuration(assistantId);
             if (err?.name === "AbortError") return;
             setStatus("error");
           },
         );
       })();
     },
-    [panelMode, workspaceId, featureId, selectedModel, useSubscriptionTransport, enterActiveMode, fetchSessions, onSessionsChanged, dismissActiveCta, appendDelta, appendThinkingDelta],
+    [
+      panelMode,
+      workspaceId,
+      featureId,
+      selectedModel,
+      useSubscriptionTransport,
+      enterActiveMode,
+      fetchSessions,
+      onSessionsChanged,
+      dismissActiveCta,
+      appendDelta,
+      appendThinkingDelta,
+      recordTurnDuration,
+    ],
   );
 
   const handleSubmit = useCallback(async () => {
@@ -858,6 +916,7 @@ export function AgentChatPanel({
     setStatus("streaming");
 
     const assistantId = nextId();
+    turnStartRef.current = Date.now();
     setMessages((prev) => [...prev, { id: assistantId, role: "assistant", content: "", toolCalls: [] }]);
 
     const finalizeStream = () => {
@@ -920,16 +979,19 @@ export function AgentChatPanel({
           onArtifactSaved?.(event.artifact);
         } else if (event.type === "error") {
           finalizeStream();
+          recordTurnDuration(assistantId);
           setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: m.content || `Error: ${event.message}` } : m)));
           setStatus("error");
         }
       },
       () => {
         finalizeStream();
+        recordTurnDuration(assistantId);
         setStatus("idle");
       },
       (err) => {
         finalizeStream();
+        recordTurnDuration(assistantId);
         if (err?.name === "AbortError") return;
         setMessages((prev) =>
           prev.map((m) =>
@@ -961,6 +1023,7 @@ export function AgentChatPanel({
     appendDelta,
     appendThinkingDelta,
     dismissActiveCta,
+    recordTurnDuration,
   ]);
 
   const handleStop = useCallback(() => {
