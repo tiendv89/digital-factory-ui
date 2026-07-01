@@ -14,7 +14,8 @@ type Provider = (typeof PROVIDERS)[number];
 /** Shared control styling so HeroUI's Input and Select render identically to
  * each other (and to the app's other form fields) — the HeroUI defaults for
  * each differ (pill vs. bordered box), which looked inconsistent side by side. */
-const FIELD_CLASS = "h-9 w-full rounded-[8px] border border-border-control bg-surface-secondary px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
+const FIELD_CLASS =
+  "h-9 w-full rounded-[8px] border border-border-control bg-surface-secondary px-3 text-sm text-text-primary placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary";
 
 function formatRate(v: number): string {
   return v.toFixed(4);
@@ -64,8 +65,8 @@ export default function AdminModelsPage() {
     return <div className="rounded-md border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger">Failed to load models: {(error as Error).message}</div>;
   }
 
-  const editingModel = editingId ? (models ?? []).find((m) => m.model_id === editingId) ?? null : null;
-  const pricingModel = pricingId ? (models ?? []).find((m) => m.model_id === pricingId) ?? null : null;
+  const editingModel = editingId ? ((models ?? []).find((m) => m.model_id === editingId) ?? null) : null;
+  const pricingModel = pricingId ? ((models ?? []).find((m) => m.model_id === pricingId) ?? null) : null;
 
   return (
     <div data-admin-models className="space-y-6">
