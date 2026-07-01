@@ -27,7 +27,7 @@ export type UpdateModelCatalogRequest = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function getAdminBase(): string {
-  return `${getBffBaseUrl()}/bff/hermes-agent/admin`;
+  return `${getBffBaseUrl()}/bff/hermes-agent/api/v1/admin`;
 }
 
 async function handleResponse<T>(res: Response, context: string): Promise<T> {

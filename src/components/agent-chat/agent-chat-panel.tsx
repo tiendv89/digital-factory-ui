@@ -209,6 +209,27 @@ export function AgentChatPanel({
   }, [refreshUnreadCounts]);
 
   useEffect(() => {
+    if (!workspaceId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const me = getMeData(await fetchMe());
+        if (cancelled) return;
+        meRef.current = {
+          id: me.user.id,
+          name: displayNameOf(me.user.display_name, me.user.email) ?? "You",
+          avatarUrl: me.user.avatar_url,
+        };
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
+
+  useEffect(() => {
     if (!nonBlocking || !workspaceId) return;
     let cancelled = false;
     void (async () => {
@@ -222,11 +243,6 @@ export function AgentChatPanel({
       let orgId: string | undefined;
       try {
         const me = getMeData(await fetchMe());
-        meRef.current = {
-          id: me.user.id,
-          name: displayNameOf(me.user.display_name, me.user.email) ?? "You",
-          avatarUrl: me.user.avatar_url,
-        };
         orgId = Object.keys(me.org_workspace_ids ?? {}).find((oid) => (me.org_workspace_ids?.[oid] ?? []).includes(workspaceId));
       } catch {
         /* ignore */
