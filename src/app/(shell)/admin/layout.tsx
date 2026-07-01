@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, CreditCard, Shield, Users } from "lucide-react";
+import { Building2, Cpu, CreditCard, Shield, Users } from "lucide-react";
 import Link from "next/link";
 import { notFound, usePathname } from "next/navigation";
 
@@ -13,6 +13,7 @@ const NAV = [
   { href: "/admin/plans", label: "Plans", icon: CreditCard },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/orgs", label: "Orgs", icon: Building2 },
+  { href: "/admin/models", label: "Models", icon: Cpu },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -18,7 +18,12 @@ function PlanSelect({ plans, value, onChange }: { plans: BillingPlan[]; value: s
       <Select.Popover className="min-w-40 overflow-hidden rounded-xl border border-border bg-surface p-1 shadow-lg">
         <ListBox className="max-h-60 overflow-auto outline-none">
           {plans.map((p) => (
-            <ListBox.Item key={p.id} id={p.id} textValue={p.display_name} className="cursor-pointer rounded-md px-2 py-1.5 text-xs text-text-primary outline-none data-[focused=true]:bg-surface-secondary">
+            <ListBox.Item
+              key={p.id}
+              id={p.id}
+              textValue={p.display_name}
+              className="cursor-pointer rounded-md px-2 py-1.5 text-xs text-text-primary outline-none data-[focused=true]:bg-surface-secondary"
+            >
               {p.display_name}
             </ListBox.Item>
           ))}

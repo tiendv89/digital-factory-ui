@@ -153,11 +153,6 @@ export function AgentChatPanel({
   const thinkingPendingRef = useRef<{ id: string; text: string }[]>([]);
 
   const lastMessageIdRef = useRef<string | null>(null);
-  // Own messages optimistically appended by handleSubmit/handleCtaAction, awaiting
-  // reconciliation with their server echo on the same subscription (see
-  // handleThreadEvent). A queue rather than a single id — back-to-back sends can
-  // both be in flight at once, and each needs its own slot so one echo doesn't
-  // consume the wrong pending entry.
   const pendingOwnMessagesRef = useRef<{ id: string; content: string }[]>([]);
   const subscriptionSessionRef = useRef<string | null>(null);
   const streamingAssistantIdRef = useRef<string | null>(null);
@@ -209,6 +204,27 @@ export function AgentChatPanel({
   }, [refreshUnreadCounts]);
 
   useEffect(() => {
+    if (!workspaceId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const me = getMeData(await fetchMe());
+        if (cancelled) return;
+        meRef.current = {
+          id: me.user.id,
+          name: displayNameOf(me.user.display_name, me.user.email) ?? "You",
+          avatarUrl: me.user.avatar_url,
+        };
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaceId]);
+
+  useEffect(() => {
     if (!nonBlocking || !workspaceId) return;
     let cancelled = false;
     void (async () => {
@@ -222,11 +238,6 @@ export function AgentChatPanel({
       let orgId: string | undefined;
       try {
         const me = getMeData(await fetchMe());
-        meRef.current = {
-          id: me.user.id,
-          name: displayNameOf(me.user.display_name, me.user.email) ?? "You",
-          avatarUrl: me.user.avatar_url,
-        };
         orgId = Object.keys(me.org_workspace_ids ?? {}).find((oid) => (me.org_workspace_ids?.[oid] ?? []).includes(workspaceId));
       } catch {
         /* ignore */
@@ -349,14 +360,6 @@ export function AgentChatPanel({
     setPanelMode({ mode: "active", sessionId, sessionTitle });
   }, []);
 
-  // RAF queue: drain ONE pending word per animation frame so React renders
-  // each piece individually. React 18 batches all setState calls that land
-  // in the same synchronous tick — a queue + RAF gives us one setState (→ one
-  // render) per frame, giving smooth per-word streaming even when many SSE
-  // frames arrive in the same TCP packet.
-  // Named function expression: the inner `drainOneDelta` resolves to this
-  // function's own name binding (valid inside its body), so the recursive RAF
-  // schedule doesn't reference the outer const before it's declared.
   const drainOneDelta = useCallback(function drainOneDelta() {
     flushRafRef.current = null;
     const item = deltaPendingRef.current.shift();
@@ -443,12 +446,6 @@ export function AgentChatPanel({
         setEmptyStateDismissed(true);
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
-          // This is the server echo of a message we just sent ourselves: it's
-          // already shown via the optimistic entry handleSubmit/handleCtaAction
-          // appended, so reconcile that entry's temp id instead of appending a
-          // duplicate. Match by content since the echo carries no temp id back;
-          // several own-sends can be in flight at once, so search the whole
-          // pending queue rather than assuming FIFO order.
           if (msg.authorId && meRef.current && msg.authorId === meRef.current.id) {
             const pendingIdx = pendingOwnMessagesRef.current.findIndex((p) => p.content === msg.content && prev.some((m) => m.id === p.id));
             if (pendingIdx !== -1) {
@@ -697,14 +694,6 @@ export function AgentChatPanel({
     };
   }, []);
 
-  // When the user reloads or closes the tab mid-turn, the SSE stream drops but
-  // the agent keeps generating server-side. Treat that the same as pressing
-  // Stop: cancel the in-flight turn on pagehide. We mirror the live turn state
-  // into a ref so the listener (registered once) always sees the latest value.
-  // Gated to the 1:1 agent chat (not channels — a shared turn shouldn't stop
-  // for everyone because one viewer reloaded). pagehide fires on reload / close
-  // / navigation but NOT on transient network blips, so auto-reconnect after a
-  // blip is unaffected.
   const inFlightSessionRef = useRef<string | null>(null);
   useEffect(() => {
     const streaming = status === "streaming" || status === "connecting" || agentWorking;
@@ -744,8 +733,6 @@ export function AgentChatPanel({
     setStatus("idle");
     setAgentWorking(false);
     setEmptyStateDismissed(false);
-    // Land on the history list (with the composer below) so past conversations
-    // are visible; typing the first message starts a fresh session.
     setPanelMode({ mode: "history" });
     void fetchSessions();
   }, [fetchSessions]);
@@ -825,8 +812,6 @@ export function AgentChatPanel({
           setStatus("connecting");
           try {
             const { message_id, agent_triggered } = await sendThreadMessage(sessionId, actionText);
-            // If the SSE echo already reconciled this entry (handleThreadEvent),
-            // it's no longer in the queue and this filter is a no-op.
             pendingOwnMessagesRef.current = pendingOwnMessagesRef.current.filter((p) => p.id !== userMsg.id);
             setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)));
             setStatus(agent_triggered ? "streaming" : "idle");
@@ -919,8 +904,6 @@ export function AgentChatPanel({
         if (useSubscriptionTransport) {
           openSubscription(sessionId);
         }
-        // Refresh the history list so the new session appears immediately
-        // (the list is otherwise only loaded on mount).
         void fetchSessions();
         onSessionsChanged?.();
       } catch {
@@ -950,8 +933,6 @@ export function AgentChatPanel({
       setStatus("connecting");
       try {
         const { message_id, agent_triggered } = await sendThreadMessage(sessionId, userMsg.content);
-        // If the SSE echo already reconciled this entry (handleThreadEvent),
-        // it's no longer in the queue and this filter is a no-op.
         pendingOwnMessagesRef.current = pendingOwnMessagesRef.current.filter((p) => p.id !== userMsg.id);
         setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)));
         setStatus(agent_triggered ? "streaming" : "idle");

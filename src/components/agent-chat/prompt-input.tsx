@@ -26,6 +26,7 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
   const historyIndexRef = useRef(-1);
   const draftRef = useRef("");
   const pendingCaretRef = useRef<number | null>(null);
+  const lastEnterSubmitAtRef = useRef(0);
 
   const resize = () => {
     if (!ref.current) return;
@@ -66,7 +67,12 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
         return;
       }
       e.preventDefault();
+      const now = Date.now();
+      if (now - lastEnterSubmitAtRef.current < 200) {
+        return;
+      }
       if (!disabled && value.trim()) {
+        lastEnterSubmitAtRef.current = now;
         historyIndexRef.current = -1;
         onSubmit();
       }

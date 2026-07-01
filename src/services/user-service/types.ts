@@ -219,3 +219,29 @@ export interface AssignOrgPlanRequest {
   plan_id: string;
   expires_at?: string | null;
 }
+
+// ─── Admin Pricing Types ──────────────────────────────────────────────────────
+
+export interface ModelPricing {
+  id: string;
+  model_id: string;
+  input_cost_per_mtok: number;
+  output_cost_per_mtok: number;
+  cache_read_cost_per_mtok: number;
+  cache_write_cost_per_mtok: number;
+  effective_from: string;
+  effective_to: string | null;
+}
+
+export interface ModelPricingListResponse {
+  pricing: ModelPricing[];
+}
+
+export interface CreateModelPricingRequest {
+  model_id: string;
+  input_cost_per_mtok: number;
+  output_cost_per_mtok: number;
+  cache_read_cost_per_mtok: number;
+  cache_write_cost_per_mtok: number;
+  effective_from?: string;
+}
