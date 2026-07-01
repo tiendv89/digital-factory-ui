@@ -94,11 +94,7 @@ export function UsageTab() {
         <h2 className="text-base font-semibold text-text-primary">Your usage limits</h2>
       </div>
 
-      {active === null ? (
-        <p className="text-sm text-text-muted">You&apos;re not a member of any organization yet.</p>
-      ) : (
-        <OrgUsageCard key={active.org_id} usage={active} now={now} />
-      )}
+      {active === null ? <p className="text-sm text-text-muted">You&apos;re not a member of any organization yet.</p> : <OrgUsageCard key={active.org_id} usage={active} now={now} />}
 
       <div className="flex items-center justify-between border-t border-border pt-4">
         <span className="text-xs text-text-muted">Last updated: {lastUpdated}</span>
