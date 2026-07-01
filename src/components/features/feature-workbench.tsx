@@ -2,7 +2,7 @@
 
 import { Modal } from "@heroui/react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, Code2, Files, FileText, Filter, Hash, Lock, Plus, Rocket, SquarePen, X } from "lucide-react";
+import { AlertCircle, Bot, Check, CheckSquare, ChevronDown, ChevronLeft, ChevronRight, ChevronsDown, Filter, Hash, Lock, Plus, SquarePen, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
@@ -103,13 +103,6 @@ function FeaturePreviewPanel({ workspaceId, featureId }: { workspaceId: string; 
     </div>
   );
 }
-
-const ARTIFACTS: { label: string; tab: DocTab; icon: React.ComponentType<{ className?: string }> }[] = [
-  { label: "Product Spec", tab: "product_spec", icon: FileText },
-  { label: "Technical Design", tab: "technical_design", icon: Code2 },
-  { label: "Tasks", tab: "tasks", icon: CheckSquare },
-  { label: "Handoffs", tab: "handoff", icon: Rocket },
-];
 
 type ActiveSession = { id: string; name: string; kind?: "session" | "channel" };
 
@@ -270,7 +263,6 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
   const [unread, setUnread] = useState<Record<string, number>>({});
   const [createChannelOpen, setCreateChannelOpen] = useState(false);
 
-  const artifactsCollapsed = collapsedWorkbenchSections.includes("artifacts");
   const tasksCollapsed = collapsedWorkbenchSections.includes("tasks");
   const channelsCollapsed = collapsedWorkbenchSections.includes("channels");
   const sessionsCollapsed = collapsedWorkbenchSections.includes("sessions");
@@ -616,36 +608,29 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
               <InitPRBanner initPrUrl={feature.init_pr_url} />
             </div>
 
-            {/* Artifacts */}
-            <SectionLabel collapsed={artifactsCollapsed} onToggle={() => toggleWorkbenchSection("artifacts")} icon={Files}>
-              Artifacts
+            {/* Sessions */}
+            <SectionLabel collapsed={sessionsCollapsed} onToggle={() => toggleWorkbenchSection("sessions")} onAdd={startNewSession} icon={Bot}>
+              Sessions
             </SectionLabel>
-            {!artifactsCollapsed &&
-              ARTIFACTS.map((a) => {
-                const active = activeTab === a.tab;
-                return (
-                  <button key={a.label} type="button" onClick={() => setActiveTab(a.tab)} className={`${ROW_BASE} ${active ? ROW_ACTIVE : ROW_IDLE}`}>
-                    <a.icon className={`h-4 w-4 shrink-0 ${active ? "text-primary" : "text-text-muted group-hover:text-text-secondary"}`} />
-                    <span className="truncate">{a.label}</span>
-                  </button>
-                );
-              })}
-
-            {/* Tasks */}
-            <SectionLabel collapsed={tasksCollapsed} onToggle={() => toggleWorkbenchSection("tasks")} icon={CheckSquare}>
-              Tasks
-            </SectionLabel>
-            {!tasksCollapsed &&
-              (tasks.length === 0 ? (
-                <p className="mx-1.5 px-2 py-1.5 text-[11px] italic text-text-muted">No tasks.</p>
+            {!sessionsCollapsed &&
+              (sessions.length === 0 ? (
+                <p className="mx-1.5 px-2 py-1.5 text-[11px] italic text-text-muted">No sessions yet.</p>
               ) : (
-                tasks.map((task) => (
-                  <button key={task.id} type="button" onClick={() => handleOpenTaskTab(task.id, task.task_name, task.title || task.task_name)} className={`${ROW_BASE} ${ROW_IDLE}`}>
-                    <StatusGlyph status={task.status} size={14} />
-                    <span className="min-w-0 flex-1 truncate">{task.title || task.task_name}</span>
-                    <span className="shrink-0 font-mono text-[10px] text-text-muted">{task.task_name}</span>
-                  </button>
-                ))
+                sessions.map((s) => {
+                  const active = activeChannel?.kind !== "channel" && activeChannel?.id === s.id;
+                  const title = s.title || `Session ${s.id.slice(-6)}`;
+                  return (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setActiveChannel(active ? null : { id: s.id, name: title, kind: "session" })}
+                      className={`${ROW_BASE} ${active ? ROW_ACTIVE : ROW_IDLE}`}
+                    >
+                      <Lock className={`h-3 w-3 shrink-0 ${active ? "text-primary" : "text-text-muted group-hover:text-text-secondary"}`} />
+                      <span className="min-w-0 flex-1 truncate">{title}</span>
+                    </button>
+                  );
+                })
               ))}
 
             {/* Channels */}
@@ -679,29 +664,21 @@ export function FeatureWorkbench({ workspaceId, featureId }: { workspaceId: stri
                 })
               ))}
 
-            {/* Sessions */}
-            <SectionLabel collapsed={sessionsCollapsed} onToggle={() => toggleWorkbenchSection("sessions")} onAdd={startNewSession} icon={Bot}>
-              Sessions
+            {/* Tasks */}
+            <SectionLabel collapsed={tasksCollapsed} onToggle={() => toggleWorkbenchSection("tasks")} icon={CheckSquare}>
+              Tasks
             </SectionLabel>
-            {!sessionsCollapsed &&
-              (sessions.length === 0 ? (
-                <p className="mx-1.5 px-2 py-1.5 text-[11px] italic text-text-muted">No sessions yet.</p>
+            {!tasksCollapsed &&
+              (tasks.length === 0 ? (
+                <p className="mx-1.5 px-2 py-1.5 text-[11px] italic text-text-muted">No tasks.</p>
               ) : (
-                sessions.map((s) => {
-                  const active = activeChannel?.kind !== "channel" && activeChannel?.id === s.id;
-                  const title = s.title || `Session ${s.id.slice(-6)}`;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setActiveChannel(active ? null : { id: s.id, name: title, kind: "session" })}
-                      className={`${ROW_BASE} ${active ? ROW_ACTIVE : ROW_IDLE}`}
-                    >
-                      <Lock className={`h-3 w-3 shrink-0 ${active ? "text-primary" : "text-text-muted group-hover:text-text-secondary"}`} />
-                      <span className="min-w-0 flex-1 truncate">{title}</span>
-                    </button>
-                  );
-                })
+                tasks.map((task) => (
+                  <button key={task.id} type="button" onClick={() => handleOpenTaskTab(task.id, task.task_name, task.title || task.task_name)} className={`${ROW_BASE} ${ROW_IDLE}`}>
+                    <StatusGlyph status={task.status} size={14} />
+                    <span className="min-w-0 flex-1 truncate">{task.title || task.task_name}</span>
+                    <span className="shrink-0 font-mono text-[10px] text-text-muted">{task.task_name}</span>
+                  </button>
+                ))
               ))}
 
             <div className="h-3" />

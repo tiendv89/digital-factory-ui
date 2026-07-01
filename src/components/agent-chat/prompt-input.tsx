@@ -59,6 +59,12 @@ function PromptInputTextarea({ value, onChange, onSubmit, disabled, placeholder 
 
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
+      // IME composition (CJK, Vietnamese, etc.) confirms its candidate with
+      // Enter too — that keydown must not be treated as "send", or the
+      // composing keystroke and the user's real send both submit the message.
+      if (e.nativeEvent.isComposing || e.keyCode === 229) {
+        return;
+      }
       e.preventDefault();
       if (!disabled && value.trim()) {
         historyIndexRef.current = -1;

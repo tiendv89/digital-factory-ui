@@ -51,6 +51,26 @@ function deriveHandle(displayName?: string | null, email?: string | null): strin
   return (displayName ?? "").toLowerCase().replace(/[^a-z0-9._-]+/g, "");
 }
 
+/**
+ * requestAnimationFrame never fires (or is throttled to near-zero) in a
+ * background/unfocused browser tab. The delta/thinking flush queues are driven
+ * by rAF purely to smooth the per-word animation, so a passive channel viewer
+ * whose tab isn't focused would otherwise see nothing update until they
+ * refocus, at which point the whole backlog renders in one jump. Fall back to
+ * a timer while hidden so streamed content keeps landing regardless of focus.
+ */
+function scheduleFrame(cb: () => void): number {
+  if (typeof document !== "undefined" && document.hidden) {
+    return window.setTimeout(cb, 50) as unknown as number;
+  }
+  return requestAnimationFrame(cb);
+}
+
+function cancelFrame(handle: number): void {
+  window.clearTimeout(handle);
+  cancelAnimationFrame(handle);
+}
+
 type PanelMode = { mode: "history" } | { mode: "active"; sessionId: string; sessionTitle: string };
 
 type AgentChatPanelProps = {
@@ -133,6 +153,12 @@ export function AgentChatPanel({
   const thinkingPendingRef = useRef<{ id: string; text: string }[]>([]);
 
   const lastMessageIdRef = useRef<string | null>(null);
+  // Own messages optimistically appended by handleSubmit/handleCtaAction, awaiting
+  // reconciliation with their server echo on the same subscription (see
+  // handleThreadEvent). A queue rather than a single id — back-to-back sends can
+  // both be in flight at once, and each needs its own slot so one echo doesn't
+  // consume the wrong pending entry.
+  const pendingOwnMessagesRef = useRef<{ id: string; content: string }[]>([]);
   const subscriptionSessionRef = useRef<string | null>(null);
   const streamingAssistantIdRef = useRef<string | null>(null);
   const [streamingAssistantId, setStreamingAssistantId] = useState<string | null>(null);
@@ -147,8 +173,8 @@ export function AgentChatPanel({
 
   useEffect(() => {
     return () => {
-      if (flushRafRef.current != null) cancelAnimationFrame(flushRafRef.current);
-      if (thinkingRafRef.current != null) cancelAnimationFrame(thinkingRafRef.current);
+      if (flushRafRef.current != null) cancelFrame(flushRafRef.current);
+      if (thinkingRafRef.current != null) cancelFrame(thinkingRafRef.current);
     };
   }, []);
 
@@ -337,7 +363,7 @@ export function AgentChatPanel({
     if (!item) return;
     setMessages((prev) => prev.map((m) => (m.id === item.id ? { ...m, content: m.content + item.text } : m)));
     if (deltaPendingRef.current.length > 0) {
-      flushRafRef.current = requestAnimationFrame(drainOneDelta);
+      flushRafRef.current = scheduleFrame(drainOneDelta);
     }
   }, []);
 
@@ -345,7 +371,7 @@ export function AgentChatPanel({
     (messageId: string, text: string) => {
       deltaPendingRef.current.push({ id: messageId, text });
       if (flushRafRef.current == null) {
-        flushRafRef.current = requestAnimationFrame(drainOneDelta);
+        flushRafRef.current = scheduleFrame(drainOneDelta);
       }
     },
     [drainOneDelta],
@@ -357,7 +383,7 @@ export function AgentChatPanel({
     if (!item) return;
     setMessages((prev) => prev.map((m) => (m.id === item.id ? { ...m, thinking: (m.thinking ?? "") + item.text } : m)));
     if (thinkingPendingRef.current.length > 0) {
-      thinkingRafRef.current = requestAnimationFrame(drainOneThinking);
+      thinkingRafRef.current = scheduleFrame(drainOneThinking);
     }
   }, []);
 
@@ -365,7 +391,7 @@ export function AgentChatPanel({
     (messageId: string, content: string) => {
       thinkingPendingRef.current.push({ id: messageId, text: content });
       if (thinkingRafRef.current == null) {
-        thinkingRafRef.current = requestAnimationFrame(drainOneThinking);
+        thinkingRafRef.current = scheduleFrame(drainOneThinking);
       }
     },
     [drainOneThinking],
@@ -374,7 +400,7 @@ export function AgentChatPanel({
   const finalizeStreamForMessage = useCallback(() => {
     // Flush all remaining queued words immediately when the stream ends.
     if (flushRafRef.current != null) {
-      cancelAnimationFrame(flushRafRef.current);
+      cancelFrame(flushRafRef.current);
       flushRafRef.current = null;
     }
     const remaining = deltaPendingRef.current.splice(0);
@@ -417,6 +443,20 @@ export function AgentChatPanel({
         setEmptyStateDismissed(true);
         setMessages((prev) => {
           if (prev.some((m) => m.id === msg.id)) return prev;
+          // This is the server echo of a message we just sent ourselves: it's
+          // already shown via the optimistic entry handleSubmit/handleCtaAction
+          // appended, so reconcile that entry's temp id instead of appending a
+          // duplicate. Match by content since the echo carries no temp id back;
+          // several own-sends can be in flight at once, so search the whole
+          // pending queue rather than assuming FIFO order.
+          if (msg.authorId && meRef.current && msg.authorId === meRef.current.id) {
+            const pendingIdx = pendingOwnMessagesRef.current.findIndex((p) => p.content === msg.content && prev.some((m) => m.id === p.id));
+            if (pendingIdx !== -1) {
+              const tempId = pendingOwnMessagesRef.current[pendingIdx].id;
+              pendingOwnMessagesRef.current = pendingOwnMessagesRef.current.filter((_, i) => i !== pendingIdx);
+              return prev.map((m) => (m.id === tempId ? msg : m));
+            }
+          }
           return [...prev, msg];
         });
         if (msg.role === "assistant") {
@@ -521,17 +561,7 @@ export function AgentChatPanel({
         setStatus("idle");
       }
     },
-    [
-      onArtifactSaved,
-      appendDelta,
-      appendThinkingDelta,
-      finalizeStreamForMessage,
-      recordTurnDuration,
-      refreshUnreadCounts,
-      ensureStreamingAssistant,
-      fetchSessions,
-      onSessionsChanged,
-    ],
+    [onArtifactSaved, appendDelta, appendThinkingDelta, finalizeStreamForMessage, recordTurnDuration, refreshUnreadCounts, ensureStreamingAssistant, fetchSessions, onSessionsChanged],
   );
 
   /** Open (or reopen) the persistent subscription for a thread. */
@@ -699,11 +729,11 @@ export function AgentChatPanel({
     turnStartRef.current = null;
     activeCTAMessageIdRef.current = null;
     if (flushRafRef.current != null) {
-      cancelAnimationFrame(flushRafRef.current);
+      cancelFrame(flushRafRef.current);
       flushRafRef.current = null;
     }
     if (thinkingRafRef.current != null) {
-      cancelAnimationFrame(thinkingRafRef.current);
+      cancelFrame(thinkingRafRef.current);
       thinkingRafRef.current = null;
     }
     deltaPendingRef.current = [];
@@ -791,9 +821,13 @@ export function AgentChatPanel({
         setMessages((prev) => [...prev, userMsg]);
 
         if (useSubscriptionTransport) {
+          pendingOwnMessagesRef.current.push({ id: userMsg.id, content: userMsg.content });
           setStatus("connecting");
           try {
             const { message_id, agent_triggered } = await sendThreadMessage(sessionId, actionText);
+            // If the SSE echo already reconciled this entry (handleThreadEvent),
+            // it's no longer in the queue and this filter is a no-op.
+            pendingOwnMessagesRef.current = pendingOwnMessagesRef.current.filter((p) => p.id !== userMsg.id);
             setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)));
             setStatus(agent_triggered ? "streaming" : "idle");
           } catch {
@@ -809,7 +843,7 @@ export function AgentChatPanel({
 
         const finalizeStream = () => {
           if (flushRafRef.current != null) {
-            cancelAnimationFrame(flushRafRef.current);
+            cancelFrame(flushRafRef.current);
             flushRafRef.current = null;
           }
         };
@@ -912,9 +946,13 @@ export function AgentChatPanel({
     dismissActiveCta();
 
     if (useSubscriptionTransport) {
+      pendingOwnMessagesRef.current.push({ id: userMsg.id, content: userMsg.content });
       setStatus("connecting");
       try {
         const { message_id, agent_triggered } = await sendThreadMessage(sessionId, userMsg.content);
+        // If the SSE echo already reconciled this entry (handleThreadEvent),
+        // it's no longer in the queue and this filter is a no-op.
+        pendingOwnMessagesRef.current = pendingOwnMessagesRef.current.filter((p) => p.id !== userMsg.id);
         setMessages((prev) => prev.map((m) => (m.id === userMsg.id ? { ...m, id: message_id } : m)));
         setStatus(agent_triggered ? "streaming" : "idle");
       } catch {
@@ -931,7 +969,7 @@ export function AgentChatPanel({
 
     const finalizeStream = () => {
       if (flushRafRef.current != null) {
-        cancelAnimationFrame(flushRafRef.current);
+        cancelFrame(flushRafRef.current);
         flushRafRef.current = null;
       }
     };
@@ -1073,15 +1111,7 @@ export function AgentChatPanel({
       {isActive ? (
         <Conversation>
           {nonBlocking ? (
-            <ChannelMessageList
-              messages={messages}
-              status={status}
-              streamingAssistantId={streamingAssistantId}
-              resolveAuthor={resolveChannelAuthor}
-              onCtaAction={handleCtaAction}
-              featureStatus={featureStatus}
-              emptyStateDismissed={emptyStateDismissed}
-            />
+            <ChannelMessageList messages={messages} status={status} streamingAssistantId={streamingAssistantId} resolveAuthor={resolveChannelAuthor} onCtaAction={handleCtaAction} />
           ) : (
             <MessageThread
               messages={messages}

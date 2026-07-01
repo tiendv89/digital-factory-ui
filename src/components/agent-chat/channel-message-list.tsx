@@ -8,7 +8,6 @@ import { deriveIconColor } from "@/components/settings/icon-colors";
 
 import { ConversationContent, useConversationScroll } from "./conversation";
 import { CTASuggestionRow } from "./cta-suggestion-row";
-import { EmptyStateCTARow } from "./empty-state-cta-row";
 import { Loader } from "./loader";
 import { MessageContent, UserMessageContent } from "./message";
 import { ThinkingDisclosure } from "./thinking-disclosure";
@@ -33,8 +32,6 @@ type ChannelMessageListProps = {
   /** Resolve a message to its display author (name + avatar). */
   resolveAuthor: (msg: HermesMessage) => ChannelAuthor;
   onCtaAction?: (actionText: string) => void;
-  featureStatus?: string | null;
-  emptyStateDismissed?: boolean;
 };
 
 function initials(name: string): string {
@@ -133,7 +130,7 @@ function formatTime(epochSeconds?: number): string {
  * align with the first. Agent replies render as markdown; human messages as
  * plain text with @mention chips. Clicking an avatar/name opens a profile card.
  */
-export function ChannelMessageList({ messages, status, streamingAssistantId, resolveAuthor, onCtaAction, featureStatus, emptyStateDismissed = false }: ChannelMessageListProps) {
+export function ChannelMessageList({ messages, status, streamingAssistantId, resolveAuthor, onCtaAction }: ChannelMessageListProps) {
   const isStreaming = status === "streaming";
   const { scrollRef, isAtBottomRef } = useConversationScroll();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -160,7 +157,6 @@ export function ChannelMessageList({ messages, status, streamingAssistantId, res
           <p className="text-[13px] font-medium text-text-secondary">No messages yet</p>
           <p className="text-[11px] text-text-muted">Say hello, or mention @agent to ask a question.</p>
         </div>
-        {onCtaAction && <EmptyStateCTARow featureStatus={featureStatus} onAction={onCtaAction} dismissed={emptyStateDismissed} />}
       </div>
     );
   }

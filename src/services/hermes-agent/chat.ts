@@ -459,8 +459,10 @@ function parseThreadEvents(eventType: string | undefined, raw: Record<string, un
   }
 
   if (eventType === "message.created") {
-    const msg = raw.message as RawThreadMessage | undefined;
-    if (!msg) return [];
+    // The bus publishes the message fields flat on `data` (see hermes-agent
+    // src/api/routers/messages.py + stream.py), not nested under a `message` key.
+    const msg = raw as unknown as RawThreadMessage;
+    if (!msg?.id) return [];
     return [{ type: "message.created", message: rawMessageToHermesMessage(msg) }];
   }
 
