@@ -8,8 +8,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSession } from "@/components/auth";
 import { cn } from "@/components/common";
 import { useWorkspaceContext } from "@/components/workspaces/workspace-context";
-import { getMeData } from "@/services/user-service";
 import { getUnreadMentions } from "@/services/hermes-agent/chat";
+import { getMeData } from "@/services/user-service";
 import { useBoardStore } from "@/stores/board";
 import { isPlatformAdmin } from "@/utils/platform-role";
 

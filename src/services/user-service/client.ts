@@ -14,11 +14,14 @@ import type {
   CallerWorkspaceRoleResponse,
   ChangeOrgMemberRoleRequest,
   CreateBillingPlanRequest,
+  CreateModelPricingRequest,
   CreateOrgRequest,
   EffectivePlan,
   EffectivePlanResponse,
   MeData,
   MeResponse,
+  ModelPricing,
+  ModelPricingListResponse,
   Org,
   OrgInvitation,
   OrgInvitationsResponse,
@@ -362,5 +365,31 @@ export async function adminDeleteOrg(orgId: string): Promise<void> {
     await userServiceApi.delete(`/admin/orgs/${orgId}`);
   } catch (err) {
     handleApiError(err, "Failed to delete org");
+  }
+}
+
+// ─── Admin Pricing Client Functions ──────────────────────────────────────────
+
+function unwrapPricingList(json: ModelPricingListResponse | { data: ModelPricingListResponse }): ModelPricing[] {
+  const body = "data" in json ? json.data : json;
+  return body.pricing ?? [];
+}
+
+export async function adminListPricing(): Promise<ModelPricing[]> {
+  try {
+    const { data } = await userServiceApi.get<ModelPricingListResponse | { data: ModelPricingListResponse }>("/admin/pricing");
+    return unwrapPricingList(data);
+  } catch (err) {
+    handleApiError(err, "Failed to list model pricing");
+  }
+}
+
+export async function adminCreatePricing(body: CreateModelPricingRequest): Promise<ModelPricing> {
+  try {
+    const { data } = await userServiceApi.post<{ pricing: ModelPricing } | { data: { pricing: ModelPricing } }>("/admin/pricing", body);
+    const inner = "data" in data ? data.data : data;
+    return inner.pricing;
+  } catch (err) {
+    handleApiError(err, "Failed to create model pricing");
   }
 }
